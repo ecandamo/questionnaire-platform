@@ -1,0 +1,36 @@
+---
+description: Project handoff workflow
+alwaysApply: true
+---
+
+# Handoff Workflow
+
+Always read `HANDOFF.md` before starting meaningful work in this repository.
+
+Use `HANDOFF.md` to understand:
+- what the project is
+- current status
+- what changed last
+- files recently touched
+- open issues
+- next best step
+- guardrails and known decisions
+
+Before ending a meaningful work session, update `HANDOFF.md` to reflect the current state of the project.
+
+When updating `HANDOFF.md`, keep it short, current, and practical. Update these sections when relevant:
+- Current Status
+- Last Session Changes
+- Files Touched
+- Open Issues
+- Next Best Step
+- Known Decisions
+
+Do not turn `HANDOFF.md` into a long diary or changelog.
+Do not duplicate the README.
+Prefer concise bullet points over long paragraphs.
+
+When in doubt:
+- preserve working logic
+- avoid unnecessary rewrites
+- follow the Next Best Step unless a blocker requires otherwise

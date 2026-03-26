@@ -1,0 +1,51 @@
+---
+description: Foundation project rules for stack, architecture, workflow, and learning logs
+alwaysApply: true
+---
+
+# Foundation
+
+## Stack
+- Next.js (App Router)
+- TypeScript only; never use JavaScript
+- Tailwind CSS for all styling; no inline styles or CSS modules unless explicitly requested
+- shadcn/ui before custom UI components
+- Neon Postgres when needed
+- Vercel for deployment
+
+## Code Rules
+- Always use TypeScript
+- Use Tailwind CSS for all styling
+- Prefer shadcn/ui components before building custom ones
+- Keep components small and composable
+- Use server components by default; use client components only when needed
+- Write clean, lightweight code with no unnecessary dependencies
+- Put all API routes in `src/app/api/`
+
+## Folder Structure
+- `src/components/ui` — shadcn/ui components
+- `src/components/layout` — layout components such as header, footer, sidebar
+- `src/components/shared` — reusable components across pages
+- `src/lib` — utilities, helpers, API clients
+- `src/hooks` — custom React hooks
+- `src/types` — TypeScript type definitions
+- `src/styles` — design tokens and global styles
+
+## Design System
+- Use design tokens from `src/styles/design-tokens.ts`
+- Extend Tailwind config from those tokens when applicable
+- Maintain consistent spacing, colors, and typography across components
+
+## Cursor Workflow
+- Use Composer/Agent for changes that touch more than one file
+- After completing a task, always suggest the next logical step
+- When adding a new component, check `src/components/ui` first before creating a new one
+- When unsure about a pattern, prefer the simpler and more readable option
+- Always show the full file path when referencing a file
+- If a change affects types, update `src/types/` in the same edit
+
+## Self-Improvement
+- At the start of each session, review `.learnings/` files for relevant context
+- After solving non-obvious issues or when corrected, log the learning to `.learnings/LEARNINGS.md`
+- Log errors and failed commands to `.learnings/ERRORS.md`
+- Before major tasks, review recent learnings to avoid repeating past mistakes
