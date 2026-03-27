@@ -20,16 +20,16 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Admin: question bank with categories, templates, users (create/ban/role), audit log
   - Client management
 - Not finished:
-  - `DATABASE_URL` and `BETTER_AUTH_SECRET` not yet configured (need env setup)
-  - DB schema not yet pushed to Neon (need `npm run db:push` or `npm run db:migrate`)
-  - Preset template seed not run (need `npm run db:seed` after DB is ready)
-  - Admin user not yet created (need `npm run auth:migrate` then create first admin)
+  - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
 - Full application built from scratch (all 8 phases)
 - Next.js 16 compatibility: renamed `middleware.ts` → `proxy.ts` with `export function proxy()`
 - Lazy DB connection (Proxy pattern) to avoid build-time crash without `DATABASE_URL`
 - All TypeScript errors resolved, production build passes
+- Switched local DB to user-owned Neon project and completed `db:push` + `db:seed`
+- Bootstrap admin flow verified manually (sign-up endpoint + DB role promotion)
+- `src/components/ui/command.tsx` lint/a11y cleanup (removed stale cmdk selectors, added required `aria-selected`)
 
 ## Files Touched
 All new files. Key paths:
@@ -58,20 +58,13 @@ All new files. Key paths:
 - `drizzle.config.ts` — Drizzle Kit config
 
 ## Open Issues
-- Need real `DATABASE_URL` from Neon to proceed
-- Need `BETTER_AUTH_SECRET` (generate: `openssl rand -base64 32`)
-- Must run `npm run db:push` to push schema to Neon
-- Must run `npm run db:seed` to populate templates and sample questions
-- First admin user must be created via Better Auth admin API or CLI
 - Import/export for questions (JSON) is scaffolded but UI not yet wired
 - `command.tsx` is a lightweight custom implementation — could be replaced with cmdk if needed
 
 ## Next Best Step
-1. Set up Neon database, fill `.env.local` with `DATABASE_URL` and `BETTER_AUTH_SECRET`
-2. Run `npm run db:push` to create tables
-3. Run `npm run db:seed` to populate question bank and templates
-4. Run `npm run dev` to start the dev server
-5. Create first admin user by calling `POST /api/auth/sign-up/email` then update role in DB directly
+1. Continue feature work (question import/export UI is the main unfinished item)
+2. Keep local dev stable with `npx next dev --webpack` if Turbopack is unstable on this machine
+3. Before deploy, set production env vars on hosting and run a full login/admin smoke test
 
 ## Guardrails
 - Preserve working logic unless a change is necessary
