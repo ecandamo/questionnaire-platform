@@ -2,6 +2,19 @@
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
+## Confirmed Next.js 16 Breaking Changes (verified in this project)
+
+### Middleware → Proxy rename (CRITICAL)
+- File: `src/proxy.ts` (NOT `src/middleware.ts`)
+- Export: `export function proxy(request: NextRequest)` (NOT `middleware`)
+- The `config` export with `matcher` is unchanged
+- Build hard-fails if either the filename or export name is wrong
+
+### Async params in route handlers
+- Route handler params are now `Promise<{ id: string }>` — always `await params` before accessing
+- Correct: `const { id } = await params`
+- Wrong: `const { id } = params`
 <!-- END:nextjs-agent-rules -->
 
 <!-- BEGIN:project-rules -->
@@ -23,6 +36,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Use server components by default, client components only when needed
 - Write clean, lightweight code — no unnecessary dependencies
 - All API routes go in src/app/api/
+
+## Radix UI Import Pattern
+This project uses the unified `radix-ui` package (not individual `@radix-ui/react-*` packages).
+Always import like: `import { Dialog as DialogPrimitive } from "radix-ui"`
+Verify by checking any existing component before writing new shadcn components.
+
+## Database / External Services — Always Lazy Initialize
+Never call `neon()`, `createClient()`, or any external service constructor at module top-level.
+Next.js evaluates module-level code at build time — a missing env var will crash the build.
+Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the pattern).
 
 ## Folder Structure
 - src/components/ui — shadcn/ui components

@@ -1,0 +1,822 @@
+"use client"
+
+import * as React from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { QuestionnairStatusBadge } from "@/components/shared/status-badge"
+import {
+  ArrowLeftIcon,
+  GripVerticalIcon,
+  PlusIcon,
+  EyeOffIcon,
+  EyeIcon,
+  Loader2Icon,
+  Share2Icon,
+  CopyIcon,
+  CheckIcon,
+  TrashIcon,
+  SearchIcon,
+  SaveIcon,
+  SendIcon,
+  ExternalLinkIcon,
+} from "lucide-react"
+import { toast } from "sonner"
+import { format } from "date-fns"
+import {
+  QUESTIONNAIRE_TYPE_LABELS,
+  QUESTION_TYPE_LABELS,
+  QUESTION_TYPES_WITH_OPTIONS,
+  type QuestionnaireStatus,
+  type QuestionnaireType,
+  type QuestionType,
+} from "@/types"
+
+interface QQuestion {
+  id: string
+  text: string
+  type: string
+  description: string | null
+  options: string[] | null
+  isRequired: boolean
+  isHidden: boolean
+  sortOrder: number
+  isCustom: boolean
+  sourceQuestionId: string | null
+}
+
+interface BankQuestion {
+  id: string
+  text: string
+  type: string
+  categoryName: string | null
+  isRequired: boolean
+  options: string[] | null
+}
+
+interface QuestionnaireDetail {
+  id: string
+  title: string
+  type: string
+  status: string
+  clientName: string | null
+  ownerName: string | null
+  ownerId: string
+  publishedAt: string | null
+  submittedAt: string | null
+  questions: QQuestion[]
+}
+
+interface Props {
+  id: string
+  isAdmin: boolean
+  currentUserId: string
+}
+
+export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props) {
+  const router = useRouter()
+  const [data, setData] = React.useState<QuestionnaireDetail | null>(null)
+  const [questions, setQuestions] = React.useState<QQuestion[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [saving, setSaving] = React.useState(false)
+  const [publishing, setPublishing] = React.useState(false)
+  const [shareUrl, setShareUrl] = React.useState<string | null>(null)
+  const [copied, setCopied] = React.useState(false)
+  const [showAddCustom, setShowAddCustom] = React.useState(false)
+  const [showBankPicker, setShowBankPicker] = React.useState(false)
+  const [bankQuestions, setBankQuestions] = React.useState<BankQuestion[]>([])
+  const [bankSearch, setBankSearch] = React.useState("")
+  const [bankLoading, setBankLoading] = React.useState(false)
+  const [expiryDays, setExpiryDays] = React.useState(30)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  async function load() {
+    setLoading(true)
+    const res = await fetch(`/api/questionnaires/${id}`)
+    if (!res.ok) { router.push("/questionnaires"); return }
+    const d = await res.json()
+    setData(d)
+    setQuestions(d.questions.sort((a: QQuestion, b: QQuestion) => a.sortOrder - b.sortOrder))
+    setLoading(false)
+  }
+
+  React.useEffect(() => { load() }, [id])
+
+  async function handleSave() {
+    setSaving(true)
+    const res = await fetch(`/api/questionnaires/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        questions: questions.map((q, i) => ({
+          id: q.id,
+          text: q.text,
+          type: q.type,
+          description: q.description,
+          options: q.options,
+          isRequired: q.isRequired,
+          isHidden: q.isHidden,
+          sortOrder: i,
+          isCustom: q.isCustom,
+          sourceQuestionId: q.sourceQuestionId,
+        })),
+      }),
+    })
+    if (res.ok) {
+      toast.success("Draft saved")
+    } else {
+      toast.error("Failed to save")
+    }
+    setSaving(false)
+  }
+
+  async function handlePublish() {
+    setPublishing(true)
+    const res = await fetch(`/api/questionnaires/${id}/publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expiryDays }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setShareUrl(data.shareUrl)
+      toast.success("Published! Share link generated.")
+      load()
+    } else {
+      const err = await res.json()
+      toast.error(err.error ?? "Failed to publish")
+    }
+    setPublishing(false)
+  }
+
+  async function handleReopen() {
+    const res = await fetch(`/api/questionnaires/${id}/reopen`, { method: "POST" })
+    if (res.ok) {
+      toast.success("Questionnaire reopened")
+      load()
+    } else {
+      toast.error("Failed to reopen")
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      setQuestions((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id)
+        const newIndex = items.findIndex((i) => i.id === over.id)
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+  }
+
+  async function loadBankQuestions() {
+    setBankLoading(true)
+    const params = new URLSearchParams({ status: "active" })
+    if (bankSearch) params.set("search", bankSearch)
+    const res = await fetch(`/api/questions?${params}`)
+    if (res.ok) setBankQuestions(await res.json())
+    setBankLoading(false)
+  }
+
+  React.useEffect(() => {
+    if (showBankPicker) loadBankQuestions()
+  }, [showBankPicker, bankSearch])
+
+  function addBankQuestion(bq: BankQuestion) {
+    const already = questions.some((q) => q.sourceQuestionId === bq.id)
+    if (already) {
+      toast.error("This question is already in the questionnaire")
+      return
+    }
+    const newQ: QQuestion = {
+      id: `temp-${Date.now()}-${Math.random()}`,
+      text: bq.text,
+      type: bq.type,
+      description: null,
+      options: bq.options,
+      isRequired: bq.isRequired,
+      isHidden: false,
+      sortOrder: questions.length,
+      isCustom: false,
+      sourceQuestionId: bq.id,
+    }
+    setQuestions((prev) => [...prev, newQ])
+    toast.success("Question added")
+  }
+
+  function addCustomQuestion(q: Omit<QQuestion, "id" | "sortOrder">) {
+    const newQ: QQuestion = {
+      ...q,
+      id: `custom-${Date.now()}-${Math.random()}`,
+      sortOrder: questions.length,
+    }
+    setQuestions((prev) => [...prev, newQ])
+  }
+
+  function updateQuestion(qId: string, updates: Partial<QQuestion>) {
+    setQuestions((prev) => prev.map((q) => (q.id === qId ? { ...q, ...updates } : q)))
+  }
+
+  function removeQuestion(qId: string) {
+    setQuestions((prev) => prev.filter((q) => q.id !== qId))
+  }
+
+  function copyShareUrl() {
+    if (!shareUrl) return
+    navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (!data) return null
+
+  const canEdit = data.status === "draft"
+  const isOwner = data.ownerId === currentUserId
+  const canInteract = isOwner || isAdmin
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <Button variant="ghost" size="icon-sm" onClick={() => router.back()}>
+            <ArrowLeftIcon className="h-4 w-4" />
+          </Button>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="font-heading text-xl font-bold tracking-tight">{data.title}</h1>
+              <QuestionnairStatusBadge status={data.status as QuestionnaireStatus} />
+            </div>
+            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+              <span>{QUESTIONNAIRE_TYPE_LABELS[data.type as QuestionnaireType]}</span>
+              {data.clientName && <><span>·</span><span>{data.clientName}</span></>}
+              {data.ownerName && <><span>·</span><span>Owner: {data.ownerName}</span></>}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {canEdit && canInteract && (
+            <Button variant="outline" onClick={handleSave} disabled={saving}>
+              {saving ? <Loader2Icon className="h-4 w-4 animate-spin" /> : <SaveIcon className="h-4 w-4" />}
+              Save Draft
+            </Button>
+          )}
+          {data.status === "submitted" && canInteract && (
+            <Button variant="outline" onClick={handleReopen}>
+              Reopen
+            </Button>
+          )}
+          {canEdit && canInteract && (
+            <Button onClick={handlePublish} disabled={publishing || questions.filter(q => !q.isHidden).length === 0}>
+              {publishing ? <Loader2Icon className="h-4 w-4 animate-spin" /> : <SendIcon className="h-4 w-4" />}
+              Publish
+            </Button>
+          )}
+          {["shared", "in_progress", "submitted"].includes(data.status) && (
+            <Button variant="outline" asChild>
+              <Link href={`/questionnaires/${id}/responses`}>
+                View Responses
+              </Link>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Share Link Banner */}
+      {shareUrl && (
+        <Card className="border-success/30 bg-success/5">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <Share2Icon className="h-5 w-5 text-success shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-success">Questionnaire published!</p>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">{shareUrl}</p>
+              </div>
+              <Button size="sm" variant="outline" onClick={copyShareUrl}>
+                {copied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+                {copied ? "Copied!" : "Copy link"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Tabs defaultValue="builder">
+        <TabsList>
+          <TabsTrigger value="builder">Builder</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+          {["shared", "in_progress", "submitted"].includes(data.status) && (
+            <TabsTrigger value="share">Share Link</TabsTrigger>
+          )}
+        </TabsList>
+
+        {/* Builder Tab */}
+        <TabsContent value="builder" className="space-y-4 mt-4">
+          {canEdit && canInteract && (
+            <div className="flex items-center gap-2 justify-between">
+              <p className="text-sm text-muted-foreground">
+                {questions.filter((q) => !q.isHidden).length} visible ·{" "}
+                {questions.filter((q) => q.isRequired && !q.isHidden).length} required ·{" "}
+                {questions.length} total
+              </p>
+              <div className="flex gap-2">
+                {data.type === "custom" && (
+                  <Button variant="outline" size="sm" onClick={() => setShowBankPicker(true)}>
+                    <SearchIcon className="h-4 w-4" />
+                    Add from Bank
+                  </Button>
+                )}
+                <Button size="sm" onClick={() => setShowAddCustom(true)}>
+                  <PlusIcon className="h-4 w-4" />
+                  Add Custom Question
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!canEdit && (
+            <div className="rounded-lg bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+              This questionnaire has been published. The structure cannot be edited.
+            </div>
+          )}
+
+          {questions.length === 0 && (
+            <Card className="shadow-card border-dashed">
+              <CardContent className="flex flex-col items-center py-12 text-center gap-3">
+                <p className="text-sm text-muted-foreground">No questions yet</p>
+                {canEdit && canInteract && (
+                  <>
+                    {data.type === "custom" ? (
+                      <Button size="sm" onClick={() => setShowBankPicker(true)}>
+                        <SearchIcon className="h-4 w-4" />
+                        Add from Question Bank
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Questions from the template will appear here.
+                        You can also add custom questions.
+                      </p>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={canEdit ? handleDragEnd : () => {}}
+          >
+            <SortableContext items={questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {questions.map((q, idx) => (
+                  <SortableQuestionCard
+                    key={q.id}
+                    question={q}
+                    index={idx + 1}
+                    canEdit={canEdit && canInteract}
+                    onUpdate={(updates) => updateQuestion(q.id, updates)}
+                    onRemove={() => removeQuestion(q.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </TabsContent>
+
+        {/* Settings Tab */}
+        <TabsContent value="settings" className="mt-4">
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="font-heading text-base">Publish Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Link Expiry (days)</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={expiryDays}
+                    onChange={(e) => setExpiryDays(Number(e.target.value))}
+                    className="w-28"
+                    disabled={!canEdit}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Expires {format(new Date(Date.now() + expiryDays * 86400000), "MMM d, yyyy")}
+                  </span>
+                </div>
+              </div>
+              <Separator />
+              <div className="text-sm space-y-1">
+                <p className="font-medium">Timeline</p>
+                <p className="text-muted-foreground text-xs">
+                  Created: {data.publishedAt ? format(new Date(data.publishedAt), "MMM d, yyyy HH:mm") : "—"}
+                </p>
+                {data.publishedAt && (
+                  <p className="text-muted-foreground text-xs">
+                    Published: {format(new Date(data.publishedAt), "MMM d, yyyy HH:mm")}
+                  </p>
+                )}
+                {data.submittedAt && (
+                  <p className="text-muted-foreground text-xs">
+                    Submitted: {format(new Date(data.submittedAt), "MMM d, yyyy HH:mm")}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Share Link Tab */}
+        <TabsContent value="share" className="mt-4">
+          <ShareLinkPanel questionnaireId={id} shareUrl={shareUrl} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Custom Question Dialog */}
+      <AddCustomQuestionDialog
+        open={showAddCustom}
+        onClose={() => setShowAddCustom(false)}
+        onAdd={addCustomQuestion}
+      />
+
+      {/* Question Bank Picker */}
+      <Dialog open={showBankPicker} onOpenChange={setShowBankPicker}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Add from Question Bank</DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search questions..."
+              value={bankSearch}
+              onChange={(e) => setBankSearch(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+            {bankLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : bankQuestions.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-8">No questions found</p>
+            ) : (
+              bankQuestions.map((bq) => {
+                const alreadyAdded = questions.some((q) => q.sourceQuestionId === bq.id)
+                return (
+                  <div
+                    key={bq.id}
+                    className="flex items-start justify-between gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{bq.text}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="text-xs">{QUESTION_TYPE_LABELS[bq.type as QuestionType]}</Badge>
+                        {bq.categoryName && <span className="text-xs text-muted-foreground">{bq.categoryName}</span>}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={alreadyAdded ? "secondary" : "outline"}
+                      onClick={() => addBankQuestion(bq)}
+                      disabled={alreadyAdded}
+                    >
+                      {alreadyAdded ? <CheckIcon className="h-3 w-3" /> : <PlusIcon className="h-3 w-3" />}
+                      {alreadyAdded ? "Added" : "Add"}
+                    </Button>
+                  </div>
+                )
+              })
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBankPicker(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+// ─── Sortable Question Card ───────────────────────────────────────────────────
+
+function SortableQuestionCard({
+  question,
+  index,
+  canEdit,
+  onUpdate,
+  onRemove,
+}: {
+  question: QQuestion
+  index: number
+  canEdit: boolean
+  onUpdate: (updates: Partial<QQuestion>) => void
+  onRemove: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: question.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-xl border border-border bg-card shadow-card transition-shadow ${
+        question.isHidden ? "opacity-50" : ""
+      }`}
+    >
+      <div className="flex items-start gap-3 p-4">
+        {canEdit && (
+          <button
+            {...attributes}
+            {...listeners}
+            className="mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
+          >
+            <GripVerticalIcon className="h-5 w-5" />
+          </button>
+        )}
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-start gap-2">
+            <span className="text-xs text-muted-foreground font-medium mt-1 shrink-0 w-5">
+              {index}.
+            </span>
+            <div className="flex-1">
+              <p className="text-sm font-medium leading-snug">{question.text}</p>
+              {question.description && (
+                <p className="text-xs text-muted-foreground mt-0.5">{question.description}</p>
+              )}
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <Badge variant="secondary" className="text-xs">
+                  {QUESTION_TYPE_LABELS[question.type as QuestionType] ?? question.type}
+                </Badge>
+                {question.isRequired && (
+                  <Badge variant="outline" className="text-xs text-destructive border-destructive/20">
+                    Required
+                  </Badge>
+                )}
+                {question.isCustom && (
+                  <Badge variant="outline" className="text-xs">Custom</Badge>
+                )}
+                {question.isHidden && (
+                  <Badge variant="outline" className="text-xs text-muted-foreground">Hidden</Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {canEdit && (
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => onUpdate({ isHidden: !question.isHidden })}
+              className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              title={question.isHidden ? "Show question" : "Hide question"}
+            >
+              {question.isHidden ? <EyeIcon className="h-4 w-4" /> : <EyeOffIcon className="h-4 w-4" />}
+            </button>
+            <div className="flex items-center gap-1.5 ml-1">
+              <Switch
+                checked={question.isRequired}
+                onCheckedChange={(v) => onUpdate({ isRequired: v })}
+                className="scale-75"
+              />
+              <span className="text-xs text-muted-foreground">Req.</span>
+            </div>
+            <button
+              onClick={onRemove}
+              className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Add Custom Question Dialog ───────────────────────────────────────────────
+
+function AddCustomQuestionDialog({
+  open,
+  onClose,
+  onAdd,
+}: {
+  open: boolean
+  onClose: () => void
+  onAdd: (q: Omit<QQuestion, "id" | "sortOrder">) => void
+}) {
+  const [text, setText] = React.useState("")
+  const [type, setType] = React.useState<QuestionType>("short_text")
+  const [description, setDescription] = React.useState("")
+  const [isRequired, setIsRequired] = React.useState(false)
+  const [options, setOptions] = React.useState("")
+
+  function handleAdd() {
+    if (!text.trim()) { toast.error("Question text is required"); return }
+    const parsedOptions = QUESTION_TYPES_WITH_OPTIONS.includes(type)
+      ? options.split("\n").map((o) => o.trim()).filter(Boolean)
+      : null
+
+    onAdd({
+      text: text.trim(),
+      type,
+      description: description.trim() || null,
+      options: parsedOptions,
+      isRequired,
+      isHidden: false,
+      isCustom: true,
+      sourceQuestionId: null,
+    })
+    setText("")
+    setDescription("")
+    setOptions("")
+    setIsRequired(false)
+    setType("short_text")
+    onClose()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Add Custom Question</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Question Text <span className="text-destructive">*</span></Label>
+            <Textarea
+              placeholder="Enter your question..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={2}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Type</Label>
+            <Select value={type} onValueChange={(v) => setType(v as QuestionType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(QUESTION_TYPE_LABELS).map(([v, l]) => (
+                  <SelectItem key={v} value={v}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {QUESTION_TYPES_WITH_OPTIONS.includes(type) && (
+            <div className="space-y-2">
+              <Label>Options (one per line)</Label>
+              <Textarea
+                placeholder="Option A&#10;Option B&#10;Option C"
+                value={options}
+                onChange={(e) => setOptions(e.target.value)}
+                rows={4}
+              />
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label>Description / Help Text</Label>
+            <Input
+              placeholder="Optional context for respondents..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="required"
+              checked={isRequired}
+              onCheckedChange={(v) => setIsRequired(v === true)}
+            />
+            <Label htmlFor="required" className="font-normal cursor-pointer">Required</Label>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleAdd} disabled={!text.trim()}>
+            <PlusIcon className="h-4 w-4" />
+            Add Question
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Share Link Panel ─────────────────────────────────────────────────────────
+
+function ShareLinkPanel({ questionnaireId, shareUrl: initialShareUrl }: { questionnaireId: string; shareUrl: string | null }) {
+  const [shareUrl, setShareUrl] = React.useState(initialShareUrl)
+  const [copied, setCopied] = React.useState(false)
+  const [loading, setLoading] = React.useState(!initialShareUrl)
+
+  React.useEffect(() => {
+    if (!initialShareUrl) {
+      // Load from API if not yet in state
+      fetch(`/api/questionnaires/${questionnaireId}`)
+        .then((r) => r.json())
+        .then(() => setLoading(false))
+    }
+  }, [questionnaireId, initialShareUrl])
+
+  function copy() {
+    if (!shareUrl) return
+    navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (!shareUrl) {
+    return (
+      <Card className="shadow-card">
+        <CardContent className="py-8 text-center text-muted-foreground text-sm">
+          No share link available.
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="shadow-card">
+      <CardHeader>
+        <CardTitle className="font-heading text-base">Share Link</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Input value={shareUrl} readOnly className="font-mono text-xs" />
+          <Button onClick={copy} size="sm" variant="outline">
+            {copied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <a href={shareUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLinkIcon className="h-4 w-4" />
+            </a>
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Share this link with your prospect or client. They do not need an account to respond.
+        </p>
+      </CardContent>
+    </Card>
+  )
+}

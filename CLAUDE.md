@@ -14,6 +14,18 @@
 - Clean, lightweight code — no unnecessary dependencies
 - Design tokens in src/styles/design-tokens.ts
 
+## Next.js 16 — Known Breaking Changes
+- Middleware is now `src/proxy.ts` with `export function proxy()` — NEVER use `middleware.ts`
+- Route handler `params` are async: always `const { id } = await params`
+
+## Radix UI
+- Uses unified `radix-ui` package — import as `import { Dialog as DialogPrimitive } from "radix-ui"`
+- Do NOT import from `@radix-ui/react-*` scoped packages
+
+## Database Initialization
+- Never initialize Neon / Drizzle at module top-level — builds crash when DATABASE_URL is absent
+- Use lazy factory pattern (see src/lib/db/index.ts)
+
 ## File Structure
 - src/components/ui — shadcn/ui
 - src/components/layout — Headers, footers, sidebars
