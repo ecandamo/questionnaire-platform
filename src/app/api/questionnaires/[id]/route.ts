@@ -112,22 +112,36 @@ export async function DELETE(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
+  const permanent = req.nextUrl.searchParams.get("permanent") === "true"
+
   const [existing] = await db.select().from(questionnaire).where(eq(questionnaire.id, id))
 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
   if (!canAccess(session, existing.ownerId)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
-  await db
-    .update(questionnaire)
-    .set({ status: "archived", updatedAt: new Date() })
-    .where(eq(questionnaire.id, id))
-
-  await logAudit({
-    userId: session.user.id,
-    action: "archive",
-    entityType: "questionnaire",
-    entityId: id,
-  })
+  if (permanent) {
+    if (session.user.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+    await db.delete(questionnaire).where(eq(questionnaire.id, id))
+    await logAudit({
+      userId: session.user.id,
+      action: "delete",
+      entityType: "questionnaire",
+      entityId: id,
+    })
+  } else {
+    await db
+      .update(questionnaire)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(questionnaire.id, id))
+    await logAudit({
+      userId: session.user.id,
+      action: "archive",
+      entityType: "questionnaire",
+      entityId: id,
+    })
+  }
 
   return NextResponse.json({ success: true })
 }

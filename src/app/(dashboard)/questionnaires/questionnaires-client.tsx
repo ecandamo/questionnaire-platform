@@ -25,6 +25,7 @@ import {
   RefreshCwIcon,
   ClipboardListIcon,
   Loader2Icon,
+  Trash2Icon,
 } from "lucide-react"
 import { toast } from "sonner"
 import { format } from "date-fns"
@@ -106,6 +107,17 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
       load()
     } else {
       toast.error("Failed to archive")
+    }
+  }
+
+  async function handleDelete(id: string, title: string) {
+    if (!confirm(`Permanently delete "${title}"? This will remove all responses and cannot be undone.`)) return
+    const res = await fetch(`/api/questionnaires/${id}?permanent=true`, { method: "DELETE" })
+    if (res.ok) {
+      toast.success("Deleted permanently")
+      load()
+    } else {
+      toast.error("Failed to delete")
     }
   }
 
@@ -248,6 +260,15 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
                               <ArchiveIcon className="mr-2 h-4 w-4" />
                               Archive
                             </DropdownMenuItem>
+                            {isAdmin && (
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(q.id, q.title)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2Icon className="mr-2 h-4 w-4" />
+                                Delete permanently
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>

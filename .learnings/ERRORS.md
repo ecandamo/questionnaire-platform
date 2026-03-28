@@ -137,6 +137,39 @@ When replacing icon usage in a component, remove JSX usage and import in the sam
 
 ---
 
+## [ERR-20260327-002] duplicate-schema-import-when-cascade-handles-children
+
+**Logged**: 2026-03-27
+**Priority**: low
+**Status**: resolved
+**Area**: backend
+
+### Summary
+Added redundant schema imports for child tables (`questionnaireQuestion`, `shareLink`, `response`, `answer`) into a route file that already imported them, causing `TS2300 Duplicate identifier` errors.
+
+### Error
+```
+Duplicate identifier 'questionnaireQuestion'.
+```
+
+### Context
+- Wanted to manually delete child rows before deleting the parent questionnaire
+- Added extra imports, but `questionnaireQuestion` was already imported earlier in the same file
+- Root cause of the manual deletion approach was also unnecessary: the DB schema already defines `onDelete: "cascade"` on all child FKs, so a single `db.delete(questionnaire)` cascades everything automatically
+
+### Suggested Fix
+Before adding imports to a route file, check existing imports. More importantly, check the schema for `onDelete: "cascade"` before writing manual child-deletion logic — if cascade is defined, the DB handles it in one statement.
+
+### Resolution
+- **Resolved**: 2026-03-27
+- **Notes**: Reverted the duplicate imports. Used `db.delete(questionnaire).where(eq(questionnaire.id, id))` — cascade does the rest.
+
+### Metadata
+- Reproducible: yes
+- Related Files: src/app/api/questionnaires/[id]/route.ts, src/lib/db/schema.ts
+
+---
+
 ## [ERR-20260326-004] better-auth-admin-setRole-type-error
 
 **Logged**: 2026-03-26T23:20:00Z

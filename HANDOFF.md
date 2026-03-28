@@ -23,45 +23,24 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
-- Applied API brand guidelines (navy `#273B6E` + green `#78BC43`) across the full theme
-- Sidebar converted to dark navy background with API green active-item highlight
-- API logo (white+green) inlined in sidebar brand area; blue logo on login page
-- Updated all CSS custom properties in `globals.css` (primary, secondary, accent, muted, border, charts, sidebar, shadows)
-- Updated `design-tokens.ts` to reflect API brand palette
-- Saved `public/logo.svg` (original) and `public/logo-white.svg` (sidebar variant) for reference
+- Added permanent delete for admins: `DELETE /api/questionnaires/:id?permanent=true`
+  - Admin-only guard enforced server-side; cascades to questions, share links, responses, answers
+  - Logged as `"delete"` in audit log (archive stays `"archive"`)
+- Added "Delete permanently" option in questionnaire list dropdown (admin-only, with confirmation)
+- Sidebar brand block: centered logo + title; subtitle uses full `text-sidebar-foreground` for contrast
 
 ## Files Touched
-Key paths (branding session 2026-03-27):
-- `src/lib/db/schema.ts` — Drizzle schema (12 tables)
-- `src/lib/db/index.ts` — Lazy Neon connection
-- `src/lib/db/seed.ts` — Seeds 3 templates + questions
-- `src/lib/auth.ts` — Better Auth server config
-- `src/lib/auth-client.ts` — Better Auth React client
-- `src/lib/audit.ts` — Audit logging
-- `src/lib/tokens.ts` — Share token generation
-- `src/lib/session.ts` — Session helpers for API routes
-- `src/proxy.ts` — Route protection (Next.js 16 proxy)
-- `src/app/(auth)/login/page.tsx` — Login page
-- `src/app/(dashboard)/layout.tsx` — Dashboard shell
-- `src/app/(dashboard)/page.tsx` — Dashboard (server)
-- `src/app/(dashboard)/dashboard-client.tsx` — Dashboard charts (client)
-- `src/app/(dashboard)/questionnaires/` — List + builder + responses
-- `src/app/(dashboard)/clients/page.tsx` — Client management
-- `src/app/(dashboard)/admin/` — All admin pages
-- `src/app/api/` — All API routes
-- `src/app/respond/[token]/` — External respondent flow
-- `src/components/layout/` — Sidebar + header
-- `src/components/shared/status-badge.tsx` — Status badges
-- `src/components/ui/dialog.tsx`, `sheet.tsx`, `command.tsx` — Manual shadcn components
-- `src/types/index.ts` — Shared types
-- `drizzle.config.ts` — Drizzle Kit config
+Key paths (delete feature 2026-03-27):
+- `src/app/api/questionnaires/[id]/route.ts` — DELETE handler updated to support `?permanent=true`
+- `src/app/(dashboard)/questionnaires/questionnaires-client.tsx` — Admin-only "Delete permanently" menu item
+- `src/components/layout/sidebar.tsx` — Brand area centering + subtitle contrast
 
 ## Open Issues
 - Import/export for questions (JSON) is scaffolded but UI not yet wired
 - `command.tsx` is a lightweight custom implementation — could be replaced with cmdk if needed
 
 ## Next Best Step
-1. Smoke-test branding visually (`npx next dev --webpack`) — check login, sidebar, dashboard, buttons
+1. Smoke-test delete: login as admin, archive a questionnaire, then "Delete permanently" — confirm it disappears and audit log shows `delete` action
 2. Continue feature work: question import/export UI is the main unfinished item
 3. Before deploy, set production env vars on hosting and run a full login/admin smoke test
 
