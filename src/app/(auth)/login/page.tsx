@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ClipboardListIcon, Loader2Icon } from "lucide-react"
+import { Loader2Icon } from "lucide-react"
 import { toast } from "sonner"
 
 export default function LoginPage() {
@@ -45,9 +45,12 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Logo / Brand */}
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
-            <ClipboardListIcon className="h-6 w-6" />
-          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 166.22 85.48" className="w-32" aria-label="API logo">
+            <rect fill="#273b6e" x="148.84" y="0.02" width="17.38" height="85.4"/>
+            <path fill="#273b6e" d="M120.17,0c-12.66,0-25.32.12-38,.12V69.64L52.72.06H36.15L0,85.42H16.46L44.43,18,72.29,85.42h9.9v.06H97.38V15.36h22.79c19.34,0,19.46,30.24,0,30.24h-7.59V60.36h7.59C159.66,60.36,159.55,0,120.17,0Z"/>
+            <line stroke="#78bc43" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="3.5" fill="none" x1="43.9" y1="49.84" x2="43.9" y2="72.34"/>
+            <line stroke="#78bc43" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="3.5" fill="none" x1="55.15" y1="61.09" x2="32.65" y2="61.09"/>
+          </svg>
           <div className="text-center">
             <h1 className="font-heading text-2xl font-bold text-foreground tracking-tight">
               Questionnaire Platform

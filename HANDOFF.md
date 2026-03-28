@@ -23,16 +23,15 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
-- Full application built from scratch (all 8 phases)
-- Next.js 16 compatibility: renamed `middleware.ts` → `proxy.ts` with `export function proxy()`
-- Lazy DB connection (Proxy pattern) to avoid build-time crash without `DATABASE_URL`
-- All TypeScript errors resolved, production build passes
-- Switched local DB to user-owned Neon project and completed `db:push` + `db:seed`
-- Bootstrap admin flow verified manually (sign-up endpoint + DB role promotion)
-- `src/components/ui/command.tsx` lint/a11y cleanup (removed stale cmdk selectors, added required `aria-selected`)
+- Applied API brand guidelines (navy `#273B6E` + green `#78BC43`) across the full theme
+- Sidebar converted to dark navy background with API green active-item highlight
+- API logo (white+green) inlined in sidebar brand area; blue logo on login page
+- Updated all CSS custom properties in `globals.css` (primary, secondary, accent, muted, border, charts, sidebar, shadows)
+- Updated `design-tokens.ts` to reflect API brand palette
+- Saved `public/logo.svg` (original) and `public/logo-white.svg` (sidebar variant) for reference
 
 ## Files Touched
-All new files. Key paths:
+Key paths (branding session 2026-03-27):
 - `src/lib/db/schema.ts` — Drizzle schema (12 tables)
 - `src/lib/db/index.ts` — Lazy Neon connection
 - `src/lib/db/seed.ts` — Seeds 3 templates + questions
@@ -62,8 +61,8 @@ All new files. Key paths:
 - `command.tsx` is a lightweight custom implementation — could be replaced with cmdk if needed
 
 ## Next Best Step
-1. Continue feature work (question import/export UI is the main unfinished item)
-2. Keep local dev stable with `npx next dev --webpack` if Turbopack is unstable on this machine
+1. Smoke-test branding visually (`npx next dev --webpack`) — check login, sidebar, dashboard, buttons
+2. Continue feature work: question import/export UI is the main unfinished item
 3. Before deploy, set production env vars on hosting and run a full login/admin smoke test
 
 ## Guardrails
@@ -74,6 +73,10 @@ All new files. Key paths:
 - Follow existing project patterns unless there is a good reason not to
 
 ## Known Decisions
+- Branding: API Navy `#273B6E` = primary, API Green `#78BC43` = accent/active — all via CSS custom properties in `globals.css`
+- Sidebar uses dark navy background (independent of light/dark page theme via `--sidebar` vars) with green active items
+- Brand logo is inlined as SVG (not `next/image`) so white and navy color variants can coexist without extra files or CSS filters
+
 - Better Auth with admin plugin for auth (email/password, no OAuth in v1)
 - Drizzle ORM + Neon Postgres serverless driver
 - Next.js 16: `proxy.ts` replaces `middleware.ts`, export must be `export function proxy()`

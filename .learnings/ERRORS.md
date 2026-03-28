@@ -105,6 +105,38 @@ Always use `required_permissions: ["full_network"]` when running `npx shadcn@lat
 
 ---
 
+## [ERR-20260327-001] sidebar-removed-import-still-used-in-jsx
+
+**Logged**: 2026-03-27T00:00:00Z
+**Priority**: low
+**Status**: resolved
+**Area**: frontend
+
+### Summary
+Removed `ShieldIcon` from the lucide-react import in sidebar.tsx before removing its usage in JSX, causing a TS2304 error.
+
+### Error
+```
+Cannot find name 'ShieldIcon'.
+```
+
+### Context
+- When replacing the sidebar brand area icon with inline SVG, the import was removed in one edit but JSX still referenced `<ShieldIcon />`
+- IDE diagnostics caught it immediately on the next edit
+
+### Suggested Fix
+When replacing icon usage in a component, remove JSX usage and import in the same edit, or check all references before removing the import.
+
+### Resolution
+- **Resolved**: 2026-03-27T00:00:00Z
+- **Notes**: Removed the JSX usage of ShieldIcon in the same step as removing the import.
+
+### Metadata
+- Reproducible: yes
+- Related Files: src/components/layout/sidebar.tsx
+
+---
+
 ## [ERR-20260326-004] better-auth-admin-setRole-type-error
 
 **Logged**: 2026-03-26T23:20:00Z
