@@ -1,32 +1,38 @@
 # Foundation - Claude Code Rules
 
 ## Stack
+
 - Next.js (App Router) + TypeScript (strict)
 - Tailwind CSS + shadcn/ui (Radix, Nova preset)
 - Neon Postgres (when needed)
 - Vercel (deployment)
 
 ## Rules
+
 - TypeScript only, never JavaScript
 - Tailwind for all styling, no CSS modules or inline styles
-- shadcn/ui components before custom ones
+- Use shadcn/ui as a base but always customize styling to match Design Philosophy — never use default shadcn appearance as-is
 - Server components by default, client only when needed
 - Clean, lightweight code — no unnecessary dependencies
 - Design tokens in src/styles/design-tokens.ts
 
 ## Next.js 16 — Known Breaking Changes
+
 - Middleware is now `src/proxy.ts` with `export function proxy()` — NEVER use `middleware.ts`
 - Route handler `params` are async: always `const { id } = await params`
 
 ## Radix UI
+
 - Uses unified `radix-ui` package — import as `import { Dialog as DialogPrimitive } from "radix-ui"`
 - Do NOT import from `@radix-ui/react-*` scoped packages
 
 ## Database Initialization
+
 - Never initialize Neon / Drizzle at module top-level — builds crash when DATABASE_URL is absent
 - Use lazy factory pattern (see src/lib/db/index.ts)
 
 ## File Structure
+
 - src/components/ui — shadcn/ui
 - src/components/layout — Headers, footers, sidebars
 - src/components/shared — Reusable components
@@ -35,12 +41,25 @@
 - src/types — TypeScript types
 - src/styles — Design tokens
 
+## Design Philosophy
+
+- Target aesthetic: Linear.app level of polish
+- Typography: strong hierarchy, dramatic size contrast between headings and body
+- Color: mostly neutral, accent used sparingly and intentionally
+- Density: data-rich but never cluttered
+- Whitespace: used deliberately, not as filler
+- Every component should feel intentional and premium, never default
+- Avoid generic AI-generated aesthetics at all costs
+- Reference apps: Linear.app, Stripe Dashboard, Vercel Dashboard
+
 ## Self-Improvement
+
 - Review .learnings/ at session start
 - Log corrections and errors to .learnings/
 - Consolidate periodically
 
 ## Handoff Workflow
+
 - Always read `HANDOFF.md` before starting meaningful work in this repository
 - Use `HANDOFF.md` to understand:
   - project summary

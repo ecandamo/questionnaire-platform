@@ -16,8 +16,8 @@ alwaysApply: true
 ## Code Rules
 - Always use TypeScript
 - Use Tailwind CSS for all styling
-- Prefer shadcn/ui components before building custom ones
-- Keep components small and composable
+- Use shadcn/ui as a base but always customize styling to match Design Philosophy — never use default shadcn appearance as-is
+- Keep components small and composable — but never sacrifice visual polish for simplicity
 - Use server components by default; use client components only when needed
 - Write clean, lightweight code with no unnecessary dependencies
 - Put all API routes in `src/app/api/`
@@ -35,6 +35,16 @@ alwaysApply: true
 - Use design tokens from `src/styles/design-tokens.ts`
 - Extend Tailwind config from those tokens when applicable
 - Maintain consistent spacing, colors, and typography across components
+
+## Design Philosophy
+- Target aesthetic: Linear.app level of polish
+- Typography: strong hierarchy, dramatic size contrast between headings and body
+- Color: mostly neutral, accent used sparingly and intentionally
+- Density: data-rich but never cluttered
+- Whitespace: used deliberately, not as filler
+- Every component should feel intentional and premium, never default
+- Avoid generic AI-generated aesthetics at all costs
+- Reference apps: Linear.app, Stripe Dashboard, Vercel Dashboard
 
 ## Cursor Workflow
 - Use Composer/Agent for changes that touch more than one file

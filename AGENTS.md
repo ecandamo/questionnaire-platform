@@ -1,4 +1,5 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
@@ -6,21 +7,25 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Confirmed Next.js 16 Breaking Changes (verified in this project)
 
 ### Middleware → Proxy rename (CRITICAL)
+
 - File: `src/proxy.ts` (NOT `src/middleware.ts`)
 - Export: `export function proxy(request: NextRequest)` (NOT `middleware`)
 - The `config` export with `matcher` is unchanged
 - Build hard-fails if either the filename or export name is wrong
 
 ### Async params in route handlers
+
 - Route handler params are now `Promise<{ id: string }>` — always `await params` before accessing
 - Correct: `const { id } = await params`
 - Wrong: `const { id } = params`
 <!-- END:nextjs-agent-rules -->
 
 <!-- BEGIN:project-rules -->
+
 # Foundation Project Rules
 
 ## Stack
+
 - Next.js (App Router)
 - TypeScript (strict — never use JavaScript)
 - Tailwind CSS (all styling — no inline styles or CSS modules)
@@ -29,25 +34,29 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Vercel (deployment)
 
 ## Code Rules
+
 - Always use TypeScript, never JavaScript
 - Use Tailwind CSS for all styling
-- Use shadcn/ui components before building custom ones
-- Keep components small and composable
+- Use shadcn/ui as a base but always customize styling to match Design Philosophy — never use default shadcn appearance as-is
+- Keep components small and composable — but never sacrifice visual polish for simplicity
 - Use server components by default, client components only when needed
 - Write clean, lightweight code — no unnecessary dependencies
 - All API routes go in src/app/api/
 
 ## Radix UI Import Pattern
+
 This project uses the unified `radix-ui` package (not individual `@radix-ui/react-*` packages).
 Always import like: `import { Dialog as DialogPrimitive } from "radix-ui"`
 Verify by checking any existing component before writing new shadcn components.
 
 ## Database / External Services — Always Lazy Initialize
+
 Never call `neon()`, `createClient()`, or any external service constructor at module top-level.
 Next.js evaluates module-level code at build time — a missing env var will crash the build.
 Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the pattern).
 
 ## Folder Structure
+
 - src/components/ui — shadcn/ui components
 - src/components/layout — Layout components (header, footer, sidebar)
 - src/components/shared — Reusable components across pages
@@ -57,13 +66,28 @@ Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the
 - src/styles — Design tokens, global styles
 
 ## Design System
+
 - Use design tokens from src/styles/design-tokens.ts
 - Extend Tailwind config from these tokens
 - Maintain consistent spacing, colors, and typography across all components
+- Apply tokens with intention — always refer to Design Philosophy for how to use them
+
+## Design Philosophy
+
+- Target aesthetic: Linear.app level of polish
+- Typography: strong hierarchy, dramatic size contrast between headings and body
+- Color: mostly neutral, accent used sparingly and intentionally
+- Density: data-rich but never cluttered
+- Whitespace: used deliberately, not as filler
+- Every component should feel intentional and premium, never default
+- Avoid generic AI-generated aesthetics at all costs
+- Reference apps: Linear.app, Stripe Dashboard, Vercel Dashboard
 <!-- END:project-rules -->
 
 <!-- BEGIN:self-improvement-rules -->
+
 # Self-Improvement
+
 - At the start of each session, review .learnings/ files for relevant context
 - After solving non-obvious issues or when I correct you, log the learning to .learnings/LEARNINGS.md
 - Log errors and failed commands to .learnings/ERRORS.md
@@ -73,7 +97,9 @@ Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the
 <!-- END:self-improvement-rules -->
 
 <!-- BEGIN:handoff-workflow -->
+
 # Handoff Workflow
+
 - Always read `HANDOFF.md` before starting meaningful work in this repository
 - Use `HANDOFF.md` to understand:
   - project summary
@@ -99,4 +125,4 @@ Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the
   - preserve working logic
   - avoid unnecessary rewrites
   - follow the Next Best Step unless a blocker requires otherwise
-<!-- END:handoff-workflow -->
+  <!-- END:handoff-workflow -->
