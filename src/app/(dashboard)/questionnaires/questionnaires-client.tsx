@@ -126,8 +126,8 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight">Questionnaires</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="font-heading text-3xl font-bold tracking-tight">Questionnaires</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">
             {isAdmin ? "All questionnaires on the platform" : "Your questionnaires"}
           </p>
         </div>
@@ -140,18 +140,18 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-2.5 flex-wrap">
         <div className="relative flex-1 min-w-52">
-          <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Search questionnaires..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
+            className="pl-8 h-9 text-sm"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="w-36 h-9 text-sm">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -162,7 +162,7 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-44 h-9 text-sm">
             <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
@@ -175,18 +175,22 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
       </div>
 
       {/* Table */}
-      <Card className="shadow-card">
+      <Card className="shadow-card overflow-hidden">
         <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-20 text-muted-foreground">
-              <Loader2Icon className="h-5 w-5 animate-spin mr-2" />
-              Loading...
+              <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+              <span className="text-sm">Loading...</span>
             </div>
           ) : questionnaires.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <ClipboardListIcon className="h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm font-medium">No questionnaires found</p>
-              <p className="text-xs text-muted-foreground">Create your first questionnaire to get started</p>
+              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
+                <ClipboardListIcon className="h-5 w-5 text-muted-foreground/50" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">No questionnaires found</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Create your first questionnaire to get started</p>
+              </div>
               <Button asChild size="sm" className="mt-1">
                 <Link href="/questionnaires/new">
                   <PlusIcon className="h-4 w-4" />
@@ -196,41 +200,41 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Title</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Type</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Client</th>
-                    {isAdmin && <th className="text-left px-4 py-3 font-medium text-muted-foreground">Owner</th>}
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Updated</th>
-                    <th className="px-4 py-3" />
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="text-left px-5 py-2.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Title</th>
+                    <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Type</th>
+                    <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Client</th>
+                    {isAdmin && <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Owner</th>}
+                    <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Status</th>
+                    <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Updated</th>
+                    <th className="px-4 py-2.5 w-10" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
-                  {questionnaires.map((q) => (
-                    <tr key={q.id} className="hover:bg-muted/40 transition-colors">
-                      <td className="px-4 py-3 font-medium max-w-64 truncate">
-                        <Link href={`/questionnaires/${q.id}`} className="hover:text-primary transition-colors">
+                <tbody>
+                  {questionnaires.map((q, i) => (
+                    <tr key={q.id} className={`hover:bg-muted/40 transition-colors group ${i > 0 ? "border-t border-border" : ""}`}>
+                      <td className="px-5 py-3.5 max-w-64">
+                        <Link href={`/questionnaires/${q.id}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors truncate block">
                           {q.title}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3.5 text-sm text-muted-foreground whitespace-nowrap">
                         {QUESTIONNAIRE_TYPE_LABELS[q.type as QuestionnaireType] ?? q.type}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{q.clientName ?? "—"}</td>
-                      {isAdmin && <td className="px-4 py-3 text-muted-foreground">{q.ownerName ?? "—"}</td>}
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5 text-sm text-muted-foreground">{q.clientName ?? <span className="text-muted-foreground/40">—</span>}</td>
+                      {isAdmin && <td className="px-4 py-3.5 text-sm text-muted-foreground">{q.ownerName ?? <span className="text-muted-foreground/40">—</span>}</td>}
+                      <td className="px-4 py-3.5">
                         <QuestionnairStatusBadge status={q.status as QuestionnaireStatus} />
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">
-                        {q.updatedAt ? format(new Date(q.updatedAt), "MMM d, yyyy") : "—"}
+                      <td className="px-4 py-3.5 text-xs text-muted-foreground whitespace-nowrap">
+                        {q.updatedAt ? format(new Date(q.updatedAt), "MMM d, yyyy") : <span className="text-muted-foreground/40">—</span>}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm">
+                            <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
                               <MoreHorizontalIcon className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>

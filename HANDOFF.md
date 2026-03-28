@@ -23,26 +23,38 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
-- Added permanent delete for admins: `DELETE /api/questionnaires/:id?permanent=true`
-  - Admin-only guard enforced server-side; cascades to questions, share links, responses, answers
-  - Logged as `"delete"` in audit log (archive stays `"archive"`)
-- Added "Delete permanently" option in questionnaire list dropdown (admin-only, with confirmation)
-- Sidebar brand block: centered logo + title; subtitle uses full `text-sidebar-foreground` for contrast
+Full design redesign (2026-03-28) — styling only, zero logic changes:
+- **Login**: Split-panel layout (navy brand panel left, clean form right)
+- **Sidebar**: Left accent bar on active nav items, smaller logo left-aligned, refined section label (`text-[10px] uppercase tracking-widest`)
+- **Header**: Page title derived from pathname displayed on left; Admin indicator replaced with subtle pill with shield icon
+- **Status badges**: All badges now include a colored dot indicator before the label
+- **Dashboard**: KPI cards with left-border color accent + `text-4xl` numbers; chart/section headers use `text-[10px] uppercase tracking-[0.08em]`; recent list rows cleaner
+- **Questionnaires list**: Table headers `text-[10px] uppercase tracking-[0.08em] bg-muted/30`; action menu fades in on row hover; stronger title weight
+- **Questionnaire detail**: Larger title (`text-2xl`), refined metadata separators; question cards use left-border accent for required questions, inline type tags replace Badge components
+- **Respondent form**: Sticky header uses `backdrop-blur-sm`; section headers use left border accent; progress bar taller; submit area has border-top
+- **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
-Key paths (delete feature 2026-03-27):
-- `src/app/api/questionnaires/[id]/route.ts` — DELETE handler updated to support `?permanent=true`
-- `src/app/(dashboard)/questionnaires/questionnaires-client.tsx` — Admin-only "Delete permanently" menu item
-- `src/components/layout/sidebar.tsx` — Brand area centering + subtitle contrast
+Key paths (design 2026-03-28):
+- `src/app/(auth)/login/page.tsx`
+- `src/components/layout/sidebar.tsx`
+- `src/components/layout/header.tsx`
+- `src/components/shared/status-badge.tsx`
+- `src/app/(dashboard)/dashboard-client.tsx`
+- `src/app/(dashboard)/questionnaires/questionnaires-client.tsx`
+- `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`
+- `src/app/respond/[token]/page.tsx`
+- `src/app/respond/[token]/confirmation/page.tsx`
 
 ## Open Issues
 - Import/export for questions (JSON) is scaffolded but UI not yet wired
 - `command.tsx` is a lightweight custom implementation — could be replaced with cmdk if needed
 
 ## Next Best Step
-1. Smoke-test delete: login as admin, archive a questionnaire, then "Delete permanently" — confirm it disappears and audit log shows `delete` action
-2. Continue feature work: question import/export UI is the main unfinished item
-3. Before deploy, set production env vars on hosting and run a full login/admin smoke test
+1. Smoke-test the redesign visually — login, dashboard, questionnaire list, detail/builder, external form, confirmation page
+2. Apply the same table header + row pattern to admin pages (question bank, users, audit log, templates)
+3. Continue feature work: question import/export UI is the main unfinished item
+4. Before deploy, set production env vars on hosting and run a full login/admin smoke test
 
 ## Guardrails
 - Preserve working logic unless a change is necessary

@@ -286,18 +286,18 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <Button variant="ghost" size="icon-sm" onClick={() => router.back()}>
+          <Button variant="ghost" size="icon-sm" onClick={() => router.back()} className="mt-1">
             <ArrowLeftIcon className="h-4 w-4" />
           </Button>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-heading text-xl font-bold tracking-tight">{data.title}</h1>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="font-heading text-2xl font-bold tracking-tight">{data.title}</h1>
               <QuestionnairStatusBadge status={data.status as QuestionnaireStatus} />
             </div>
-            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
               <span>{QUESTIONNAIRE_TYPE_LABELS[data.type as QuestionnaireType]}</span>
-              {data.clientName && <><span>·</span><span>{data.clientName}</span></>}
-              {data.ownerName && <><span>·</span><span>Owner: {data.ownerName}</span></>}
+              {data.clientName && <><span className="text-muted-foreground/40">/</span><span>{data.clientName}</span></>}
+              {data.ownerName && <><span className="text-muted-foreground/40">/</span><span>{data.ownerName}</span></>}
             </div>
           </div>
         </div>
@@ -383,7 +383,8 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
           )}
 
           {!canEdit && (
-            <div className="rounded-lg bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+            <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
               This questionnaire has been published. The structure cannot be edited.
             </div>
           )}
@@ -579,44 +580,48 @@ function SortableQuestionCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-xl border border-border bg-card shadow-card transition-shadow ${
-        question.isHidden ? "opacity-50" : ""
-      }`}
+      className={`rounded-lg border bg-card shadow-card transition-all hover:shadow-card-hover ${
+        question.isRequired ? "border-l-2 border-l-primary/30" : "border-border"
+      } ${question.isHidden ? "opacity-50" : ""}`}
     >
-      <div className="flex items-start gap-3 p-4">
+      <div className="flex items-start gap-2 p-4">
         {canEdit && (
           <button
             {...attributes}
             {...listeners}
-            className="mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
+            className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors touch-none"
           >
-            <GripVerticalIcon className="h-5 w-5" />
+            <GripVerticalIcon className="h-4 w-4" />
           </button>
         )}
-        <div className="flex-1 min-w-0 space-y-2">
-          <div className="flex items-start gap-2">
-            <span className="text-xs text-muted-foreground font-medium mt-1 shrink-0 w-5">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start gap-2.5">
+            <span className="font-mono text-[10px] text-muted-foreground/50 mt-1 shrink-0 w-4 text-right tabular-nums">
               {index}.
             </span>
-            <div className="flex-1">
-              <p className="text-sm font-medium leading-snug">{question.text}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium leading-snug text-foreground">{question.text}</p>
               {question.description && (
-                <p className="text-xs text-muted-foreground mt-0.5">{question.description}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{question.description}</p>
               )}
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <Badge variant="secondary" className="text-xs">
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                <span className="inline-flex items-center rounded-md bg-primary/8 px-2 py-0.5 text-[10px] font-medium text-primary">
                   {QUESTION_TYPE_LABELS[question.type as QuestionType] ?? question.type}
-                </Badge>
+                </span>
                 {question.isRequired && (
-                  <Badge variant="outline" className="text-xs text-destructive border-destructive/20">
+                  <span className="inline-flex items-center rounded-md bg-destructive/8 px-2 py-0.5 text-[10px] font-medium text-destructive">
                     Required
-                  </Badge>
+                  </span>
                 )}
                 {question.isCustom && (
-                  <Badge variant="outline" className="text-xs">Custom</Badge>
+                  <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    Custom
+                  </span>
                 )}
                 {question.isHidden && (
-                  <Badge variant="outline" className="text-xs text-muted-foreground">Hidden</Badge>
+                  <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    Hidden
+                  </span>
                 )}
               </div>
             </div>
@@ -624,27 +629,27 @@ function SortableQuestionCard({
         </div>
 
         {canEdit && (
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-0.5 shrink-0">
             <button
               onClick={() => onUpdate({ isHidden: !question.isHidden })}
-              className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground/50 hover:text-foreground"
               title={question.isHidden ? "Show question" : "Hide question"}
             >
-              {question.isHidden ? <EyeIcon className="h-4 w-4" /> : <EyeOffIcon className="h-4 w-4" />}
+              {question.isHidden ? <EyeIcon className="h-3.5 w-3.5" /> : <EyeOffIcon className="h-3.5 w-3.5" />}
             </button>
-            <div className="flex items-center gap-1.5 ml-1">
+            <div className="flex items-center gap-1.5 ml-1.5 mr-1">
               <Switch
                 checked={question.isRequired}
                 onCheckedChange={(v) => onUpdate({ isRequired: v })}
                 className="scale-75"
               />
-              <span className="text-xs text-muted-foreground">Req.</span>
+              <span className="text-[10px] text-muted-foreground">Req</span>
             </div>
             <button
               onClick={onRemove}
-              className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
+              className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground/50 hover:text-destructive"
             >
-              <TrashIcon className="h-4 w-4" />
+              <TrashIcon className="h-3.5 w-3.5" />
             </button>
           </div>
         )}

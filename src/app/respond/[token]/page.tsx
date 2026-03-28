@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -19,7 +19,6 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog"
-import { Separator } from "@/components/ui/separator"
 import {
   CheckCircle2Icon,
   ClipboardListIcon,
@@ -214,50 +213,48 @@ export default function RespondPage() {
   return (
     <div className="min-h-screen bg-muted/20">
       {/* Sticky header with progress */}
-      <div className="sticky top-0 z-10 bg-card border-b border-border shadow-sm">
+      <div className="sticky top-0 z-10 bg-card/90 backdrop-blur-sm border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                <ClipboardListIcon className="h-3.5 w-3.5 text-primary-foreground" />
-              </div>
+            <div className="flex items-center gap-3 min-w-0">
               <div className="min-w-0">
-                <p className="text-sm font-semibold truncate font-heading">{questionnaire?.title}</p>
+                <p className="text-sm font-semibold truncate text-foreground">{questionnaire?.title}</p>
                 {questionnaire?.clientName && (
-                  <p className="text-xs text-muted-foreground">{questionnaire.clientName}</p>
+                  <p className="text-xs text-muted-foreground leading-tight">{questionnaire.clientName}</p>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              <div className="hidden sm:flex items-center gap-2">
-                <Progress value={progress} className="w-24 h-2" />
-                <span className="text-xs text-muted-foreground">{progress}%</span>
+              <div className="hidden sm:flex items-center gap-2.5">
+                <Progress value={progress} className="w-28 h-2" />
+                <span className="text-xs font-medium text-muted-foreground tabular-nums">{progress}%</span>
               </div>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => handleSave(true)}
                 disabled={saving}
+                className="h-8"
               >
                 {saving ? <Loader2Icon className="h-3.5 w-3.5 animate-spin" /> : <SaveIcon className="h-3.5 w-3.5" />}
                 Save
               </Button>
             </div>
           </div>
-          <Progress value={progress} className="mt-2 h-1.5 sm:hidden" />
+          <Progress value={progress} className="mt-2.5 h-1.5 sm:hidden" />
         </div>
       </div>
 
       {/* Form */}
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
         {/* Respondent info */}
         <Card className="shadow-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="font-heading text-base">Your Information</CardTitle>
+          <CardHeader className="pb-3 border-b border-border">
+            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Your Information</p>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Your Name</Label>
+          <CardContent className="grid grid-cols-2 gap-4 pt-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-sm">Your Name</Label>
               <Input
                 id="name"
                 value={respondentName}
@@ -265,8 +262,8 @@ export default function RespondPage() {
                 placeholder="Jane Smith"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Your Email</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm">Your Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -293,22 +290,23 @@ export default function RespondPage() {
         </div>
 
         {/* Submit */}
-        <div className="flex items-center justify-between pt-2">
-          {lastSaved && (
+        <div className="flex items-center justify-between pt-4 border-t border-border">
+          {lastSaved ? (
             <p className="text-xs text-muted-foreground">
-              Saved {lastSaved.toLocaleTimeString()}
+              Saved at {lastSaved.toLocaleTimeString()}
             </p>
+          ) : (
+            <div />
           )}
-          <div className="ml-auto">
-            <Button
-              onClick={() => setShowSubmitConfirm(true)}
-              disabled={saving}
-              size="lg"
-            >
-              <SendIcon className="h-4 w-4" />
-              Submit Questionnaire
-            </Button>
-          </div>
+          <Button
+            onClick={() => setShowSubmitConfirm(true)}
+            disabled={saving}
+            size="lg"
+            className="gap-2"
+          >
+            <SendIcon className="h-4 w-4" />
+            Submit Questionnaire
+          </Button>
         </div>
       </div>
 
@@ -364,12 +362,13 @@ function QuestionField({
 }) {
   if (question.type === "section_header") {
     return (
-      <div className="pt-4">
-        <Separator className="mb-4" />
-        <h2 className="font-heading text-lg font-semibold text-foreground">{question.text}</h2>
-        {question.description && (
-          <p className="text-sm text-muted-foreground mt-1">{question.description}</p>
-        )}
+      <div className="pt-6 pb-2">
+        <div className="border-l-2 border-primary pl-4">
+          <h2 className="font-heading text-base font-semibold text-foreground">{question.text}</h2>
+          {question.description && (
+            <p className="text-sm text-muted-foreground mt-0.5">{question.description}</p>
+          )}
+        </div>
       </div>
     )
   }
@@ -377,24 +376,24 @@ function QuestionField({
   const selectedMulti = value ? value.split(",").filter(Boolean) : []
 
   return (
-    <Card className="shadow-card">
+    <Card className={`shadow-card transition-all ${question.isRequired ? "border-l-2 border-l-primary/20" : ""}`}>
       <CardContent className="pt-4 space-y-3">
         <div>
-          <div className="flex items-start gap-2">
-            <span className="text-xs text-muted-foreground mt-0.5 shrink-0 w-5 text-right">{index}.</span>
+          <div className="flex items-start gap-2.5">
+            <span className="font-mono text-[10px] text-muted-foreground/50 mt-1 shrink-0 w-4 text-right tabular-nums">{index}.</span>
             <div className="flex-1">
               <p className="text-sm font-medium leading-snug">
                 {question.text}
-                {question.isRequired && <span className="text-destructive ml-1">*</span>}
+                {question.isRequired && <span className="text-destructive ml-1 font-normal">*</span>}
               </p>
               {question.description && (
-                <p className="text-xs text-muted-foreground mt-0.5">{question.description}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{question.description}</p>
               )}
             </div>
           </div>
         </div>
 
-        <div className="ml-5">
+        <div className="ml-6">
           {question.type === "short_text" && (
             <Input
               value={value}

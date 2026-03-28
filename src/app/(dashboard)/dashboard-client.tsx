@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { QuestionnairStatusBadge } from "@/components/shared/status-badge"
@@ -20,10 +20,6 @@ import {
 import {
   ClipboardListIcon,
   PlusIcon,
-  TrendingUpIcon,
-  CheckCircle2Icon,
-  ClockIcon,
-  FileTextIcon,
 } from "lucide-react"
 import { format } from "date-fns"
 import type { QuestionnaireStatus, QuestionnaireType, QUESTIONNAIRE_TYPE_LABELS } from "@/types"
@@ -76,30 +72,26 @@ export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, r
     {
       label: "Total",
       value: total,
-      icon: ClipboardListIcon,
-      color: "text-primary",
-      bg: "bg-primary/10",
+      accent: "border-l-primary",
+      valueColor: "text-foreground",
     },
     {
       label: "In Progress",
       value: statusCounts.in_progress ?? 0,
-      icon: ClockIcon,
-      color: "text-warning",
-      bg: "bg-warning/10",
+      accent: "border-l-warning",
+      valueColor: "text-foreground",
     },
     {
       label: "Submitted",
       value: statusCounts.submitted ?? 0,
-      icon: CheckCircle2Icon,
-      color: "text-success",
-      bg: "bg-success/10",
+      accent: "border-l-success",
+      valueColor: "text-foreground",
     },
     {
       label: "Draft",
       value: statusCounts.draft ?? 0,
-      icon: FileTextIcon,
-      color: "text-muted-foreground",
-      bg: "bg-muted",
+      accent: "border-l-muted-foreground/30",
+      valueColor: "text-foreground",
     },
   ]
 
@@ -108,10 +100,10 @@ export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, r
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-foreground tracking-tight">
+          <h1 className="font-heading text-3xl font-bold text-foreground tracking-tight">
             {isAdmin ? "Platform Overview" : `Welcome back, ${userName.split(" ")[0]}`}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1.5">
             {isAdmin ? "All questionnaires across the platform" : "Your questionnaires at a glance"}
           </p>
         </div>
@@ -125,36 +117,30 @@ export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, r
 
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon
-          return (
-            <Card key={kpi.label} className="shadow-card">
-              <CardContent className="pt-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">{kpi.label}</p>
-                    <p className="text-3xl font-bold font-heading tracking-tight mt-1">
-                      {kpi.value}
-                    </p>
-                  </div>
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${kpi.bg}`}>
-                    <Icon className={`h-5 w-5 ${kpi.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+        {kpis.map((kpi) => (
+          <Card key={kpi.label} className={`shadow-card border-l-2 ${kpi.accent} hover:shadow-card-hover transition-shadow`}>
+            <CardContent className="pt-5 pb-5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                {kpi.label}
+              </p>
+              <p className={`text-4xl font-bold font-heading tracking-tight mt-2 ${kpi.valueColor}`}>
+                {kpi.value}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Charts */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Status Pie */}
-        <Card className="shadow-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="font-heading text-base font-semibold">By Status</CardTitle>
+        <Card className="shadow-card hover:shadow-card-hover transition-shadow">
+          <CardHeader className="pb-2 border-b border-border">
+            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              By Status
+            </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             {statusData.length === 0 ? (
               <div className="flex h-48 items-center justify-center text-muted-foreground text-sm">
                 No data yet
@@ -180,9 +166,10 @@ export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, r
                       borderRadius: "8px",
                       border: "1px solid var(--color-border)",
                       background: "var(--color-card)",
+                      fontSize: "12px",
                     }}
                   />
-                  <Legend iconType="circle" iconSize={8} />
+                  <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: "12px" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -190,11 +177,13 @@ export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, r
         </Card>
 
         {/* Type Bar */}
-        <Card className="shadow-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="font-heading text-base font-semibold">By Type</CardTitle>
+        <Card className="shadow-card hover:shadow-card-hover transition-shadow">
+          <CardHeader className="pb-2 border-b border-border">
+            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              By Type
+            </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             {typeData.length === 0 ? (
               <div className="flex h-48 items-center justify-center text-muted-foreground text-sm">
                 No data yet
@@ -220,6 +209,7 @@ export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, r
                       borderRadius: "8px",
                       border: "1px solid var(--color-border)",
                       background: "var(--color-card)",
+                      fontSize: "12px",
                     }}
                   />
                   <Bar dataKey="count" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} />
@@ -232,41 +222,47 @@ export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, r
 
       {/* Recent Activity */}
       <Card className="shadow-card">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="font-heading text-base font-semibold">Recent Questionnaires</CardTitle>
-          <Button variant="ghost" size="sm" asChild>
+        <CardHeader className="pb-0 border-b border-border flex flex-row items-center justify-between">
+          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground pb-3">
+            Recent Questionnaires
+          </p>
+          <Button variant="ghost" size="sm" asChild className="-mt-1 -mr-2 text-xs text-muted-foreground hover:text-foreground">
             <Link href="/questionnaires">View all</Link>
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {recent.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-10 text-center">
-              <ClipboardListIcon className="h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">No questionnaires yet</p>
-              <Button asChild size="sm">
+            <div className="flex flex-col items-center gap-3 py-12 text-center">
+              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
+                <ClipboardListIcon className="h-5 w-5 text-muted-foreground/50" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">No questionnaires yet</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Create your first to get started</p>
+              </div>
+              <Button asChild size="sm" className="mt-1">
                 <Link href="/questionnaires/new">
                   <PlusIcon className="h-4 w-4" />
-                  Create your first questionnaire
+                  New Questionnaire
                 </Link>
               </Button>
             </div>
           ) : (
-            <div className="divide-y divide-border">
-              {recent.map((q) => (
+            <div>
+              {recent.map((q, i) => (
                 <Link
                   key={q.id}
                   href={`/questionnaires/${q.id}`}
-                  className="flex items-center justify-between py-3 hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors"
+                  className={`flex items-center justify-between px-5 py-3.5 hover:bg-muted/40 transition-colors ${i > 0 ? "border-t border-border" : ""}`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <ClipboardListIcon className="h-4 w-4 text-primary" />
-                    </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{q.title}</p>
+                      <p className="text-sm font-semibold truncate text-foreground">{q.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {TYPE_LABELS[q.type as QuestionnaireType] ?? q.type}
-                        {q.updatedAt && ` · ${format(new Date(q.updatedAt), "MMM d")}`}
+                        {q.updatedAt && (
+                          <span className="text-muted-foreground/60"> · {format(new Date(q.updatedAt), "MMM d")}</span>
+                        )}
                       </p>
                     </div>
                   </div>
