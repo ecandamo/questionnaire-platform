@@ -23,6 +23,7 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
+- **2026-03-29 (copy / branding):** Sidebar brand reads **Client Questionnaires** (`text-sm`; **Client** semibold, **Questionnaires** normal). Dashboard `h1` is the same for all roles: **Welcome back, {first name}!** Subtitle still differs admin vs non-admin.
 - **MD3-style button (2026-03-28):** Added `src/components/ui/material-design-3-button.tsx` (ripple + press morph via Web Animations API, client component). `src/components/ui/button.tsx` is a compatibility shim mapping legacy variants (`default`→`filled`, `outline`→`outlined`, `secondary`→`tonal`, `ghost`/`link`→`text`) so no page imports changed. Extra CVA sizes `xs`, `icon-xs`, `icon-sm`, `icon-lg` preserved for existing layouts. Ignore third-party prompt CSS themes — brand stays in `globals.css`.
 
 Earlier (2026-03-28): **Header** — removed duplicate route title; **page titles** normalized; **sidebar** border/brand tweaks; **API Navy** sidebar tokens.
@@ -39,6 +40,8 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/components/layout/sidebar.tsx` — brand line Client Questionnaires + typography
+- `src/app/(dashboard)/dashboard-client.tsx` — unified welcome `h1` with exclamation
 - `src/components/ui/material-design-3-button.tsx` — MD3 interaction + CVA variants
 - `src/components/ui/button.tsx` — shim re-exports `Button` / `buttonVariants` with legacy variant names
 - `src/components/layout/header.tsx` — minimal top bar (no pathname title)
@@ -52,7 +55,6 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - `src/app/(dashboard)/admin/users/page.tsx`
 - `src/app/respond/[token]/page.tsx`
 - `src/app/(auth)/login/page.tsx`
-- `src/components/layout/sidebar.tsx` — no border under brand block
 - `src/app/globals.css` — sidebar CSS variables (API Navy alignment)
 
 Key paths (design 2026-03-28):
@@ -75,7 +77,7 @@ Key paths (design 2026-03-28):
 2. If default buttons feel too tall vs the old UI, change MD3 `default` size from `h-10 px-6` to `h-8 px-4` in `material-design-3-button.tsx`
 3. Apply the same table header + row pattern to admin pages (question bank, users, audit log, templates) if not already uniform
 4. Continue feature work: question import/export UI is the main unfinished item
-5. Before deploy, set production env vars on hosting and run a full login/admin smoke test
+5. Before deploy, set production env on hosting (`BETTER_AUTH_URL` = public `https` origin; `BETTER_AUTH_SECRET`; DB URL, etc.) and run a full login/admin smoke test
 
 ## Guardrails
 - Preserve working logic unless a change is necessary
@@ -90,7 +92,7 @@ Key paths (design 2026-03-28):
 - Sidebar uses API Navy background (`--sidebar` matches primary in light theme) with green active items
 - Brand logo is inlined as SVG (not `next/image`) so white and navy color variants can coexist without extra files or CSS filters
 
-- Better Auth with admin plugin for auth (email/password, no OAuth in v1)
+- Better Auth with admin plugin for auth (email/password, no OAuth in v1); set **`BETTER_AUTH_URL`** per environment (e.g. `http://localhost:3000` locally, production domain on Vercel) so base URL / redirects are valid — `src/lib/auth.ts` does not hardcode `baseURL`
 - Drizzle ORM + Neon Postgres serverless driver
 - Next.js 16: `proxy.ts` replaces `middleware.ts`, export must be `export function proxy()`
 - DB connection is lazy (Proxy pattern) to avoid module-level crash at build time without env vars

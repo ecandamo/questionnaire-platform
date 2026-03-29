@@ -57,11 +57,8 @@ export function Sidebar({ isAdmin }: SidebarProps) {
           <line stroke="#78bc43" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="3.5" fill="none" x1="55.15" y1="61.09" x2="32.65" y2="61.09"/>
         </svg>
         <div>
-          <p className="text-xs font-semibold text-sidebar-foreground leading-tight">
-            Questionnaire
-          </p>
-          <p className="text-xs font-semibold text-sidebar-foreground leading-tight">
-            Platform
+          <p className="text-sm font-normal text-sidebar-foreground leading-tight">
+            <span className="font-semibold">Client</span> Questionnaires
           </p>
         </div>
       </div>

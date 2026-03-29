@@ -101,7 +101,7 @@ export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, r
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading text-3xl font-bold text-foreground tracking-tight">
-            {isAdmin ? "Platform Overview" : `Welcome back, ${userName.split(" ")[0]}`}
+            Welcome back, {userName.split(" ")[0]}!
           </h1>
           <p className="text-sm text-muted-foreground mt-1.5">
             {isAdmin ? "All questionnaires across the platform" : "Your questionnaires at a glance"}
