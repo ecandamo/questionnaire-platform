@@ -23,10 +23,9 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
-- **Header:** removed duplicate route title from top bar; bar is right-aligned (Admin pill + user menu only).
-- **Page titles:** all primary `h1` pages use `text-3xl font-bold tracking-tight` (matches Questionnaires); login form `h2` aligned; respondent error states updated.
-- **Sidebar brand row:** removed bottom border under logo/title (`sidebar.tsx`).
-- **Sidebar color (2026-03-28):** `--sidebar` tuned to API Navy — light theme uses same `oklch` as `--primary` (`#273B6E`); hover/border/foreground adjusted; dark theme rail uses deep navy with matched chroma.
+- **MD3-style button (2026-03-28):** Added `src/components/ui/material-design-3-button.tsx` (ripple + press morph via Web Animations API, client component). `src/components/ui/button.tsx` is a compatibility shim mapping legacy variants (`default`→`filled`, `outline`→`outlined`, `secondary`→`tonal`, `ghost`/`link`→`text`) so no page imports changed. Extra CVA sizes `xs`, `icon-xs`, `icon-sm`, `icon-lg` preserved for existing layouts. Ignore third-party prompt CSS themes — brand stays in `globals.css`.
+
+Earlier (2026-03-28): **Header** — removed duplicate route title; **page titles** normalized; **sidebar** border/brand tweaks; **API Navy** sidebar tokens.
 
 Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Login**: Split-panel layout (navy brand panel left, clean form right)
@@ -40,6 +39,8 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/components/ui/material-design-3-button.tsx` — MD3 interaction + CVA variants
+- `src/components/ui/button.tsx` — shim re-exports `Button` / `buttonVariants` with legacy variant names
 - `src/components/layout/header.tsx` — minimal top bar (no pathname title)
 - `src/app/(dashboard)/clients/page.tsx`
 - `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`
@@ -70,10 +71,11 @@ Key paths (design 2026-03-28):
 - `command.tsx` is a lightweight custom implementation — could be replaced with cmdk if needed
 
 ## Next Best Step
-1. Smoke-test the redesign visually — login, dashboard, questionnaire list, detail/builder, external form, confirmation page
-2. Apply the same table header + row pattern to admin pages (question bank, users, audit log, templates)
-3. Continue feature work: question import/export UI is the main unfinished item
-4. Before deploy, set production env vars on hosting and run a full login/admin smoke test
+1. Smoke-test buttons (ripple, keyboard, dropdown triggers, `asChild` links) on login, dashboard, questionnaires, admin tables, respondent flow
+2. If default buttons feel too tall vs the old UI, change MD3 `default` size from `h-10 px-6` to `h-8 px-4` in `material-design-3-button.tsx`
+3. Apply the same table header + row pattern to admin pages (question bank, users, audit log, templates) if not already uniform
+4. Continue feature work: question import/export UI is the main unfinished item
+5. Before deploy, set production env vars on hosting and run a full login/admin smoke test
 
 ## Guardrails
 - Preserve working logic unless a change is necessary
@@ -83,6 +85,7 @@ Key paths (design 2026-03-28):
 - Follow existing project patterns unless there is a good reason not to
 
 ## Known Decisions
+- **Buttons:** shadcn-style `Button` from `@/components/ui/button` is backed by `material-design-3-button.tsx`; drop-in external snippets that import `@radix-ui/react-slot` must use `radix-ui` + `Slot.Root` instead. Ripple is client-only; no extra global CSS required.
 - Branding: API Navy `#273B6E` = primary, API Green `#78BC43` = accent/active — all via CSS custom properties in `globals.css`
 - Sidebar uses API Navy background (`--sidebar` matches primary in light theme) with green active items
 - Brand logo is inlined as SVG (not `next/image`) so white and navy color variants can coexist without extra files or CSS filters

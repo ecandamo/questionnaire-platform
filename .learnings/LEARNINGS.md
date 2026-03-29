@@ -218,3 +218,30 @@ When adding Recharts tooltips, omit `formatter` unless necessary. If needed, cas
 - Tags: recharts, typescript, charts
 
 ---
+
+## [LRN-20260328-001] best_practice
+
+**Logged**: 2026-03-28T12:00:00Z
+**Priority**: medium
+**Status**: pending
+**Area**: frontend
+
+### Summary
+Integrating third-party “shadcn” button snippets that use Material-style ripples in this repo requires three adaptations: unified Radix `Slot`, Tailwind 4 duration/delay classes, and optional legacy variant mapping.
+
+### Details
+1. **Radix:** This project uses the unified `radix-ui` package, not `@radix-ui/react-slot`. Use `import { Slot } from "radix-ui"` and `<Slot.Root>` for `asChild`, matching other UI components.
+2. **Tailwind 4:** Classes like `duration-600` and `delay-250` are not on the default scale; use `duration-[600ms]` and `delay-[250ms]` (or documented scale tokens) or the animation may silently omit timing.
+3. **Client boundary:** Ripple logic uses hooks + Web Animations API — add `"use client"` on the MD3 file.
+4. **API compatibility:** MD3 CVA often names variants `filled` / `outlined` / `tonal` / `text` while existing apps use `default` / `outline` / `secondary` / `ghost` / `link`. A thin `button.tsx` shim that maps names avoids touching every consumer. Add missing sizes (`icon-sm`, etc.) to MD3 CVA if the old design used them.
+5. **Theme:** Ignore bundled `index.css`/HSL theme blocks from external prompts when `globals.css` already defines tokens — the component should use semantic classes (`bg-primary`, etc.) only.
+
+### Suggested Action
+When pasting external button components: grep for `@radix-ui/react-slot`, verify CVA sizes/variants against `grep '<Button'` in `src/`, and keep a single export path (`@/components/ui/button`) so Server Components can import the client button without changing pages.
+
+### Metadata
+- Source: implementation
+- Related Files: src/components/ui/material-design-3-button.tsx, src/components/ui/button.tsx
+- Tags: shadcn, radix-ui, tailwind4, nextjs, button, ripple
+
+---
