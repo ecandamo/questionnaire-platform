@@ -78,7 +78,7 @@ export default function LoginPage() {
 
         <div className="w-full max-w-sm">
           <div className="mb-8">
-            <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
+            <h2 className="font-heading text-3xl font-bold tracking-tight text-foreground">
               Sign in
             </h2>
             <p className="text-sm text-muted-foreground mt-1">

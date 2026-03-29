@@ -58,7 +58,7 @@ export default function AuditLogPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="font-heading text-2xl font-bold tracking-tight">Audit Log</h1>
+        <h1 className="font-heading text-3xl font-bold tracking-tight">Audit Log</h1>
         <p className="text-sm text-muted-foreground mt-1">All user actions across the platform</p>
       </div>
 

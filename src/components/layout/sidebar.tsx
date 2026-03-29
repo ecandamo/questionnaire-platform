@@ -49,7 +49,7 @@ export function Sidebar({ isAdmin }: SidebarProps) {
   return (
     <aside className="flex h-full w-60 flex-col bg-sidebar border-r border-sidebar-border">
       {/* Brand */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border">
+      <div className="flex items-center gap-3 px-4 py-4">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 166.22 85.48" className="w-16 shrink-0" aria-label="API logo">
           <rect fill="#ffffff" x="148.84" y="0.02" width="17.38" height="85.4"/>
           <path fill="#ffffff" d="M120.17,0c-12.66,0-25.32.12-38,.12V69.64L52.72.06H36.15L0,85.42H16.46L44.43,18,72.29,85.42h9.9v.06H97.38V15.36h22.79c19.34,0,19.46,30.24,0,30.24h-7.59V60.36h7.59C159.66,60.36,159.55,0,120.17,0Z"/>

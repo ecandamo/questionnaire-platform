@@ -23,20 +23,35 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
+- **Header:** removed duplicate route title from top bar; bar is right-aligned (Admin pill + user menu only).
+- **Page titles:** all primary `h1` pages use `text-3xl font-bold tracking-tight` (matches Questionnaires); login form `h2` aligned; respondent error states updated.
+- **Sidebar brand row:** removed bottom border under logo/title (`sidebar.tsx`).
 - **Sidebar color (2026-03-28):** `--sidebar` tuned to API Navy — light theme uses same `oklch` as `--primary` (`#273B6E`); hover/border/foreground adjusted; dark theme rail uses deep navy with matched chroma.
 
 Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Login**: Split-panel layout (navy brand panel left, clean form right)
 - **Sidebar**: Left accent bar on active nav items, smaller logo left-aligned, refined section label (`text-[10px] uppercase tracking-widest`)
-- **Header**: Page title derived from pathname displayed on left; Admin indicator replaced with subtle pill with shield icon
+- **Header**: Top bar holds Admin pill + user menu only (no duplicate page title; wayfinding via sidebar + main `h1`)
 - **Status badges**: All badges now include a colored dot indicator before the label
 - **Dashboard**: KPI cards with left-border color accent + `text-4xl` numbers; chart/section headers use `text-[10px] uppercase tracking-[0.08em]`; recent list rows cleaner
 - **Questionnaires list**: Table headers `text-[10px] uppercase tracking-[0.08em] bg-muted/30`; action menu fades in on row hover; stronger title weight
-- **Questionnaire detail**: Larger title (`text-2xl`), refined metadata separators; question cards use left-border accent for required questions, inline type tags replace Badge components
+- **Questionnaire detail**: Page title `text-3xl`; refined metadata separators; question cards use left-border accent for required questions, inline type tags replace Badge components
 - **Respondent form**: Sticky header uses `backdrop-blur-sm`; section headers use left border accent; progress bar taller; submit area has border-top
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/components/layout/header.tsx` — minimal top bar (no pathname title)
+- `src/app/(dashboard)/clients/page.tsx`
+- `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`
+- `src/app/(dashboard)/questionnaires/[id]/responses/page.tsx`
+- `src/app/(dashboard)/questionnaires/new/new-client.tsx`
+- `src/app/(dashboard)/admin/templates/page.tsx`
+- `src/app/(dashboard)/admin/audit-log/page.tsx`
+- `src/app/(dashboard)/admin/question-bank/page.tsx`
+- `src/app/(dashboard)/admin/users/page.tsx`
+- `src/app/respond/[token]/page.tsx`
+- `src/app/(auth)/login/page.tsx`
+- `src/components/layout/sidebar.tsx` — no border under brand block
 - `src/app/globals.css` — sidebar CSS variables (API Navy alignment)
 
 Key paths (design 2026-03-28):

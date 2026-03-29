@@ -187,7 +187,7 @@ export default function RespondPage() {
           <div className="h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
             <ClipboardListIcon className="h-7 w-7 text-destructive" />
           </div>
-          <h1 className="font-heading text-xl font-bold">Link Unavailable</h1>
+          <h1 className="font-heading text-3xl font-bold tracking-tight">Link Unavailable</h1>
           <p className="text-muted-foreground text-sm">{error}</p>
         </div>
       </div>
@@ -201,7 +201,7 @@ export default function RespondPage() {
           <div className="h-14 w-14 rounded-full bg-success/10 flex items-center justify-center mx-auto">
             <CheckCircle2Icon className="h-7 w-7 text-success" />
           </div>
-          <h1 className="font-heading text-xl font-bold">Already Submitted</h1>
+          <h1 className="font-heading text-3xl font-bold tracking-tight">Already Submitted</h1>
           <p className="text-muted-foreground text-sm">
             This questionnaire has already been submitted. Thank you!
           </p>
