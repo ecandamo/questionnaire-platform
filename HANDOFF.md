@@ -23,6 +23,8 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
+- **Sidebar color (2026-03-28):** `--sidebar` tuned to API Navy — light theme uses same `oklch` as `--primary` (`#273B6E`); hover/border/foreground adjusted; dark theme rail uses deep navy with matched chroma.
+
 Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Login**: Split-panel layout (navy brand panel left, clean form right)
 - **Sidebar**: Left accent bar on active nav items, smaller logo left-aligned, refined section label (`text-[10px] uppercase tracking-widest`)
@@ -35,6 +37,8 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/app/globals.css` — sidebar CSS variables (API Navy alignment)
+
 Key paths (design 2026-03-28):
 - `src/app/(auth)/login/page.tsx`
 - `src/components/layout/sidebar.tsx`
@@ -65,7 +69,7 @@ Key paths (design 2026-03-28):
 
 ## Known Decisions
 - Branding: API Navy `#273B6E` = primary, API Green `#78BC43` = accent/active — all via CSS custom properties in `globals.css`
-- Sidebar uses dark navy background (independent of light/dark page theme via `--sidebar` vars) with green active items
+- Sidebar uses API Navy background (`--sidebar` matches primary in light theme) with green active items
 - Brand logo is inlined as SVG (not `next/image`) so white and navy color variants can coexist without extra files or CSS filters
 
 - Better Auth with admin plugin for auth (email/password, no OAuth in v1)

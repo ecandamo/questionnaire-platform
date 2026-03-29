@@ -14,7 +14,8 @@
 - Use shadcn/ui as a base but always customize styling to match Design Philosophy — never use default shadcn appearance as-is
 - Server components by default, client only when needed
 - Clean, lightweight code — no unnecessary dependencies
-- Design tokens in src/styles/design-tokens.ts
+- Live design system lives in src/app/globals.css — edit there for any style changes
+- src/styles/design-tokens.ts is a reference document only, not the live source
 
 ## Next.js 16 — Known Breaking Changes
 

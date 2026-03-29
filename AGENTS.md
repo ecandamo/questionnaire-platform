@@ -67,8 +67,8 @@ Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the
 
 ## Design System
 
-- Use design tokens from src/styles/design-tokens.ts
-- Extend Tailwind config from these tokens
+- Live design system lives in src/app/globals.css — edit there for any style changes
+- src/styles/design-tokens.ts is a reference document only, not the live source
 - Maintain consistent spacing, colors, and typography across all components
 - Apply tokens with intention — always refer to Design Philosophy for how to use them
 
