@@ -29,7 +29,7 @@ alwaysApply: true
 - `src/lib` — utilities, helpers, API clients
 - `src/hooks` — custom React hooks
 - `src/types` — TypeScript type definitions
-- `src/styles` — design tokens and global styles
+- `src/styles` — Reference tokens and shared style utilities only (live theme is in src/app/globals.css)
 
 ## Design System
 - Live design system lives in `src/app/globals.css` — edit there for any style changes

@@ -63,7 +63,7 @@ Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the
 - src/lib — Utilities, helpers, API clients
 - src/hooks — Custom React hooks
 - src/types — TypeScript type definitions
-- src/styles — Design tokens, global styles
+- src/styles — Reference tokens and shared style utilities only (live theme is in src/app/globals.css)
 
 ## Design System
 
