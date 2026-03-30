@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { QuestionStatusBadge } from "@/components/shared/status-badge"
 import {
+  ArchiveIcon,
   BookOpenIcon,
   Loader2Icon,
   MoreHorizontalIcon,
@@ -330,7 +331,7 @@ export default function QuestionBankPage() {
                                 onClick={() => handleArchiveQuestion(q.id)}
                                 className="text-destructive focus:text-destructive"
                               >
-                                <TrashIcon className="mr-2 h-4 w-4" />
+                                <ArchiveIcon className="mr-2 h-4 w-4" />
                                 Archive
                               </DropdownMenuItem>
                             </DropdownMenuContent>

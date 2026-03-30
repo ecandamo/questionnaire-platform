@@ -58,7 +58,7 @@ export function Sidebar({ isAdmin }: SidebarProps) {
         </svg>
         <div>
           <p className="text-sm font-normal text-sidebar-foreground leading-tight">
-            <span className="font-semibold">Client</span> Questionnaires
+            <span className="font-semibold">Sales</span> Questionnaires
           </p>
         </div>
       </div>

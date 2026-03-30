@@ -23,7 +23,7 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
-- **2026-03-29 (copy / branding):** Sidebar brand reads **Client Questionnaires** (`text-sm`; **Client** semibold, **Questionnaires** normal). Dashboard `h1` is the same for all roles: **Welcome back, {first name}!** Subtitle still differs admin vs non-admin.
+- **2026-03-29:** Sidebar brand **Sales Questionnaires** (`text-sm`; **Sales** semibold, **Questionnaires** normal). Admin affordances: question bank **Archive** uses `ArchiveIcon` (replaces trash on a soft-archive action); templates **Deactivate** gets `ArchiveIcon`; users row menu — role toggle uses `Shield` / `ShieldOff`, deactivate/reactivate uses `UserX` / `UserCheck`. (Dashboard welcome line unchanged: **Welcome back, {first name}!**; subtitle still admin vs non-admin.)
 - **MD3-style button (2026-03-28):** Added `src/components/ui/material-design-3-button.tsx` (ripple + press morph via Web Animations API, client component). `src/components/ui/button.tsx` is a compatibility shim mapping legacy variants (`default`→`filled`, `outline`→`outlined`, `secondary`→`tonal`, `ghost`/`link`→`text`) so no page imports changed. Extra CVA sizes `xs`, `icon-xs`, `icon-sm`, `icon-lg` preserved for existing layouts. Ignore third-party prompt CSS themes — brand stays in `globals.css`.
 
 Earlier (2026-03-28): **Header** — removed duplicate route title; **page titles** normalized; **sidebar** border/brand tweaks; **API Navy** sidebar tokens.
@@ -40,7 +40,10 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
-- `src/components/layout/sidebar.tsx` — brand line Client Questionnaires + typography
+- `src/components/layout/sidebar.tsx` — brand line Sales Questionnaires + typography
+- `src/app/(dashboard)/admin/question-bank/page.tsx` — Archive menu item uses archive icon
+- `src/app/(dashboard)/admin/templates/page.tsx` — Deactivate menu item icon
+- `src/app/(dashboard)/admin/users/page.tsx` — role / ban menu item icons
 - `src/app/(dashboard)/dashboard-client.tsx` — unified welcome `h1` with exclamation
 - `src/components/ui/material-design-3-button.tsx` — MD3 interaction + CVA variants
 - `src/components/ui/button.tsx` — shim re-exports `Button` / `buttonVariants` with legacy variant names
@@ -49,10 +52,7 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`
 - `src/app/(dashboard)/questionnaires/[id]/responses/page.tsx`
 - `src/app/(dashboard)/questionnaires/new/new-client.tsx`
-- `src/app/(dashboard)/admin/templates/page.tsx`
 - `src/app/(dashboard)/admin/audit-log/page.tsx`
-- `src/app/(dashboard)/admin/question-bank/page.tsx`
-- `src/app/(dashboard)/admin/users/page.tsx`
 - `src/app/respond/[token]/page.tsx`
 - `src/app/(auth)/login/page.tsx`
 - `src/app/globals.css` — sidebar CSS variables (API Navy alignment)

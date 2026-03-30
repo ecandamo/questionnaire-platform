@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Loader2Icon, MoreHorizontalIcon, PlusIcon, UsersIcon } from "lucide-react"
+import { Loader2Icon, MoreHorizontalIcon, PlusIcon, ShieldIcon, ShieldOffIcon, UserCheckIcon, UserXIcon, UsersIcon } from "lucide-react"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { authClient } from "@/lib/auth-client"
@@ -174,12 +174,20 @@ export default function UsersPage() {
                           <DropdownMenuItem
                             onClick={() => handleSetRole(u.id, u.role)}
                           >
+                            {u.role === "admin"
+                              ? <ShieldOffIcon className="mr-2 h-4 w-4" />
+                              : <ShieldIcon className="mr-2 h-4 w-4" />
+                            }
                             Make {u.role === "admin" ? "User" : "Admin"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleBan(u.id, u.banned ?? false)}
                             className={u.banned ? "" : "text-destructive focus:text-destructive"}
                           >
+                            {u.banned
+                              ? <UserCheckIcon className="mr-2 h-4 w-4" />
+                              : <UserXIcon className="mr-2 h-4 w-4" />
+                            }
                             {u.banned ? "Reactivate" : "Deactivate"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>

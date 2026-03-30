@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  ArchiveIcon,
   LayoutTemplateIcon,
   Loader2Icon,
   MoreHorizontalIcon,
@@ -217,6 +218,7 @@ export default function TemplatesPage() {
                               onClick={() => handleDeactivate(t.id)}
                               className="text-destructive focus:text-destructive"
                             >
+                              <ArchiveIcon className="mr-2 h-4 w-4" />
                               Deactivate
                             </DropdownMenuItem>
                           )}
