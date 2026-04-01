@@ -23,6 +23,8 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
+- **2026-04-01:** Branding added to respondent-facing pages. Extracted logo SVG into `src/components/shared/api-logo.tsx` (navy/white variant prop). Added navy logo to respond page sticky header (with divider separator). Added API Navy top bar with white logo to confirmation page. Login and sidebar updated to use `<ApiLogo>` instead of inline SVG.
+
 - **2026-03-29:** Sidebar brand **Sales Questionnaires** (`text-sm`; **Sales** semibold, **Questionnaires** normal). Admin affordances: question bank **Archive** uses `ArchiveIcon` (replaces trash on a soft-archive action); templates **Deactivate** gets `ArchiveIcon`; users row menu — role toggle uses `Shield` / `ShieldOff`, deactivate/reactivate uses `UserX` / `UserCheck`. (Dashboard welcome line unchanged: **Welcome back, {first name}!**; subtitle still admin vs non-admin.)
 - **MD3-style button (2026-03-28):** Added `src/components/ui/material-design-3-button.tsx` (ripple + press morph via Web Animations API, client component). `src/components/ui/button.tsx` is a compatibility shim mapping legacy variants (`default`→`filled`, `outline`→`outlined`, `secondary`→`tonal`, `ghost`/`link`→`text`) so no page imports changed. Extra CVA sizes `xs`, `icon-xs`, `icon-sm`, `icon-lg` preserved for existing layouts. Ignore third-party prompt CSS themes — brand stays in `globals.css`.
 
@@ -40,7 +42,11 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
-- `src/components/layout/sidebar.tsx` — brand line Sales Questionnaires + typography
+- `src/components/shared/api-logo.tsx` — new shared logo component (navy/white variants)
+- `src/app/respond/[token]/page.tsx` — logo + divider added to sticky header
+- `src/app/respond/[token]/confirmation/page.tsx` — navy top bar with white logo
+- `src/app/(auth)/login/page.tsx` — uses ApiLogo instead of inline SVG
+- `src/components/layout/sidebar.tsx` — brand line Sales Questionnaires + typography; uses ApiLogo
 - `src/app/(dashboard)/admin/question-bank/page.tsx` — Archive menu item uses archive icon
 - `src/app/(dashboard)/admin/templates/page.tsx` — Deactivate menu item icon
 - `src/app/(dashboard)/admin/users/page.tsx` — role / ban menu item icons

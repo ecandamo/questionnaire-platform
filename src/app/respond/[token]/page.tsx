@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { QUESTION_TYPE_LABELS, type QuestionType } from "@/types"
+import { ApiLogo } from "@/components/shared/api-logo"
 
 interface Question {
   id: string
@@ -217,6 +218,8 @@ export default function RespondPage() {
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
+              <ApiLogo variant="navy" className="w-14 shrink-0" />
+              <div className="w-px h-7 bg-border shrink-0" />
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate text-foreground">{questionnaire?.title}</p>
                 {questionnaire?.clientName && (
