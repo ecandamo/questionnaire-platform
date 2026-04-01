@@ -8,6 +8,13 @@
       "when": 1775059406906,
       "tag": "0000_shallow_whizzer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775062115653,
+      "tag": "0001_complete_moonstone",
+      "breakpoints": true
     }
   ]
 }

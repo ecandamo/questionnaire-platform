@@ -27,7 +27,6 @@ import {
   SendIcon,
 } from "lucide-react"
 import { toast } from "sonner"
-import { QUESTION_TYPE_LABELS, type QuestionType } from "@/types"
 import { ApiLogo } from "@/components/shared/api-logo"
 import { CollaboratorPanel } from "@/components/shared/collaborator-panel"
 
@@ -69,6 +68,8 @@ export default function RespondPage() {
   const [lastSaved, setLastSaved] = React.useState<Date | null>(null)
   const [viewerRole, setViewerRole] = React.useState<ViewerRole>("owner")
   const [responseId, setResponseId] = React.useState<string | null>(null)
+  /** Owner-only: who last saved each answer (from API + optimistic updates) */
+  const [attributionByQuestionId, setAttributionByQuestionId] = React.useState<Record<string, string>>({})
   // All questions (unfiltered) used by CollaboratorPanel for assignment picker
   const [allQuestions, setAllQuestions] = React.useState<Question[]>([])
 
@@ -87,6 +88,16 @@ export default function RespondPage() {
         if (data.responseStatus === "submitted") {
           setSubmitted(true)
         }
+        const initialAnswers: Record<string, string> = {}
+        const attr: Record<string, string> = {}
+        for (const row of data.answers ?? []) {
+          initialAnswers[row.questionId] = row.value ?? ""
+          if (data.viewerRole === "owner" && row.answeredByLabel) {
+            attr[row.questionId] = row.answeredByLabel
+          }
+        }
+        setAnswers(initialAnswers)
+        setAttributionByQuestionId(attr)
         // Pre-fill collaborator name/email if available
         if (data.collaboratorName) setRespondentName(data.collaboratorName)
         if (data.collaboratorEmail) setRespondentEmail(data.collaboratorEmail)
@@ -126,6 +137,17 @@ export default function RespondPage() {
     if (res.ok) {
       const data = await res.json()
       if (data.responseId && !responseId) setResponseId(data.responseId)
+      if (viewerRole === "owner") {
+        const r2 = await fetch(`/api/share/${token}`)
+        if (r2.ok) {
+          const fresh = await r2.json()
+          const nextAttr: Record<string, string> = {}
+          for (const row of fresh.answers ?? []) {
+            if (row.answeredByLabel) nextAttr[row.questionId] = row.answeredByLabel
+          }
+          setAttributionByQuestionId(nextAttr)
+        }
+      }
       setLastSaved(new Date())
       if (showToast) toast.success("Progress saved")
     } else {
@@ -184,6 +206,12 @@ export default function RespondPage() {
 
   function setAnswer(questionId: string, value: string) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
+    if (viewerRole === "owner") {
+      setAttributionByQuestionId((prev) => ({
+        ...prev,
+        [questionId]: "Primary respondent",
+      }))
+    }
   }
 
   function toggleMultiSelect(questionId: string, option: string) {
@@ -191,7 +219,14 @@ export default function RespondPage() {
     const updated = current.includes(option)
       ? current.filter((o) => o !== option)
       : [...current, option]
-    setAnswer(questionId, updated.join(","))
+    const next = updated.join(",")
+    setAnswers((prev) => ({ ...prev, [questionId]: next }))
+    if (viewerRole === "owner") {
+      setAttributionByQuestionId((prev) => ({
+        ...prev,
+        [questionId]: "Primary respondent",
+      }))
+    }
   }
 
   const answered = questions.filter(
@@ -326,8 +361,8 @@ export default function RespondPage() {
           </CardContent>
         </Card>
 
-        {/* Team panel — owner only, shown once response is active */}
-        {viewerRole === "owner" && responseId && questionnaire && (
+        {/* Team panel — owner only (response row is created on first share load) */}
+        {viewerRole === "owner" && questionnaire && responseId && (
           <CollaboratorPanel
             responseId={responseId}
             ownerToken={token}
@@ -355,6 +390,8 @@ export default function RespondPage() {
               value={answers[q.id] ?? ""}
               onChange={(v) => setAnswer(q.id, v)}
               onToggleMulti={(o) => toggleMultiSelect(q.id, o)}
+              showAttribution={viewerRole === "owner"}
+              answeredByLabel={attributionByQuestionId[q.id]}
             />
           ))}
         </div>
@@ -427,12 +464,16 @@ function QuestionField({
   value,
   onChange,
   onToggleMulti,
+  showAttribution,
+  answeredByLabel,
 }: {
   question: Question
   index: number
   value: string
   onChange: (v: string) => void
   onToggleMulti: (option: string) => void
+  showAttribution?: boolean
+  answeredByLabel?: string
 }) {
   if (question.type === "section_header") {
     return (
@@ -563,6 +604,15 @@ function QuestionField({
             </div>
           )}
         </div>
+
+        {showAttribution && answeredByLabel && value.trim() && (
+          <p className="ml-6 text-[10px] text-muted-foreground flex items-center gap-1.5 mt-1">
+            <span className="h-1 w-1 rounded-full bg-[color:var(--accent)] shrink-0" />
+            <span>
+              Last updated by <span className="font-medium text-foreground/80">{answeredByLabel}</span>
+            </span>
+          </p>
+        )}
       </CardContent>
     </Card>
   )

@@ -1,0 +1,2 @@
+ALTER TABLE "answer" ADD COLUMN "last_updated_by_collaborator_id" uuid;--> statement-breakpoint
+ALTER TABLE "answer" ADD CONSTRAINT "answer_last_updated_by_collaborator_id_response_collaborator_id_fk" FOREIGN KEY ("last_updated_by_collaborator_id") REFERENCES "public"."response_collaborator"("id") ON DELETE set null ON UPDATE no action;

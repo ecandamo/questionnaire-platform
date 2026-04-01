@@ -8,8 +8,25 @@ import {
   response,
   responseCollaborator,
   questionAssignment,
+  answer,
 } from "@/lib/db/schema"
-import { asc, eq } from "drizzle-orm"
+import { and, asc, eq } from "drizzle-orm"
+
+function buildAnswerRows(
+  rows: { questionId: string; value: string | null; lastUpdatedByCollaboratorId: string | null }[],
+  collabById: Map<string, { name: string | null; email: string }>
+) {
+  return rows.map((r) => ({
+    questionId: r.questionId,
+    value: r.value ?? "",
+    answeredByLabel: r.lastUpdatedByCollaboratorId
+      ? (() => {
+          const c = collabById.get(r.lastUpdatedByCollaboratorId)
+          return c ? (c.name?.trim() ? `${c.name} (${c.email})` : c.email) : "Team member"
+        })()
+      : "Primary respondent",
+  }))
+}
 
 export async function GET(
   _req: NextRequest,
@@ -64,18 +81,59 @@ export async function GET(
 
     const visibleQuestions = questions.filter((qq) => !qq.isHidden)
 
-    const [existing] = await db
+    let [existingResponse] = await db
       .select()
       .from(response)
       .where(eq(response.shareLinkId, link.id))
+
+    // Eager response so Team panel + collaborator APIs work before first save
+    if (!existingResponse) {
+      const [created] = await db
+        .insert(response)
+        .values({
+          questionnaireId: link.questionnaireId,
+          shareLinkId: link.id,
+          status: "in_progress",
+        })
+        .returning()
+      existingResponse = created
+
+      await db
+        .update(questionnaire)
+        .set({ status: "in_progress", updatedAt: new Date() })
+        .where(and(eq(questionnaire.id, link.questionnaireId), eq(questionnaire.status, "shared")))
+    }
+
+    const collaborators = await db
+      .select({
+        id: responseCollaborator.id,
+        name: responseCollaborator.name,
+        email: responseCollaborator.email,
+      })
+      .from(responseCollaborator)
+      .where(eq(responseCollaborator.responseId, existingResponse.id))
+
+    const collabById = new Map(collaborators.map((c) => [c.id, c]))
+
+    const answerRows = await db
+      .select({
+        questionId: answer.questionId,
+        value: answer.value,
+        lastUpdatedByCollaboratorId: answer.lastUpdatedByCollaboratorId,
+      })
+      .from(answer)
+      .where(eq(answer.responseId, existingResponse.id))
+
+    const answersPayload = buildAnswerRows(answerRows, collabById)
 
     return NextResponse.json({
       questionnaire: q,
       questions: visibleQuestions,
       link: { id: link.id, expiresAt: link.expiresAt },
-      responseId: existing?.id ?? null,
-      responseStatus: existing?.status ?? null,
+      responseId: existingResponse.id,
+      responseStatus: existingResponse.status,
       viewerRole: "owner" as const,
+      answers: answersPayload,
     })
   }
 
@@ -89,7 +147,6 @@ export async function GET(
     return NextResponse.json({ error: "Invalid link" }, { status: 404 })
   }
 
-  // Check parent questionnaire status
   const [q] = await db
     .select({
       id: questionnaire.id,
@@ -111,7 +168,6 @@ export async function GET(
     )
   }
 
-  // Mark collaborator as active on first visit
   if (collaborator.inviteStatus === "pending") {
     await db
       .update(responseCollaborator)
@@ -119,7 +175,6 @@ export async function GET(
       .where(eq(responseCollaborator.id, collaborator.id))
   }
 
-  // Load all visible questions for this questionnaire
   const allQuestions = await db
     .select()
     .from(questionnaireQuestion)
@@ -128,7 +183,6 @@ export async function GET(
 
   const visibleQuestions = allQuestions.filter((qq) => !qq.isHidden)
 
-  // Get assigned question IDs for this collaborator
   const assignments = await db
     .select()
     .from(questionAssignment)
@@ -136,18 +190,42 @@ export async function GET(
 
   const assignedIds = new Set(assignments.map((a) => a.questionnaireQuestionId))
 
-  // Contributors see only their assigned questions (plus any section_header that precedes them)
   const assignedQuestions = visibleQuestions.filter(
     (qq) => qq.type === "section_header" || assignedIds.has(qq.id)
   )
 
-  // Strip leading section_headers that have no assigned questions after them
   const trimmedQuestions = stripOrphanedSectionHeaders(assignedQuestions, assignedIds)
 
   const [resp] = await db
     .select()
     .from(response)
     .where(eq(response.id, collaborator.responseId))
+
+  const collaborators = await db
+    .select({
+      id: responseCollaborator.id,
+      name: responseCollaborator.name,
+      email: responseCollaborator.email,
+    })
+    .from(responseCollaborator)
+    .where(eq(responseCollaborator.responseId, collaborator.responseId))
+
+  const collabById = new Map(collaborators.map((c) => [c.id, c]))
+
+  let answersPayload: ReturnType<typeof buildAnswerRows> = []
+  if (resp) {
+    const answerRows = await db
+      .select({
+        questionId: answer.questionId,
+        value: answer.value,
+        lastUpdatedByCollaboratorId: answer.lastUpdatedByCollaboratorId,
+      })
+      .from(answer)
+      .where(eq(answer.responseId, resp.id))
+
+    const full = buildAnswerRows(answerRows, collabById)
+    answersPayload = full.filter((a) => assignedIds.has(a.questionId))
+  }
 
   return NextResponse.json({
     questionnaire: q,
@@ -159,10 +237,10 @@ export async function GET(
     collaboratorId: collaborator.id,
     collaboratorName: collaborator.name,
     collaboratorEmail: collaborator.email,
+    answers: answersPayload,
   })
 }
 
-// Remove section_headers that have no answerable questions following them
 function stripOrphanedSectionHeaders(
   questions: { id: string; type: string }[],
   assignedIds: Set<string>
@@ -171,7 +249,6 @@ function stripOrphanedSectionHeaders(
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i]
     if (q.type === "section_header") {
-      // Look ahead: is there at least one non-header assigned question after this?
       const hasFollowingQuestion = questions
         .slice(i + 1)
         .some((next) => next.type !== "section_header" && assignedIds.has(next.id))

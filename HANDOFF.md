@@ -19,11 +19,13 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Reopen submitted questionnaires
   - Admin: question bank with categories, templates, users (create/ban/role), audit log
   - Client management
-  - **Collaborative questionnaire answering** — owner invites contributors with scoped magic links; contributor sees only their assigned questions; progress panel; mailto + copy link sharing; submission gate; sender-side Team tab in dashboard
+  - **Collaborative questionnaire answering** — owner invites contributors with scoped magic links; contributor sees only their assigned questions; progress panel; mailto + copy link sharing; submission gate; sender-side Team tab in dashboard; **owner share load creates response row** (Team panel visible before first save); **answers prefilled on owner view** with “Last updated by …” (DB `answer.last_updated_by_collaborator_id`); owner saves echo collaborator text without clearing attribution unless value changes; contributors blocked from POSTing non-assigned question IDs
 - Not finished:
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
+- **2026-04-01 (collaborative UX polish):** `GET /api/share/[token]` for owner **creates `response` on first load** if missing (and bumps questionnaire `shared` → `in_progress` when applicable) so Team panel shows immediately. Share GET returns **`answers[]`** with `questionId`, `value`, `answeredByLabel`. New column **`answer.last_updated_by_collaborator_id`** (FK → `response_collaborator`). `POST …/answers`: contributors may only write assigned questions; attribution set on collaborator writes; owner updates preserve collaborator attribution when value unchanged. Respond page: merge API answers into form; owner sees attribution line under each answered question; refetch share after save to sync labels; optimistic “Primary respondent” when owner edits.
+
 - **2026-04-01 (collaborative answering):** Full collaborative questionnaire response feature on branch `feature/collaborative-questionnaire-responses`.
   - New DB tables: `response_collaborator`, `question_assignment` (with enums `collaborator_role`, `invite_status`). Schema pushed to Neon.
   - `GET /api/share/[token]` extended: resolves both owner share_link tokens and contributor tokens; filters questions to assigned-only for contributors; marks collaborator active on first visit.

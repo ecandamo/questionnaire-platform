@@ -248,19 +248,6 @@ export const response = pgTable("response", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
 
-export const answer = pgTable("answer", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  responseId: uuid("response_id")
-    .notNull()
-    .references(() => response.id, { onDelete: "cascade" }),
-  questionId: uuid("question_id")
-    .notNull()
-    .references(() => questionnaireQuestion.id, { onDelete: "cascade" }),
-  value: text("value"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-})
-
 export const responseCollaborator = pgTable("response_collaborator", {
   id: uuid("id").primaryKey().defaultRandom(),
   responseId: uuid("response_id")
@@ -289,6 +276,24 @@ export const questionAssignment = pgTable("question_assignment", {
   collaboratorId: uuid("collaborator_id").references(() => responseCollaborator.id, {
     onDelete: "set null",
   }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const answer = pgTable("answer", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  responseId: uuid("response_id")
+    .notNull()
+    .references(() => response.id, { onDelete: "cascade" }),
+  questionId: uuid("question_id")
+    .notNull()
+    .references(() => questionnaireQuestion.id, { onDelete: "cascade" }),
+  value: text("value"),
+  /** Set when a contributor last wrote this answer; null = owner / primary respondent */
+  lastUpdatedByCollaboratorId: uuid("last_updated_by_collaborator_id").references(
+    () => responseCollaborator.id,
+    { onDelete: "set null" }
+  ),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })

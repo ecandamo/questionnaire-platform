@@ -98,6 +98,27 @@ export async function POST(
     )
   }
 
+  const attributionCollaboratorId =
+    ctx.kind === "contributor" ? ctx.collaboratorId : null
+
+  // ── Contributors may only write assigned questions ───────────────────────────
+  if (ctx.kind === "contributor" && answerData && Array.isArray(answerData)) {
+    const assignments = await db
+      .select()
+      .from(questionAssignment)
+      .where(eq(questionAssignment.collaboratorId, ctx.collaboratorId))
+
+    const allowed = new Set(assignments.map((x) => x.questionnaireQuestionId))
+    for (const a of answerData) {
+      if (!allowed.has(a.questionId)) {
+        return NextResponse.json(
+          { error: "You can only answer questions assigned to you" },
+          { status: 403 }
+        )
+      }
+    }
+  }
+
   // ── Upsert answers ────────────────────────────────────────────────────────────
   if (answerData && Array.isArray(answerData)) {
     for (const a of answerData) {
@@ -107,15 +128,35 @@ export async function POST(
         .where(and(eq(answer.responseId, resp.id), eq(answer.questionId, a.questionId)))
 
       if (existingAnswer) {
-        await db
-          .update(answer)
-          .set({ value: a.value, updatedAt: new Date() })
-          .where(eq(answer.id, existingAnswer.id))
+        if (ctx.kind === "contributor") {
+          await db
+            .update(answer)
+            .set({
+              value: a.value,
+              updatedAt: new Date(),
+              lastUpdatedByCollaboratorId: attributionCollaboratorId,
+            })
+            .where(eq(answer.id, existingAnswer.id))
+        } else {
+          const valueChanged = (existingAnswer.value ?? "") !== (a.value ?? "")
+          await db
+            .update(answer)
+            .set({
+              value: a.value,
+              updatedAt: new Date(),
+              lastUpdatedByCollaboratorId: valueChanged
+                ? null
+                : existingAnswer.lastUpdatedByCollaboratorId,
+            })
+            .where(eq(answer.id, existingAnswer.id))
+        }
       } else {
         await db.insert(answer).values({
           responseId: resp.id,
           questionId: a.questionId,
           value: a.value ?? null,
+          lastUpdatedByCollaboratorId:
+            ctx.kind === "contributor" ? attributionCollaboratorId : null,
         })
       }
     }
