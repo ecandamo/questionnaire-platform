@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { ArrowLeftIcon, DownloadIcon, Loader2Icon } from "lucide-react"
 import { format } from "date-fns"
 import { QUESTION_TYPE_LABELS, type QuestionType } from "@/types"
+import { answerableDisplayNumbers } from "@/lib/question-sections"
 
 interface Question {
   id: string
@@ -60,7 +61,28 @@ export default function ResponsesPage() {
   }, [id])
 
   const answerMap = new Map(answers.map((a) => [a.questionId, a.value]))
-  const visibleQuestions = questions.filter((q) => !q.isHidden)
+  const visibleQuestions = React.useMemo(
+    () =>
+      [...questions.filter((q) => !q.isHidden)].sort((a, b) => a.sortOrder - b.sortOrder),
+    [questions]
+  )
+  const displayNumbers = React.useMemo(
+    () => answerableDisplayNumbers(visibleQuestions),
+    [visibleQuestions]
+  )
+  const answerableVisible = React.useMemo(
+    () => visibleQuestions.filter((q) => q.type !== "section_header"),
+    [visibleQuestions]
+  )
+  const answeredAnswerableCount = React.useMemo(
+    () =>
+      answerableVisible.filter((q) => {
+        const row = answers.find((a) => a.questionId === q.id)
+        const v = row?.value
+        return v != null && String(v).trim() !== ""
+      }).length,
+    [answerableVisible, answers]
+  )
 
   function handleExport() {
     window.open(`/api/responses/${id}/export`, "_blank")
@@ -143,19 +165,40 @@ export default function ResponsesPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="font-heading text-base">Answers</CardTitle>
                 <span className="text-xs text-muted-foreground">
-                  {answers.filter((a) => a.value).length} / {visibleQuestions.length} answered
+                  {answeredAnswerableCount} / {answerableVisible.length} answered
                 </span>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {visibleQuestions.map((q, idx) => {
+                if (q.type === "section_header") {
+                  return (
+                    <div key={q.id}>
+                      {idx > 0 && <Separator className="mb-4" />}
+                      <div className="space-y-1 pt-1">
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                          Section
+                        </p>
+                        <p className="text-sm font-semibold">{q.text}</p>
+                      </div>
+                    </div>
+                  )
+                }
+
                 const value = answerMap.get(q.id)
+                const num = displayNumbers.get(q.id)
                 return (
                   <div key={q.id}>
                     {idx > 0 && <Separator className="mb-4" />}
                     <div className="space-y-1.5">
                       <div className="flex items-start gap-2">
-                        <span className="text-xs text-muted-foreground mt-0.5 shrink-0">{idx + 1}.</span>
+                        {num != null ? (
+                          <span className="text-xs text-muted-foreground mt-0.5 shrink-0 tabular-nums">
+                            {num}.
+                          </span>
+                        ) : (
+                          <span className="w-4 shrink-0" aria-hidden />
+                        )}
                         <div className="flex-1">
                           <p className="text-sm font-medium">{q.text}</p>
                           <div className="flex items-center gap-2 mt-1">

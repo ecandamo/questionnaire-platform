@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner"
 import { ApiLogo } from "@/components/shared/api-logo"
 import { CollaboratorPanel } from "@/components/shared/collaborator-panel"
+import { answerableDisplayNumbers } from "@/lib/question-sections"
 
 interface Question {
   id: string
@@ -109,16 +110,36 @@ export default function RespondPage() {
       })
   }, [token])
 
-  // Autosave every 30 seconds if there are answers
-  React.useEffect(() => {
-    if (!questionnaire || submitted || markedComplete) return
-    const interval = setInterval(() => {
-      if (Object.keys(answers).length > 0) {
-        handleSave(false)
+  const questionDisplayNumbers = React.useMemo(
+    () => answerableDisplayNumbers(questions),
+    [questions]
+  )
+
+  /** Re-sync form + progress from DB after team changes (e.g. collaborator removed → answers deleted). */
+  const refreshShareSnapshot = React.useCallback(async () => {
+    const r = await fetch(`/api/share/${token}`)
+    if (!r.ok) return
+    const data = await r.json()
+    setQuestionnaire(data.questionnaire)
+    setQuestions(data.questions)
+    setAllQuestions(data.questions)
+    setResponseId(data.responseId ?? null)
+    if (data.responseStatus === "submitted") {
+      setSubmitted(true)
+    }
+    const nextAnswers: Record<string, string> = {}
+    for (const row of data.answers ?? []) {
+      nextAnswers[row.questionId] = row.value ?? ""
+    }
+    setAnswers(nextAnswers)
+    const nextAttr: Record<string, string> = {}
+    for (const row of data.answers ?? []) {
+      if (data.viewerRole === "owner" && row.answeredByLabel) {
+        nextAttr[row.questionId] = row.answeredByLabel
       }
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [questionnaire, answers, submitted, markedComplete])
+    }
+    setAttributionByQuestionId(nextAttr)
+  }, [token])
 
   async function handleSave(showToast = true) {
     if (!questionnaire) return
@@ -155,6 +176,17 @@ export default function RespondPage() {
     }
     setSaving(false)
   }
+
+  // Autosave every 30 seconds if there are answers
+  React.useEffect(() => {
+    if (!questionnaire || submitted || markedComplete) return
+    const interval = setInterval(() => {
+      if (Object.keys(answers).length > 0) {
+        void handleSave(false)
+      }
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [questionnaire, answers, submitted, markedComplete])
 
   async function handleSubmit() {
     if (!questionnaire) return
@@ -368,6 +400,7 @@ export default function RespondPage() {
             ownerToken={token}
             questionnaireTitle={questionnaire.title}
             questions={allQuestions}
+            onTeamChanged={refreshShareSnapshot}
           />
         )}
 
@@ -375,18 +408,22 @@ export default function RespondPage() {
         {viewerRole === "contributor" && (
           <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
             <p className="text-xs text-muted-foreground">
-              You've been assigned specific questions to answer. Once done, click "Mark Complete" below.
+              You&apos;ve been assigned specific questions to answer. Once done, click &quot;Mark Complete&quot; below.
             </p>
           </div>
         )}
 
         {/* Questions */}
         <div className="space-y-4">
-          {questions.map((q, idx) => (
+          {questions.map((q) => (
             <QuestionField
               key={q.id}
               question={q}
-              index={idx + 1}
+              displayNumber={
+                q.type === "section_header"
+                  ? null
+                  : (questionDisplayNumbers.get(q.id) ?? null)
+              }
               value={answers[q.id] ?? ""}
               onChange={(v) => setAnswer(q.id, v)}
               onToggleMulti={(o) => toggleMultiSelect(q.id, o)}
@@ -435,9 +472,20 @@ export default function RespondPage() {
               <span className="font-medium text-foreground">{answered}</span> of{" "}
               <span className="font-medium text-foreground">{total}</span> questions answered
             </p>
-            {questions.filter(q => q.isRequired && !answers[q.id]?.trim()).length > 0 && (
+            {questions.filter(
+              (q) =>
+                q.type !== "section_header" && q.isRequired && !answers[q.id]?.trim()
+            ).length > 0 && (
               <p className="text-destructive">
-                {questions.filter(q => q.isRequired && !answers[q.id]?.trim()).length} required question(s) unanswered
+                {
+                  questions.filter(
+                    (q) =>
+                      q.type !== "section_header" &&
+                      q.isRequired &&
+                      !answers[q.id]?.trim()
+                  ).length
+                }{" "}
+                required question(s) unanswered
               </p>
             )}
           </div>
@@ -460,7 +508,7 @@ export default function RespondPage() {
 
 function QuestionField({
   question,
-  index,
+  displayNumber,
   value,
   onChange,
   onToggleMulti,
@@ -468,7 +516,7 @@ function QuestionField({
   answeredByLabel,
 }: {
   question: Question
-  index: number
+  displayNumber: number | null
   value: string
   onChange: (v: string) => void
   onToggleMulti: (option: string) => void
@@ -495,7 +543,13 @@ function QuestionField({
       <CardContent className="pt-4 space-y-3">
         <div>
           <div className="flex items-start gap-2.5">
-            <span className="font-mono text-[10px] text-muted-foreground/50 mt-1 shrink-0 w-4 text-right tabular-nums">{index}.</span>
+            {displayNumber != null ? (
+              <span className="font-mono text-[10px] text-muted-foreground/50 mt-1 shrink-0 w-4 text-right tabular-nums">
+                {displayNumber}.
+              </span>
+            ) : (
+              <span className="mt-1 shrink-0 w-4" aria-hidden />
+            )}
             <div className="flex-1">
               <p className="text-sm font-medium leading-snug">
                 {question.text}

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -26,6 +25,7 @@ import {
   ClockIcon,
 } from "lucide-react"
 import { toast } from "sonner"
+import { QuestionAssignmentPicker } from "@/components/shared/question-assignment-picker"
 
 interface Question {
   id: string
@@ -51,6 +51,8 @@ interface CollaboratorPanelProps {
   ownerToken: string
   questionnaireTitle: string
   questions: Question[]
+  /** After invite/remove team member: refetch share payload so answers, progress, and attribution stay in sync. */
+  onTeamChanged?: () => void | Promise<void>
 }
 
 export function CollaboratorPanel({
@@ -58,6 +60,7 @@ export function CollaboratorPanel({
   ownerToken,
   questionnaireTitle,
   questions,
+  onTeamChanged,
 }: CollaboratorPanelProps) {
   const [collaborators, setCollaborators] = React.useState<Collaborator[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -75,20 +78,6 @@ export function CollaboratorPanel({
     typeof window !== "undefined"
       ? window.location.origin
       : (process.env.NEXT_PUBLIC_APP_URL ?? "")
-
-  const answerableQuestions = questions.filter((q) => q.type !== "section_header")
-
-  // Determine which question IDs are already assigned to other collaborators
-  const assignedToOthers = React.useMemo(() => {
-    const set = new Set<string>()
-    collaborators
-      .filter((c) => c.role === "contributor")
-      .forEach(() => {
-        // We don't have per-question data at this level; backend handles conflicts.
-        // For UX we just rely on the backend's response.
-      })
-    return set
-  }, [collaborators])
 
   React.useEffect(() => {
     fetchCollaborators()
@@ -140,6 +129,7 @@ export function CollaboratorPanel({
       setInviteName("")
       setSelectedQuestions(new Set())
       await fetchCollaborators()
+      await onTeamChanged?.()
     } finally {
       setInviting(false)
     }
@@ -155,6 +145,7 @@ export function CollaboratorPanel({
       if (res.ok) {
         toast.success(`Removed ${email}`)
         await fetchCollaborators()
+        await onTeamChanged?.()
       } else {
         toast.error("Failed to remove collaborator")
       }
@@ -181,15 +172,6 @@ export function CollaboratorPanel({
       `Hi ${name ?? "there"},\n\nPlease answer your assigned questions here:\n${url}\n\nThank you`
     )
     window.open(`mailto:${email}?subject=${subject}&body=${body}`)
-  }
-
-  function toggleQuestion(id: string) {
-    setSelectedQuestions((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
   }
 
   const contributors = collaborators.filter((c) => c.role === "contributor")
@@ -265,8 +247,8 @@ export function CollaboratorPanel({
           <DialogHeader>
             <DialogTitle>Add Team Member</DialogTitle>
             <DialogDescription>
-              Assign specific questions to a colleague. They'll receive a personal link scoped to
-              only their questions.
+              Assign questions or whole sections. They get a personal link scoped to only what you
+              assign.
             </DialogDescription>
           </DialogHeader>
 
@@ -291,56 +273,12 @@ export function CollaboratorPanel({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">
-                  Assign questions <span className="text-destructive">*</span>
-                </Label>
-                <button
-                  type="button"
-                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => {
-                    if (selectedQuestions.size === answerableQuestions.length) {
-                      setSelectedQuestions(new Set())
-                    } else {
-                      setSelectedQuestions(new Set(answerableQuestions.map((q) => q.id)))
-                    }
-                  }}
-                >
-                  {selectedQuestions.size === answerableQuestions.length
-                    ? "Deselect all"
-                    : "Select all"}
-                </button>
-              </div>
-              <div className="max-h-52 overflow-y-auto rounded-lg border border-border divide-y divide-border">
-                {answerableQuestions.map((q, i) => (
-                  <div
-                    key={q.id}
-                    className="flex items-start gap-3 px-3 py-2.5 hover:bg-muted/30 cursor-pointer transition-colors"
-                    onClick={() => toggleQuestion(q.id)}
-                  >
-                    <Checkbox
-                      id={`q-${q.id}`}
-                      checked={selectedQuestions.has(q.id)}
-                      onCheckedChange={() => toggleQuestion(q.id)}
-                      className="mt-0.5 shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs leading-snug line-clamp-2">
-                        <span className="text-muted-foreground/50 mr-1.5 font-mono text-[10px]">{i + 1}.</span>
-                        {q.text}
-                        {q.isRequired && <span className="text-destructive ml-1">*</span>}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {selectedQuestions.size > 0 && (
-                <p className="text-[10px] text-muted-foreground">
-                  {selectedQuestions.size} question{selectedQuestions.size !== 1 ? "s" : ""} selected
-                </p>
-              )}
-            </div>
+            <QuestionAssignmentPicker
+              questions={questions}
+              selectedIds={selectedQuestions}
+              setSelectedIds={setSelectedQuestions}
+              assignLabel="Assign questions or sections"
+            />
           </div>
 
           <DialogFooter>

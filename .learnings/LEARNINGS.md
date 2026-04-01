@@ -245,3 +245,103 @@ When pasting external button components: grep for `@radix-ui/react-slot`, verify
 - Tags: shadcn, radix-ui, tailwind4, nextjs, button, ripple
 
 ---
+
+## [LRN-20260401-001] best_practice
+
+**Logged**: 2026-04-01
+**Priority**: medium
+**Status**: pending
+**Area**: frontend + api
+
+### Summary
+Published **share URLs** must be loadable from the server on every questionnaire fetch—not only from the publish POST response—so the Share tab and banner stay correct after refresh. Child UI that mirrors a parent prop should not freeze the first `null` in `useState(initialProp)` without syncing when the prop updates.
+
+### Details
+1. **API:** Extend `GET /api/questionnaires/[id]` to return `shareUrl` when an **active** `share_link` exists (same URL shape as publish). Parent `load()` then calls `setShareUrl(d.shareUrl ?? null)`.
+2. **Components:** Prefer using the prop directly (e.g. `ShareLinkPanel` takes `shareUrl` only) or `useEffect(() => setLocal(shareUrl), [shareUrl])`. Otherwise the Share tab can show “no link” right after publish while the parent state is correct.
+
+### Suggested Action
+Whenever a mutation returns a URL/token the user must see again later, persist it in the DB and **re-hydrate** on the standard GET used by the detail page.
+
+### Metadata
+- Source: session / bugfix
+- Related Files: `src/app/api/questionnaires/[id]/route.ts`, `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`
+- Tags: share-link, hydration, react-state
+
+---
+
+## [LRN-20260401-002] best_practice
+
+**Logged**: 2026-04-01
+**Priority**: high
+**Status**: pending
+**Area**: backend
+
+### Summary
+When removing a **response collaborator**, delete their **answers** (by assignment + `last_updated_by_collaborator_id`) **before** deleting `question_assignment` rows—otherwise assignment IDs are gone and cleanup cannot find which question rows to clear.
+
+### Details
+Centralize in a helper (e.g. `deleteAnswersForRemovedCollaborator(responseId, collaboratorId)`) and call it first in both DELETE handlers (respond flow + dashboard collaborators).
+
+### Metadata
+- Source: session / feature
+- Related Files: `src/lib/collaborator-cleanup.ts`, collaborator DELETE routes
+- Tags: collaboration, drizzle, cascade
+
+---
+
+## [LRN-20260401-003] best_practice
+
+**Logged**: 2026-04-01
+**Priority**: medium
+**Status**: pending
+**Area**: frontend
+
+### Summary
+After **team changes** on the respondent page (invite/remove collaborator), **refetch the share payload** (`GET /api/share/[token]`) and merge answers + attribution into parent state so progress and deleted collaborator answers match the DB—no full page reload required.
+
+### Details
+Expose `onTeamChanged` from the team panel; parent implements refresh the same way it already refreshes attribution after save. Note: replacing answers from the server can overwrite **unsaved** local edits for questions with no row yet; autosave mitigates most cases.
+
+### Metadata
+- Source: session / feature
+- Related Files: `src/app/respond/[token]/page.tsx`, `src/components/shared/collaborator-panel.tsx`
+- Tags: collaboration, data-sync
+
+---
+
+## [LRN-20260401-004] best_practice
+
+**Logged**: 2026-04-01
+**Priority**: medium
+**Status**: pending
+**Area**: frontend
+
+### Summary
+**Section headers** must be excluded from **visible question numbering** and from **“answered / total”** denominators everywhere (respond UI, builder, responses viewer). Use one shared helper over the ordered question list (e.g. `answerableDisplayNumbers` skipping `type === "section_header"`).
+
+### Metadata
+- Source: session / feature
+- Related Files: `src/lib/question-sections.ts`
+- Tags: questionnaire, ux
+
+---
+
+## [LRN-20260401-005] best_practice
+
+**Logged**: 2026-04-01
+**Priority**: medium
+**Status**: pending
+**Area**: tooling
+
+### Summary
+Cursor/VS Code **folder emphasis** (“contains emphasized items”) usually means files under that folder have **ESLint or TS diagnostics**. `eslint-config-next` + React Compiler-related rules flag: **`react-hooks/purity`** (`Date.now` / `Math.random` / impure calls in render), **`react-hooks/preserve-manual-memoization`** (`useMemo` deps must match inferred dependencies), **hooks calling functions declared below** (`useEffect` before `handleSave`), and **`react/no-unescaped-entities`** in JSX text.
+
+### Suggested Action
+Run `npx eslint src` after UI refactors. Move impure date/random work to `useEffect`, module-level helpers called only from event handlers, or `crypto.randomUUID()` in handlers; move effects **below** the functions they invoke (or use `useCallback` + stable deps carefully).
+
+### Metadata
+- Source: session / diagnostics
+- Tags: eslint, react-compiler, cursor
+
+---

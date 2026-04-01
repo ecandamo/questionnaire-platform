@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema"
 import { getRequestSession } from "@/lib/session"
 import { generateShareToken } from "@/lib/tokens"
+import { deleteAnswersForRemovedCollaborator } from "@/lib/collaborator-cleanup"
 import { and, eq } from "drizzle-orm"
 
 // ── Resolve or lazily create the master response for a published questionnaire ─
@@ -136,6 +137,8 @@ export async function POST(
     )
   }
 
+  const uniqueIds = [...new Set(questionIds)]
+
   const [q] = await db.select().from(questionnaire).where(eq(questionnaire.id, questionnaireId))
   if (!q) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
@@ -178,9 +181,9 @@ export async function POST(
       .delete(questionAssignment)
       .where(eq(questionAssignment.collaboratorId, existing.id))
 
-    if (questionIds.length > 0) {
+    if (uniqueIds.length > 0) {
       await db.insert(questionAssignment).values(
-        questionIds.map((qId) => ({
+        uniqueIds.map((qId) => ({
           responseId: resp.id,
           questionnaireQuestionId: qId,
           collaboratorId: existing.id,
@@ -217,7 +220,7 @@ export async function POST(
     .returning()
 
   await db.insert(questionAssignment).values(
-    questionIds.map((qId) => ({
+    uniqueIds.map((qId) => ({
       responseId: resp.id,
       questionnaireQuestionId: qId,
       collaboratorId: collaborator.id,
@@ -230,7 +233,7 @@ export async function POST(
   return NextResponse.json({
     collaborator: {
       ...collaborator,
-      assignedCount: questionIds.length,
+      assignedCount: uniqueIds.length,
       answeredCount: 0,
       collaboratorUrl,
     },
@@ -267,6 +270,8 @@ export async function DELETE(
     )
 
   if (!collab) return NextResponse.json({ error: "Collaborator not found" }, { status: 404 })
+
+  await deleteAnswersForRemovedCollaborator(collab.responseId, collaboratorId)
 
   await db
     .delete(questionAssignment)

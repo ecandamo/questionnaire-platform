@@ -204,3 +204,33 @@ await authClient.admin.setRole({ userId, role: newRole })
 - Related Files: src/app/(dashboard)/admin/users/page.tsx
 
 ---
+
+## [ERR-20260401-001] eslint-react-compiler-rules-src-emphasis
+
+**Logged**: 2026-04-01
+**Priority**: medium
+**Status**: resolved
+**Area**: tooling + frontend
+
+### Summary
+`npx eslint src` reported **errors** (not just warnings) that caused Cursor to treat **`src`** as containing emphasized/problem files.
+
+### Error / rules involved
+- `react-hooks/purity` — `Date.now()` / `Math.random()` in component paths treated as render-time impurity (`detail-client.tsx` temp IDs, expiry preview in JSX).
+- `react-hooks/preserve-manual-memoization` — `useMemo` in `responses/page.tsx` used `answerMap` inside callback but deps listed `answers` only.
+- `react-hooks/immutability` — autosave `useEffect` referenced `handleSave` **before** its function declaration (`respond/[token]/page.tsx`).
+- `react/no-unescaped-entities` — apostrophes/quotes in JSX strings (`detail-client`, `respond`).
+
+### Context
+Next.js / eslint-config-next stack enables strict React rules;explorer “emphasized” folders track error-severity diagnostics.
+
+### Resolution
+- **Resolved**: 2026-04-01
+- **Notes**: Temp IDs → module helper with `crypto.randomUUID()` from event handlers; expiry label → `setState` in `useEffect` + `addDays`; `answeredAnswerableCount` → derive via `answers.find` with `[answerableVisible, answers]`; autosave effect moved **after** `handleSave`; JSX entities escaped. `eslint src` → 0 errors.
+
+### Metadata
+- Reproducible: yes
+- Related Files: `detail-client.tsx`, `responses/page.tsx`, `respond/[token]/page.tsx`
+- See Also: LRN-20260401-005
+
+---

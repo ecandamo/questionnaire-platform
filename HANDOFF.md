@@ -24,6 +24,14 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
+- **2026-04-01 (self-improvement):** Logged session learnings to `.learnings/LEARNINGS.md` (LRN-20260401-001–005: share URL hydration, collaborator delete order, team refresh sync, section numbering, ESLint/React diagnostics vs Cursor folder emphasis) and `.learnings/ERRORS.md` (ERR-20260401-001: resolved ESLint errors).
+
+- **2026-04-01 (Share Link tab):** `GET /api/questionnaires/[id]` returns `shareUrl` for the latest **active** share link (built like publish). `load()` sets parent `shareUrl` so banner + tab survive refresh. `ShareLinkPanel` uses the prop only (removed stale `useState` + no-op fetch).
+
+- **2026-04-01 (respond team refresh):** `CollaboratorPanel` optional `onTeamChanged` runs after successful invite/delete; respond page implements `refreshShareSnapshot` (`GET /api/share/[token]`) to update `questions`, `allQuestions`, `answers`, and `attributionByQuestionId` so progress and cleared collaborator answers match the DB without a full page reload.
+
+- **2026-04-01 (collaboration + numbering):** Section headers no longer consume visible question numbers — shared helper `answerableDisplayNumbers` in `src/lib/question-sections.ts` (with `getQuestionIdsInSectionAfterHeader` for section bulk select). **Respond** page, **questionnaire builder** cards, and **responses** viewer use that numbering; responses summary counts **answerable** questions only (excludes `section_header`). **Removing a collaborator** calls `deleteAnswersForRemovedCollaborator` (in `src/lib/collaborator-cleanup.ts`) before deleting assignments — clears answers for assigned questions and any row last-updated by that collaborator (`DELETE` on both collaborator APIs). **Assign whole sections:** `QuestionAssignmentPicker` (`src/components/shared/question-assignment-picker.tsx`) used in `collaborator-panel.tsx` and dashboard `SenderAssignmentsPanel` — section rows toggle all questions until the next section header; indeterminate checkbox when partially selected. Collaborator **POST** bodies dedupe `questionIds` with `new Set` on both APIs.
+
 - **2026-04-01 (collaborative UX polish):** `GET /api/share/[token]` for owner **creates `response` on first load** if missing (and bumps questionnaire `shared` → `in_progress` when applicable) so Team panel shows immediately. Share GET returns **`answers[]`** with `questionId`, `value`, `answeredByLabel`. New column **`answer.last_updated_by_collaborator_id`** (FK → `response_collaborator`). `POST …/answers`: contributors may only write assigned questions; attribution set on collaborator writes; owner updates preserve collaborator attribution when value unchanged. Respond page: merge API answers into form; owner sees attribution line under each answered question; refetch share after save to sync labels; optimistic “Primary respondent” when owner edits.
 
 - **2026-04-01 (collaborative answering):** Full collaborative questionnaire response feature on branch `feature/collaborative-questionnaire-responses`.
@@ -56,6 +64,15 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/lib/question-sections.ts` — display numbering + section question IDs for bulk assign
+- `src/lib/collaborator-cleanup.ts` — delete collaborator-tied answers before removing assignments
+- `src/components/shared/question-assignment-picker.tsx` — section + per-question assign UI
+- `src/app/api/responses/[id]/collaborators/route.ts` — DELETE cleanup; POST dedupe `questionIds`
+- `src/app/api/questionnaires/[id]/collaborators/route.ts` — same
+- `src/components/shared/collaborator-panel.tsx` — uses `QuestionAssignmentPicker`
+- `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx` — builder numbering; Team tab picker
+- `src/app/respond/[token]/page.tsx` — respondent numbering; submit dialog required filter
+- `src/app/(dashboard)/questionnaires/[id]/responses/page.tsx` — viewer numbering + answerable counts
 - `src/lib/db/schema.ts` — added `response_collaborator`, `question_assignment` tables + enums
 - `drizzle/0000_shallow_whizzer.sql` — generated migration (applied via db:push)
 - `src/app/api/share/[token]/route.ts` — extended for collaborator token resolution
@@ -103,9 +120,10 @@ Key paths (design 2026-03-28):
 - `command.tsx` is a lightweight custom implementation — could be replaced with cmdk if needed
 
 ## Next Best Step
-1. **Smoke-test collaborative flow** on branch `feature/collaborative-questionnaire-responses`:
+1. Smoke-test: numbering skips section headers; assign a full section via Team UI; remove a collaborator and confirm their answers disappear from the owner view / DB.
+2. **Smoke-test collaborative flow** on branch `feature/collaborative-questionnaire-responses` (if not on `main`):
    - Publish a questionnaire → open the respond link → add a collaborator → copy their link → open in a second browser → verify they see only assigned questions → mark complete → verify owner can then submit
-2. Merge branch to `main` when smoke-test passes
+3. Merge branch to `main` when smoke-test passes
 3. Phase 2 (post-merge): Sender-side email invite (mailto: is already done); "reassign" questions after invite; show questionnaire-level collaborator count in the questionnaire list
 4. Continue feature work: question import/export UI is the main unfinished item
 5. Before deploy, set production env on hosting (`BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, DB URL, `NEXT_PUBLIC_APP_URL`) and run a full smoke test

@@ -60,7 +60,7 @@ import {
   ClockIcon,
 } from "lucide-react"
 import { toast } from "sonner"
-import { format } from "date-fns"
+import { addDays, format } from "date-fns"
 import {
   QUESTIONNAIRE_TYPE_LABELS,
   QUESTION_TYPE_LABELS,
@@ -69,6 +69,12 @@ import {
   type QuestionnaireType,
   type QuestionType,
 } from "@/types"
+import { answerableDisplayNumbers } from "@/lib/question-sections"
+import { QuestionAssignmentPicker } from "@/components/shared/question-assignment-picker"
+
+function newTempQuestionId(prefix: string) {
+  return `${prefix}-${globalThis.crypto.randomUUID()}`
+}
 
 interface QQuestion {
   id: string
@@ -103,6 +109,7 @@ interface QuestionnaireDetail {
   publishedAt: string | null
   submittedAt: string | null
   questions: QQuestion[]
+  shareUrl?: string | null
 }
 
 interface Props {
@@ -126,10 +133,20 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
   const [bankSearch, setBankSearch] = React.useState("")
   const [bankLoading, setBankLoading] = React.useState(false)
   const [expiryDays, setExpiryDays] = React.useState(30)
+  const [expiryPreview, setExpiryPreview] = React.useState("")
+
+  React.useEffect(() => {
+    setExpiryPreview(format(addDays(new Date(), expiryDays), "MMM d, yyyy"))
+  }, [expiryDays])
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const questionDisplayNumbers = React.useMemo(
+    () => answerableDisplayNumbers(questions),
+    [questions]
   )
 
   async function load() {
@@ -139,6 +156,7 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
     const d = await res.json()
     setData(d)
     setQuestions(d.questions.sort((a: QQuestion, b: QQuestion) => a.sortOrder - b.sortOrder))
+    setShareUrl(d.shareUrl ?? null)
     setLoading(false)
   }
 
@@ -232,7 +250,7 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
       return
     }
     const newQ: QQuestion = {
-      id: `temp-${Date.now()}-${Math.random()}`,
+      id: newTempQuestionId("temp"),
       text: bq.text,
       type: bq.type,
       description: null,
@@ -250,7 +268,7 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
   function addCustomQuestion(q: Omit<QQuestion, "id" | "sortOrder">) {
     const newQ: QQuestion = {
       ...q,
-      id: `custom-${Date.now()}-${Math.random()}`,
+      id: newTempQuestionId("custom"),
       sortOrder: questions.length,
     }
     setQuestions((prev) => [...prev, newQ])
@@ -426,11 +444,15 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
           >
             <SortableContext items={questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2">
-                {questions.map((q, idx) => (
+                {questions.map((q) => (
                   <SortableQuestionCard
                     key={q.id}
                     question={q}
-                    index={idx + 1}
+                    displayIndex={
+                      q.type === "section_header"
+                        ? null
+                        : (questionDisplayNumbers.get(q.id) ?? null)
+                    }
                     canEdit={canEdit && canInteract}
                     onUpdate={(updates) => updateQuestion(q.id, updates)}
                     onRemove={() => removeQuestion(q.id)}
@@ -461,7 +483,7 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
                     disabled={!canEdit}
                   />
                   <span className="text-sm text-muted-foreground">
-                    Expires {format(new Date(Date.now() + expiryDays * 86400000), "MMM d, yyyy")}
+                    Expires {expiryPreview || "—"}
                   </span>
                 </div>
               </div>
@@ -488,7 +510,7 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
 
         {/* Share Link Tab */}
         <TabsContent value="share" className="mt-4">
-          <ShareLinkPanel questionnaireId={id} shareUrl={shareUrl} />
+          <ShareLinkPanel shareUrl={shareUrl} />
         </TabsContent>
 
         {/* Team (Sender Assignments) Tab */}
@@ -574,13 +596,13 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
 
 function SortableQuestionCard({
   question,
-  index,
+  displayIndex,
   canEdit,
   onUpdate,
   onRemove,
 }: {
   question: QQuestion
-  index: number
+  displayIndex: number | null
   canEdit: boolean
   onUpdate: (updates: Partial<QQuestion>) => void
   onRemove: () => void
@@ -614,9 +636,13 @@ function SortableQuestionCard({
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2.5">
-            <span className="font-mono text-[10px] text-muted-foreground/50 mt-1 shrink-0 w-4 text-right tabular-nums">
-              {index}.
-            </span>
+            {displayIndex != null ? (
+              <span className="font-mono text-[10px] text-muted-foreground/50 mt-1 shrink-0 w-4 text-right tabular-nums">
+                {displayIndex}.
+              </span>
+            ) : (
+              <span className="mt-1 shrink-0 w-4" aria-hidden />
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium leading-snug text-foreground">{question.text}</p>
               {question.description && (
@@ -819,8 +845,6 @@ function SenderAssignmentsPanel({
   const [inviteName, setInviteName] = React.useState("")
   const [selectedQuestions, setSelectedQuestions] = React.useState<Set<string>>(new Set())
 
-  const answerableQuestions = questions.filter((q) => q.type !== "section_header")
-
   async function fetchCollaborators() {
     setLoading(true)
     const res = await fetch(`/api/questionnaires/${questionnaireId}/collaborators`)
@@ -899,15 +923,6 @@ function SenderAssignmentsPanel({
     window.open(`mailto:${email}?subject=${subject}&body=${body}`)
   }
 
-  function toggleQuestion(id: string) {
-    setSelectedQuestions((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -922,7 +937,7 @@ function SenderAssignmentsPanel({
         <div>
           <p className="text-sm font-medium">Client Team Members</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Assign specific questions to people on the client's side.
+            Assign questions or whole sections to people on the client&apos;s side.
           </p>
         </div>
         <Button size="sm" onClick={() => setShowInvite(true)}>
@@ -937,7 +952,7 @@ function SenderAssignmentsPanel({
             <UsersIcon className="h-8 w-8 text-muted-foreground/30 mx-auto" />
             <p className="text-sm text-muted-foreground">No team members yet.</p>
             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-              You can pre-assign questions to client contacts. They'll get a personal link scoped to their questions.
+              You can pre-assign questions to client contacts. They&apos;ll get a personal link scoped to their questions.
             </p>
           </CardContent>
         </Card>
@@ -1038,50 +1053,12 @@ function SenderAssignmentsPanel({
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Assign questions <span className="text-destructive">*</span></Label>
-                <button
-                  type="button"
-                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => {
-                    if (selectedQuestions.size === answerableQuestions.length) {
-                      setSelectedQuestions(new Set())
-                    } else {
-                      setSelectedQuestions(new Set(answerableQuestions.map((q) => q.id)))
-                    }
-                  }}
-                >
-                  {selectedQuestions.size === answerableQuestions.length ? "Deselect all" : "Select all"}
-                </button>
-              </div>
-              <div className="max-h-52 overflow-y-auto rounded-lg border border-border divide-y divide-border">
-                {answerableQuestions.map((q, i) => (
-                  <div
-                    key={q.id}
-                    className="flex items-start gap-3 px-3 py-2.5 hover:bg-muted/30 cursor-pointer transition-colors"
-                    onClick={() => toggleQuestion(q.id)}
-                  >
-                    <Checkbox
-                      id={`sq-${q.id}`}
-                      checked={selectedQuestions.has(q.id)}
-                      onCheckedChange={() => toggleQuestion(q.id)}
-                      className="mt-0.5 shrink-0"
-                    />
-                    <p className="text-xs leading-snug line-clamp-2 flex-1">
-                      <span className="text-muted-foreground/50 mr-1.5 font-mono text-[10px]">{i + 1}.</span>
-                      {q.text}
-                      {q.isRequired && <span className="text-destructive ml-1">*</span>}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              {selectedQuestions.size > 0 && (
-                <p className="text-[10px] text-muted-foreground">
-                  {selectedQuestions.size} question{selectedQuestions.size !== 1 ? "s" : ""} selected
-                </p>
-              )}
-            </div>
+            <QuestionAssignmentPicker
+              questions={questions}
+              selectedIds={selectedQuestions}
+              setSelectedIds={setSelectedQuestions}
+              assignLabel="Assign questions or sections"
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowInvite(false)}>Cancel</Button>
@@ -1101,19 +1078,8 @@ function SenderAssignmentsPanel({
 
 // ─── Share Link Panel ─────────────────────────────────────────────────────────
 
-function ShareLinkPanel({ questionnaireId, shareUrl: initialShareUrl }: { questionnaireId: string; shareUrl: string | null }) {
-  const [shareUrl, setShareUrl] = React.useState(initialShareUrl)
+function ShareLinkPanel({ shareUrl }: { shareUrl: string | null }) {
   const [copied, setCopied] = React.useState(false)
-  const [loading, setLoading] = React.useState(!initialShareUrl)
-
-  React.useEffect(() => {
-    if (!initialShareUrl) {
-      // Load from API if not yet in state
-      fetch(`/api/questionnaires/${questionnaireId}`)
-        .then((r) => r.json())
-        .then(() => setLoading(false))
-    }
-  }, [questionnaireId, initialShareUrl])
 
   function copy() {
     if (!shareUrl) return

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { questionnaire, questionnaireQuestion, client, user } from "@/lib/db/schema"
+import { questionnaire, questionnaireQuestion, client, user, shareLink } from "@/lib/db/schema"
 import { getRequestSession } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
-import { asc, eq } from "drizzle-orm"
+import { and, asc, desc, eq } from "drizzle-orm"
 
 function canAccess(session: NonNullable<Awaited<ReturnType<typeof getRequestSession>>>, ownerId: string) {
   return session.user.role === "admin" || session.user.id === ownerId
@@ -48,7 +48,19 @@ export async function GET(
     .where(eq(questionnaireQuestion.questionnaireId, id))
     .orderBy(asc(questionnaireQuestion.sortOrder))
 
-  return NextResponse.json({ ...q, questions })
+  const [activeLink] = await db
+    .select({ token: shareLink.token })
+    .from(shareLink)
+    .where(and(eq(shareLink.questionnaireId, id), eq(shareLink.status, "active")))
+    .orderBy(desc(shareLink.createdAt))
+    .limit(1)
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ""
+  const shareUrl = activeLink?.token
+    ? `${appUrl.replace(/\/$/, "")}/respond/${activeLink.token}`
+    : null
+
+  return NextResponse.json({ ...q, questions, shareUrl })
 }
 
 export async function PATCH(

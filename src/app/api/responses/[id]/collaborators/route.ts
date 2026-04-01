@@ -9,6 +9,7 @@ import {
   questionnaireQuestion,
 } from "@/lib/db/schema"
 import { generateShareToken } from "@/lib/tokens"
+import { deleteAnswersForRemovedCollaborator } from "@/lib/collaborator-cleanup"
 import { and, eq } from "drizzle-orm"
 
 // ── Verify the request comes from the questionnaire owner (share_link token) ──
@@ -126,6 +127,8 @@ export async function POST(
     )
   }
 
+  const uniqueIds = [...new Set(questionIds)]
+
   const resp = await resolveOwnerContext(token, responseId)
   if (!resp) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -148,9 +151,9 @@ export async function POST(
       .delete(questionAssignment)
       .where(eq(questionAssignment.collaboratorId, existing.id))
 
-    if (questionIds.length > 0) {
+    if (uniqueIds.length > 0) {
       await db.insert(questionAssignment).values(
-        questionIds.map((qId) => ({
+        uniqueIds.map((qId) => ({
           responseId,
           questionnaireQuestionId: qId,
           collaboratorId: existing.id,
@@ -186,7 +189,7 @@ export async function POST(
 
   // Assign questions
   await db.insert(questionAssignment).values(
-    questionIds.map((qId) => ({
+    uniqueIds.map((qId) => ({
       responseId,
       questionnaireQuestionId: qId,
       collaboratorId: collaborator.id,
@@ -199,7 +202,7 @@ export async function POST(
   return NextResponse.json({
     collaborator: {
       ...collaborator,
-      assignedCount: questionIds.length,
+      assignedCount: uniqueIds.length,
       answeredCount: 0,
     },
     collaboratorUrl,
@@ -236,7 +239,8 @@ export async function DELETE(
     return NextResponse.json({ error: "Collaborator not found" }, { status: 404 })
   }
 
-  // Cascade delete via FK, but delete assignments explicitly first just in case
+  await deleteAnswersForRemovedCollaborator(responseId, collaboratorId)
+
   await db
     .delete(questionAssignment)
     .where(eq(questionAssignment.collaboratorId, collaboratorId))
