@@ -250,7 +250,7 @@ const Ripple = React.forwardRef<
   {
     hovered: boolean
     pressed: boolean
-    rippleEffectRef: React.RefObject<HTMLDivElement>
+    rippleEffectRef: React.RefObject<HTMLDivElement | null>
   }
 >(({ hovered, pressed, rippleEffectRef }, ref) => {
   return (

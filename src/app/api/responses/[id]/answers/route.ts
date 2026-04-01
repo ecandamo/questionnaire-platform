@@ -1,38 +1,83 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { response, answer, questionnaire, shareLink } from "@/lib/db/schema"
+import {
+  response,
+  answer,
+  questionnaire,
+  shareLink,
+  responseCollaborator,
+  questionAssignment,
+} from "@/lib/db/schema"
 import { logAudit } from "@/lib/audit"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 
 // Create response + save answers (public — no auth)
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: questionnaireId } = await params
   const body = await req.json()
-  const { token, answers: answerData, submit, respondentName, respondentEmail } = body
+  const {
+    token,
+    answers: answerData,
+    submit,
+    respondentName,
+    respondentEmail,
+  } = body
 
-  // Verify token
+  // ── Resolve token to either a share_link (owner) or a collaborator ──────────
+  type TokenContext =
+    | { kind: "owner"; linkId: string }
+    | { kind: "contributor"; collaboratorId: string; responseId: string }
+
+  let ctx: TokenContext | null = null
+
   const [link] = await db.select().from(shareLink).where(eq(shareLink.token, token))
-  if (!link || link.status !== "active") {
-    return NextResponse.json({ error: "Invalid or expired link" }, { status: 403 })
-  }
-  if (link.expiresAt && link.expiresAt < new Date()) {
-    return NextResponse.json({ error: "Link has expired" }, { status: 403 })
+  if (link) {
+    if (link.status !== "active" || (link.expiresAt && link.expiresAt < new Date())) {
+      return NextResponse.json({ error: "Invalid or expired link" }, { status: 403 })
+    }
+    ctx = { kind: "owner", linkId: link.id }
+  } else {
+    const [collab] = await db
+      .select()
+      .from(responseCollaborator)
+      .where(eq(responseCollaborator.token, token))
+
+    if (!collab) {
+      return NextResponse.json({ error: "Invalid or expired link" }, { status: 403 })
+    }
+    ctx = { kind: "contributor", collaboratorId: collab.id, responseId: collab.responseId }
   }
 
-  // Upsert response
-  let [resp] = await db
-    .select()
-    .from(response)
-    .where(eq(response.shareLinkId, link.id))
+  // ── Resolve / create the master response row ─────────────────────────────────
+  let resp: typeof response.$inferSelect | undefined
+
+  if (ctx.kind === "owner") {
+    const [existing] = await db
+      .select()
+      .from(response)
+      .where(eq(response.shareLinkId, ctx.linkId))
+    resp = existing
+  } else {
+    const [existing] = await db
+      .select()
+      .from(response)
+      .where(eq(response.id, ctx.responseId))
+    resp = existing
+  }
 
   if (!resp) {
+    if (ctx.kind !== "owner") {
+      // Collaborator should always have a pre-existing response
+      return NextResponse.json({ error: "Response not found" }, { status: 404 })
+    }
     const [created] = await db
       .insert(response)
       .values({
-        questionnaireId: link.questionnaireId,
-        shareLinkId: link.id,
+        questionnaireId,
+        shareLinkId: ctx.linkId,
         respondentName: respondentName ?? null,
         respondentEmail: respondentEmail ?? null,
         status: "in_progress",
@@ -40,32 +85,28 @@ export async function POST(
       .returning()
     resp = created
 
-    // Transition questionnaire to in_progress
     await db
       .update(questionnaire)
       .set({ status: "in_progress", updatedAt: new Date() })
-      .where(eq(questionnaire.id, link.questionnaireId))
+      .where(eq(questionnaire.id, questionnaireId))
   }
 
   if (resp.status === "submitted") {
-    return NextResponse.json({ error: "This questionnaire has already been submitted" }, { status: 400 })
+    return NextResponse.json(
+      { error: "This questionnaire has already been submitted" },
+      { status: 400 }
+    )
   }
 
-  // Upsert answers
+  // ── Upsert answers ────────────────────────────────────────────────────────────
   if (answerData && Array.isArray(answerData)) {
     for (const a of answerData) {
-      const [existing] = await db
-        .select()
-        .from(answer)
-        .where(eq(answer.responseId, resp.id))
-
-      // Check if this question already has an answer
       const [existingAnswer] = await db
         .select()
         .from(answer)
-        .where(eq(answer.questionId, a.questionId))
+        .where(and(eq(answer.responseId, resp.id), eq(answer.questionId, a.questionId)))
 
-      if (existingAnswer && existingAnswer.responseId === resp.id) {
+      if (existingAnswer) {
         await db
           .update(answer)
           .set({ value: a.value, updatedAt: new Date() })
@@ -80,7 +121,55 @@ export async function POST(
     }
   }
 
-  if (submit) {
+  // ── Handle contributor "mark complete" ────────────────────────────────────────
+  if (submit && ctx.kind === "contributor") {
+    await db
+      .update(responseCollaborator)
+      .set({ inviteStatus: "completed", updatedAt: new Date() })
+      .where(eq(responseCollaborator.id, ctx.collaboratorId))
+
+    return NextResponse.json({ success: true, markedComplete: true })
+  }
+
+  // ── Handle owner full submit ──────────────────────────────────────────────────
+  if (submit && ctx.kind === "owner") {
+    // Check all collaborators have completed their assigned questions
+    const allCollaborators = await db
+      .select()
+      .from(responseCollaborator)
+      .where(
+        and(
+          eq(responseCollaborator.responseId, resp.id),
+          eq(responseCollaborator.role, "contributor")
+        )
+      )
+
+    // For each contributor, check their assigned questions are answered
+    const existingAnswers = await db
+      .select()
+      .from(answer)
+      .where(eq(answer.responseId, resp.id))
+
+    const answeredQuestionIds = new Set(existingAnswers.map((a) => a.questionId))
+
+    for (const collab of allCollaborators) {
+      const assignments = await db
+        .select()
+        .from(questionAssignment)
+        .where(eq(questionAssignment.collaboratorId, collab.id))
+
+      const unanswered = assignments.filter((a) => !answeredQuestionIds.has(a.questionnaireQuestionId))
+      if (unanswered.length > 0) {
+        return NextResponse.json(
+          {
+            error: `Collaborator ${collab.name ?? collab.email} has ${unanswered.length} unanswered assigned question(s)`,
+            collaboratorIncomplete: true,
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     await db
       .update(response)
       .set({
@@ -95,18 +184,21 @@ export async function POST(
     await db
       .update(questionnaire)
       .set({ status: "submitted", submittedAt: new Date(), updatedAt: new Date() })
-      .where(eq(questionnaire.id, link.questionnaireId))
+      .where(eq(questionnaire.id, questionnaireId))
 
-    await db
-      .update(shareLink)
-      .set({ status: "closed" })
-      .where(eq(shareLink.id, link.id))
+    // Close owner's share link
+    if (link) {
+      await db
+        .update(shareLink)
+        .set({ status: "closed" })
+        .where(eq(shareLink.id, link.id))
+    }
 
     await logAudit({
       action: "submit",
       entityType: "response",
       entityId: resp.id,
-      metadata: { questionnaireId: link.questionnaireId },
+      metadata: { questionnaireId },
     })
 
     return NextResponse.json({ success: true, submitted: true })

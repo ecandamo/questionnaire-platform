@@ -19,11 +19,23 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Reopen submitted questionnaires
   - Admin: question bank with categories, templates, users (create/ban/role), audit log
   - Client management
+  - **Collaborative questionnaire answering** — owner invites contributors with scoped magic links; contributor sees only their assigned questions; progress panel; mailto + copy link sharing; submission gate; sender-side Team tab in dashboard
 - Not finished:
   - Import/export for questions (JSON) UI still scaffolded, not wired
 
 ## Last Session Changes
-- **2026-04-01:** Branding added to respondent-facing pages. Extracted logo SVG into `src/components/shared/api-logo.tsx` (navy/white variant prop). Added navy logo to respond page sticky header (with divider separator). Added API Navy top bar with white logo to confirmation page. Login and sidebar updated to use `<ApiLogo>` instead of inline SVG.
+- **2026-04-01 (collaborative answering):** Full collaborative questionnaire response feature on branch `feature/collaborative-questionnaire-responses`.
+  - New DB tables: `response_collaborator`, `question_assignment` (with enums `collaborator_role`, `invite_status`). Schema pushed to Neon.
+  - `GET /api/share/[token]` extended: resolves both owner share_link tokens and contributor tokens; filters questions to assigned-only for contributors; marks collaborator active on first visit.
+  - `POST /api/responses/[id]/answers` extended: handles contributor tokens (mark-complete instead of submit); enforces submission gate (all collaborators' required questions answered before owner can submit).
+  - New `POST/GET/DELETE /api/responses/[id]/collaborators` — respondent-side (owner): invite, list progress, remove.
+  - New `POST/GET/DELETE /api/questionnaires/[id]/collaborators` — sender-side (authenticated): invite from dashboard; lazily creates response if needed.
+  - `src/components/shared/collaborator-panel.tsx` — owner's team panel embedded in respond page: invite dialog, question picker, per-collaborator progress bar, Copy link + Open in email (mailto:) buttons.
+  - `src/app/respond/[token]/page.tsx` updated: owner sees CollaboratorPanel + all questions; contributor sees only assigned questions + "Mark Complete" flow; "Section Complete" screen.
+  - `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`: new "Team" tab (visible when shared/in_progress) with `SenderAssignmentsPanel` — same invite/assign/copy/email UI for internal users.
+  - Fixed pre-existing `material-design-3-button.tsx` TS error (`RefObject<HTMLDivElement | null>`).
+
+- **2026-04-01 (branding):** Branding added to respondent-facing pages. Extracted logo SVG into `src/components/shared/api-logo.tsx` (navy/white variant prop). Added navy logo to respond page sticky header (with divider separator). Added API Navy top bar with white logo to confirmation page. Login and sidebar updated to use `<ApiLogo>` instead of inline SVG.
 
 - **2026-03-29:** Sidebar brand **Sales Questionnaires** (`text-sm`; **Sales** semibold, **Questionnaires** normal). Admin affordances: question bank **Archive** uses `ArchiveIcon` (replaces trash on a soft-archive action); templates **Deactivate** gets `ArchiveIcon`; users row menu — role toggle uses `Shield` / `ShieldOff`, deactivate/reactivate uses `UserX` / `UserCheck`. (Dashboard welcome line unchanged: **Welcome back, {first name}!**; subtitle still admin vs non-admin.)
 - **MD3-style button (2026-03-28):** Added `src/components/ui/material-design-3-button.tsx` (ripple + press morph via Web Animations API, client component). `src/components/ui/button.tsx` is a compatibility shim mapping legacy variants (`default`→`filled`, `outline`→`outlined`, `secondary`→`tonal`, `ghost`/`link`→`text`) so no page imports changed. Extra CVA sizes `xs`, `icon-xs`, `icon-sm`, `icon-lg` preserved for existing layouts. Ignore third-party prompt CSS themes — brand stays in `globals.css`.
@@ -42,6 +54,16 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/lib/db/schema.ts` — added `response_collaborator`, `question_assignment` tables + enums
+- `drizzle/0000_shallow_whizzer.sql` — generated migration (applied via db:push)
+- `src/app/api/share/[token]/route.ts` — extended for collaborator token resolution
+- `src/app/api/responses/[id]/answers/route.ts` — collaborator token support + submission gate
+- `src/app/api/responses/[id]/collaborators/route.ts` — new (owner manage team via respond flow)
+- `src/app/api/questionnaires/[id]/collaborators/route.ts` — new (sender manage team from dashboard)
+- `src/components/shared/collaborator-panel.tsx` — new (team panel for respond page)
+- `src/app/respond/[token]/page.tsx` — owner/contributor role-aware view
+- `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx` — Team tab + SenderAssignmentsPanel
+- `src/components/ui/material-design-3-button.tsx` — TS fix (`RefObject<HTMLDivElement | null>`)
 - `src/components/shared/api-logo.tsx` — new shared logo component (navy/white variants)
 - `src/app/respond/[token]/page.tsx` — logo + divider added to sticky header
 - `src/app/respond/[token]/confirmation/page.tsx` — navy top bar with white logo
@@ -79,11 +101,12 @@ Key paths (design 2026-03-28):
 - `command.tsx` is a lightweight custom implementation — could be replaced with cmdk if needed
 
 ## Next Best Step
-1. Smoke-test buttons (ripple, keyboard, dropdown triggers, `asChild` links) on login, dashboard, questionnaires, admin tables, respondent flow
-2. If default buttons feel too tall vs the old UI, change MD3 `default` size from `h-10 px-6` to `h-8 px-4` in `material-design-3-button.tsx`
-3. Apply the same table header + row pattern to admin pages (question bank, users, audit log, templates) if not already uniform
+1. **Smoke-test collaborative flow** on branch `feature/collaborative-questionnaire-responses`:
+   - Publish a questionnaire → open the respond link → add a collaborator → copy their link → open in a second browser → verify they see only assigned questions → mark complete → verify owner can then submit
+2. Merge branch to `main` when smoke-test passes
+3. Phase 2 (post-merge): Sender-side email invite (mailto: is already done); "reassign" questions after invite; show questionnaire-level collaborator count in the questionnaire list
 4. Continue feature work: question import/export UI is the main unfinished item
-5. Before deploy, set production env on hosting (`BETTER_AUTH_URL` = public `https` origin; `BETTER_AUTH_SECRET`; DB URL, etc.) and run a full login/admin smoke test
+5. Before deploy, set production env on hosting (`BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, DB URL, `NEXT_PUBLIC_APP_URL`) and run a full smoke test
 
 ## Guardrails
 - Preserve working logic unless a change is necessary

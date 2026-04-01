@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner"
 import { QUESTION_TYPE_LABELS, type QuestionType } from "@/types"
 import { ApiLogo } from "@/components/shared/api-logo"
+import { CollaboratorPanel } from "@/components/shared/collaborator-panel"
 
 interface Question {
   id: string
@@ -47,6 +48,8 @@ interface QData {
   clientName: string | null
 }
 
+type ViewerRole = "owner" | "contributor"
+
 export default function RespondPage() {
   const params = useParams<{ token: string }>()
   const router = useRouter()
@@ -62,7 +65,12 @@ export default function RespondPage() {
   const [saving, setSaving] = React.useState(false)
   const [showSubmitConfirm, setShowSubmitConfirm] = React.useState(false)
   const [submitted, setSubmitted] = React.useState(false)
+  const [markedComplete, setMarkedComplete] = React.useState(false)
   const [lastSaved, setLastSaved] = React.useState<Date | null>(null)
+  const [viewerRole, setViewerRole] = React.useState<ViewerRole>("owner")
+  const [responseId, setResponseId] = React.useState<string | null>(null)
+  // All questions (unfiltered) used by CollaboratorPanel for assignment picker
+  const [allQuestions, setAllQuestions] = React.useState<Question[]>([])
 
   React.useEffect(() => {
     fetch(`/api/share/${token}`)
@@ -73,9 +81,15 @@ export default function RespondPage() {
       .then((data) => {
         setQuestionnaire(data.questionnaire)
         setQuestions(data.questions)
+        setAllQuestions(data.questions)
+        setViewerRole(data.viewerRole ?? "owner")
+        setResponseId(data.responseId ?? null)
         if (data.responseStatus === "submitted") {
           setSubmitted(true)
         }
+        // Pre-fill collaborator name/email if available
+        if (data.collaboratorName) setRespondentName(data.collaboratorName)
+        if (data.collaboratorEmail) setRespondentEmail(data.collaboratorEmail)
         setLoading(false)
       })
       .catch((e) => {
@@ -86,14 +100,14 @@ export default function RespondPage() {
 
   // Autosave every 30 seconds if there are answers
   React.useEffect(() => {
-    if (!questionnaire || submitted) return
+    if (!questionnaire || submitted || markedComplete) return
     const interval = setInterval(() => {
       if (Object.keys(answers).length > 0) {
         handleSave(false)
       }
     }, 30000)
     return () => clearInterval(interval)
-  }, [questionnaire, answers, submitted])
+  }, [questionnaire, answers, submitted, markedComplete])
 
   async function handleSave(showToast = true) {
     if (!questionnaire) return
@@ -110,6 +124,8 @@ export default function RespondPage() {
       }),
     })
     if (res.ok) {
+      const data = await res.json()
+      if (data.responseId && !responseId) setResponseId(data.responseId)
       setLastSaved(new Date())
       if (showToast) toast.success("Progress saved")
     } else {
@@ -121,7 +137,7 @@ export default function RespondPage() {
   async function handleSubmit() {
     if (!questionnaire) return
 
-    // Validate required fields
+    // Validate required fields for questions visible to this viewer
     const requiredMissing = questions.filter(
       (q) => q.isRequired && q.type !== "section_header" && !answers[q.id]?.trim()
     )
@@ -145,11 +161,22 @@ export default function RespondPage() {
     })
 
     if (res.ok) {
-      setSubmitted(true)
-      router.push(`/respond/${token}/confirmation`)
+      const data = await res.json()
+      if (data.markedComplete) {
+        // Contributor finished their questions
+        setMarkedComplete(true)
+      } else {
+        // Owner submitted the whole questionnaire
+        setSubmitted(true)
+        router.push(`/respond/${token}/confirmation`)
+      }
     } else {
       const err = await res.json()
-      toast.error(err.error ?? "Submission failed")
+      if (err.collaboratorIncomplete) {
+        toast.error(err.error, { duration: 5000 })
+      } else {
+        toast.error(err.error ?? "Submission failed")
+      }
     }
     setSaving(false)
     setShowSubmitConfirm(false)
@@ -211,6 +238,22 @@ export default function RespondPage() {
     )
   }
 
+  if (markedComplete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-sm space-y-4">
+          <div className="h-14 w-14 rounded-full bg-[color:var(--accent)]/10 flex items-center justify-center mx-auto">
+            <CheckCircle2Icon className="h-7 w-7 text-[color:var(--accent)]" />
+          </div>
+          <h1 className="font-heading text-3xl font-bold tracking-tight">Section Complete</h1>
+          <p className="text-muted-foreground text-sm">
+            Thank you! Your answers have been saved. The questionnaire owner will handle final submission.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-muted/20">
       {/* Sticky header with progress */}
@@ -228,6 +271,11 @@ export default function RespondPage() {
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
+              {viewerRole === "contributor" && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 hidden sm:inline-flex">
+                  Contributor
+                </Badge>
+              )}
               <div className="hidden sm:flex items-center gap-2.5">
                 <Progress value={progress} className="w-28 h-2" />
                 <span className="text-xs font-medium text-muted-foreground tabular-nums">{progress}%</span>
@@ -278,6 +326,25 @@ export default function RespondPage() {
           </CardContent>
         </Card>
 
+        {/* Team panel — owner only, shown once response is active */}
+        {viewerRole === "owner" && responseId && questionnaire && (
+          <CollaboratorPanel
+            responseId={responseId}
+            ownerToken={token}
+            questionnaireTitle={questionnaire.title}
+            questions={allQuestions}
+          />
+        )}
+
+        {/* Contributor hint */}
+        {viewerRole === "contributor" && (
+          <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+            <p className="text-xs text-muted-foreground">
+              You've been assigned specific questions to answer. Once done, click "Mark Complete" below.
+            </p>
+          </div>
+        )}
+
         {/* Questions */}
         <div className="space-y-4">
           {questions.map((q, idx) => (
@@ -292,7 +359,7 @@ export default function RespondPage() {
           ))}
         </div>
 
-        {/* Submit */}
+        {/* Submit / Mark Complete */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
           {lastSaved ? (
             <p className="text-xs text-muted-foreground">
@@ -308,18 +375,22 @@ export default function RespondPage() {
             className="gap-2"
           >
             <SendIcon className="h-4 w-4" />
-            Submit Questionnaire
+            {viewerRole === "contributor" ? "Mark Complete" : "Submit Questionnaire"}
           </Button>
         </div>
       </div>
 
-      {/* Submit Confirm */}
+      {/* Submit / Mark Complete Confirm */}
       <Dialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Submit Questionnaire?</DialogTitle>
+            <DialogTitle>
+              {viewerRole === "contributor" ? "Mark Your Section Complete?" : "Submit Questionnaire?"}
+            </DialogTitle>
             <DialogDescription>
-              Once submitted, you will not be able to make changes unless the questionnaire is reopened by the owner.
+              {viewerRole === "contributor"
+                ? "This will save your answers and notify the questionnaire owner that your section is done."
+                : "Once submitted, you will not be able to make changes unless the questionnaire is reopened by the owner."}
             </DialogDescription>
           </DialogHeader>
           <div className="text-sm text-muted-foreground space-y-1 py-2">
@@ -339,7 +410,7 @@ export default function RespondPage() {
             </Button>
             <Button onClick={handleSubmit} disabled={saving}>
               {saving && <Loader2Icon className="h-4 w-4 animate-spin" />}
-              Yes, Submit
+              {viewerRole === "contributor" ? "Yes, Mark Complete" : "Yes, Submit"}
             </Button>
           </DialogFooter>
         </DialogContent>

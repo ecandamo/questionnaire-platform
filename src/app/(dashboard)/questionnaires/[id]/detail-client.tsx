@@ -54,6 +54,10 @@ import {
   SaveIcon,
   SendIcon,
   ExternalLinkIcon,
+  UsersIcon,
+  MailIcon,
+  CheckCircle2Icon,
+  ClockIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import { format } from "date-fns"
@@ -356,6 +360,9 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
           {["shared", "in_progress", "submitted"].includes(data.status) && (
             <TabsTrigger value="share">Share Link</TabsTrigger>
           )}
+          {["shared", "in_progress"].includes(data.status) && canInteract && (
+            <TabsTrigger value="team">Team</TabsTrigger>
+          )}
         </TabsList>
 
         {/* Builder Tab */}
@@ -483,6 +490,17 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
         <TabsContent value="share" className="mt-4">
           <ShareLinkPanel questionnaireId={id} shareUrl={shareUrl} />
         </TabsContent>
+
+        {/* Team (Sender Assignments) Tab */}
+        {["shared", "in_progress"].includes(data.status) && canInteract && (
+          <TabsContent value="team" className="mt-4">
+            <SenderAssignmentsPanel
+              questionnaireId={id}
+              questionnaireTitle={data.title}
+              questions={questions.filter((q) => !q.isHidden)}
+            />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Custom Question Dialog */}
@@ -765,6 +783,319 @@ function AddCustomQuestionDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// ─── Sender Assignments Panel ─────────────────────────────────────────────────
+
+interface SenderCollaborator {
+  id: string
+  email: string
+  name: string | null
+  token: string
+  inviteStatus: "pending" | "active" | "completed"
+  assignedCount: number
+  answeredCount: number
+  collaboratorUrl: string
+}
+
+function SenderAssignmentsPanel({
+  questionnaireId,
+  questionnaireTitle,
+  questions,
+}: {
+  questionnaireId: string
+  questionnaireTitle: string
+  questions: QQuestion[]
+}) {
+  const [collaborators, setCollaborators] = React.useState<SenderCollaborator[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [responseExists, setResponseExists] = React.useState(false)
+  const [showInvite, setShowInvite] = React.useState(false)
+  const [inviting, setInviting] = React.useState(false)
+  const [copiedId, setCopiedId] = React.useState<string | null>(null)
+  const [deletingId, setDeletingId] = React.useState<string | null>(null)
+  const [inviteEmail, setInviteEmail] = React.useState("")
+  const [inviteName, setInviteName] = React.useState("")
+  const [selectedQuestions, setSelectedQuestions] = React.useState<Set<string>>(new Set())
+
+  const answerableQuestions = questions.filter((q) => q.type !== "section_header")
+
+  async function fetchCollaborators() {
+    setLoading(true)
+    const res = await fetch(`/api/questionnaires/${questionnaireId}/collaborators`)
+    if (res.ok) {
+      const data = await res.json()
+      setCollaborators(data.collaborators ?? [])
+      setResponseExists(data.responseExists ?? false)
+    }
+    setLoading(false)
+  }
+
+  React.useEffect(() => { fetchCollaborators() }, [questionnaireId])
+
+  async function handleInvite() {
+    if (!inviteEmail.trim() || selectedQuestions.size === 0) {
+      toast.error("Please enter an email and select at least one question")
+      return
+    }
+    setInviting(true)
+    try {
+      const res = await fetch(`/api/questionnaires/${questionnaireId}/collaborators`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: inviteEmail.trim(),
+          name: inviteName.trim() || undefined,
+          questionIds: Array.from(selectedQuestions),
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        toast.error(err.error ?? "Failed to add collaborator")
+        return
+      }
+      toast.success(`${inviteName || inviteEmail} added`)
+      setShowInvite(false)
+      setInviteEmail("")
+      setInviteName("")
+      setSelectedQuestions(new Set())
+      await fetchCollaborators()
+    } finally {
+      setInviting(false)
+    }
+  }
+
+  async function handleDelete(collaboratorId: string, email: string) {
+    setDeletingId(collaboratorId)
+    try {
+      const res = await fetch(
+        `/api/questionnaires/${questionnaireId}/collaborators?collaboratorId=${collaboratorId}`,
+        { method: "DELETE" }
+      )
+      if (res.ok) {
+        toast.success(`Removed ${email}`)
+        await fetchCollaborators()
+      } else {
+        toast.error("Failed to remove collaborator")
+      }
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  function copyLink(url: string, id: string) {
+    navigator.clipboard.writeText(url)
+    setCopiedId(id)
+    toast.success("Link copied")
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  function openInEmail(email: string, url: string, name: string | null) {
+    const subject = encodeURIComponent(`Your input is needed: ${questionnaireTitle}`)
+    const body = encodeURIComponent(
+      `Hi ${name ?? "there"},\n\nPlease answer your assigned questions here:\n${url}\n\nThank you`
+    )
+    window.open(`mailto:${email}?subject=${subject}&body=${body}`)
+  }
+
+  function toggleQuestion(id: string) {
+    setSelectedQuestions((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">Client Team Members</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Assign specific questions to people on the client's side.
+          </p>
+        </div>
+        <Button size="sm" onClick={() => setShowInvite(true)}>
+          <PlusIcon className="h-4 w-4" />
+          Add Team Member
+        </Button>
+      </div>
+
+      {!responseExists && collaborators.length === 0 && (
+        <Card className="shadow-card border-dashed">
+          <CardContent className="py-8 text-center space-y-2">
+            <UsersIcon className="h-8 w-8 text-muted-foreground/30 mx-auto" />
+            <p className="text-sm text-muted-foreground">No team members yet.</p>
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              You can pre-assign questions to client contacts. They'll get a personal link scoped to their questions.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {collaborators.length > 0 && (
+        <Card className="shadow-card overflow-hidden">
+          <div className="divide-y divide-border">
+            {collaborators.map((c) => {
+              const progress = c.assignedCount > 0
+                ? Math.round((c.answeredCount / c.assignedCount) * 100)
+                : 0
+              const statusIcon =
+                c.inviteStatus === "completed" ? (
+                  <CheckCircle2Icon className="h-3 w-3 text-[color:var(--accent)]" />
+                ) : c.inviteStatus === "active" ? (
+                  <ClockIcon className="h-3 w-3 text-amber-500" />
+                ) : (
+                  <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+                )
+
+              return (
+                <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 text-[10px] font-semibold text-muted-foreground uppercase">
+                    {(c.name ?? c.email).charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-medium truncate">{c.name ?? c.email}</p>
+                      {statusIcon}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex-1 max-w-24 bg-muted rounded-full h-1 overflow-hidden">
+                        <div
+                          className="h-full bg-[color:var(--accent)] rounded-full transition-all"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                        {c.answeredCount}/{c.assignedCount}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{c.email}</p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      size="sm" variant="ghost" className="h-7 w-7 p-0"
+                      title="Copy link" onClick={() => copyLink(c.collaboratorUrl, c.id)}
+                    >
+                      {copiedId === c.id
+                        ? <CheckIcon className="h-3.5 w-3.5 text-[color:var(--accent)]" />
+                        : <CopyIcon className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button
+                      size="sm" variant="ghost" className="h-7 w-7 p-0"
+                      title="Open in email" onClick={() => openInEmail(c.email, c.collaboratorUrl, c.name)}
+                    >
+                      <MailIcon className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm" variant="ghost"
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      title="Remove" onClick={() => handleDelete(c.id, c.email)}
+                      disabled={deletingId === c.id}
+                    >
+                      {deletingId === c.id
+                        ? <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
+                        : <TrashIcon className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* Invite Dialog */}
+      <Dialog open={showInvite} onOpenChange={setShowInvite}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add Team Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Email <span className="text-destructive">*</span></Label>
+                <Input
+                  type="email" placeholder="colleague@company.com"
+                  value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Name (optional)</Label>
+                <Input
+                  placeholder="Jane Smith"
+                  value={inviteName} onChange={(e) => setInviteName(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Assign questions <span className="text-destructive">*</span></Label>
+                <button
+                  type="button"
+                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => {
+                    if (selectedQuestions.size === answerableQuestions.length) {
+                      setSelectedQuestions(new Set())
+                    } else {
+                      setSelectedQuestions(new Set(answerableQuestions.map((q) => q.id)))
+                    }
+                  }}
+                >
+                  {selectedQuestions.size === answerableQuestions.length ? "Deselect all" : "Select all"}
+                </button>
+              </div>
+              <div className="max-h-52 overflow-y-auto rounded-lg border border-border divide-y divide-border">
+                {answerableQuestions.map((q, i) => (
+                  <div
+                    key={q.id}
+                    className="flex items-start gap-3 px-3 py-2.5 hover:bg-muted/30 cursor-pointer transition-colors"
+                    onClick={() => toggleQuestion(q.id)}
+                  >
+                    <Checkbox
+                      id={`sq-${q.id}`}
+                      checked={selectedQuestions.has(q.id)}
+                      onCheckedChange={() => toggleQuestion(q.id)}
+                      className="mt-0.5 shrink-0"
+                    />
+                    <p className="text-xs leading-snug line-clamp-2 flex-1">
+                      <span className="text-muted-foreground/50 mr-1.5 font-mono text-[10px]">{i + 1}.</span>
+                      {q.text}
+                      {q.isRequired && <span className="text-destructive ml-1">*</span>}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {selectedQuestions.size > 0 && (
+                <p className="text-[10px] text-muted-foreground">
+                  {selectedQuestions.size} question{selectedQuestions.size !== 1 ? "s" : ""} selected
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInvite(false)}>Cancel</Button>
+            <Button
+              onClick={handleInvite}
+              disabled={inviting || !inviteEmail.trim() || selectedQuestions.size === 0}
+            >
+              {inviting && <Loader2Icon className="h-4 w-4 animate-spin" />}
+              Add Team Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }
 

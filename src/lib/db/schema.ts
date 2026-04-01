@@ -53,6 +53,17 @@ export const linkStatusEnum = pgEnum("link_status", [
   "closed",
 ])
 
+export const collaboratorRoleEnum = pgEnum("collaborator_role", [
+  "owner",
+  "contributor",
+])
+
+export const inviteStatusEnum = pgEnum("invite_status", [
+  "pending",
+  "active",
+  "completed",
+])
+
 // ─── Better Auth tables ───────────────────────────────────────────────────────
 
 export const user = pgTable("user", {
@@ -250,6 +261,38 @@ export const answer = pgTable("answer", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
 
+export const responseCollaborator = pgTable("response_collaborator", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  responseId: uuid("response_id")
+    .notNull()
+    .references(() => response.id, { onDelete: "cascade" }),
+  questionnaireId: uuid("questionnaire_id")
+    .notNull()
+    .references(() => questionnaire.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  name: text("name"),
+  token: text("token").notNull().unique(),
+  role: collaboratorRoleEnum("role").notNull().default("contributor"),
+  inviteStatus: inviteStatusEnum("invite_status").notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const questionAssignment = pgTable("question_assignment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  responseId: uuid("response_id")
+    .notNull()
+    .references(() => response.id, { onDelete: "cascade" }),
+  questionnaireQuestionId: uuid("questionnaire_question_id")
+    .notNull()
+    .references(() => questionnaireQuestion.id, { onDelete: "cascade" }),
+  collaboratorId: uuid("collaborator_id").references(() => responseCollaborator.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
 export const auditLog = pgTable("audit_log", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
@@ -274,4 +317,6 @@ export type QuestionnaireQuestion = typeof questionnaireQuestion.$inferSelect
 export type ShareLink = typeof shareLink.$inferSelect
 export type Response = typeof response.$inferSelect
 export type Answer = typeof answer.$inferSelect
+export type ResponseCollaborator = typeof responseCollaborator.$inferSelect
+export type QuestionAssignment = typeof questionAssignment.$inferSelect
 export type AuditLog = typeof auditLog.$inferSelect
