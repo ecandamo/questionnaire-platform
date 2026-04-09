@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -37,6 +38,7 @@ import {
   UploadIcon,
 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import {
   QUESTION_TYPE_LABELS,
   QUESTION_TYPES_WITH_OPTIONS,
@@ -63,6 +65,28 @@ interface Category {
   name: string
   description: string | null
   sortOrder: number
+}
+
+/** Stable accent per template id so the same name always picks the same pill color. */
+function hashTemplateId(id: string): number {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = Math.imul(31, h) + id.charCodeAt(i)
+  return Math.abs(h)
+}
+
+const TEMPLATE_PILL_STYLES = [
+  "border-primary/30 bg-primary/10 text-primary",
+  "border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200",
+  "border-sky-500/35 bg-sky-500/10 text-sky-900 dark:text-sky-200",
+  "border-violet-500/30 bg-violet-500/10 text-violet-900 dark:text-violet-200",
+  "border-amber-500/35 bg-amber-500/12 text-amber-950 dark:text-amber-200",
+  "border-rose-500/30 bg-rose-500/10 text-rose-900 dark:text-rose-200",
+  "border-teal-500/30 bg-teal-500/10 text-teal-900 dark:text-teal-200",
+  "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-900 dark:text-fuchsia-200",
+] as const
+
+function templatePillClass(templateId: string): string {
+  return TEMPLATE_PILL_STYLES[hashTemplateId(templateId) % TEMPLATE_PILL_STYLES.length]
 }
 
 export default function QuestionBankPage() {
@@ -369,20 +393,29 @@ export default function QuestionBankPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{q.categoryName ?? "—"}</td>
-                        <td
-                          className="px-4 py-3 max-w-56 align-top"
-                          title={
-                            q.templates && q.templates.length > 0
-                              ? q.templates.map((t) => t.name).join(", ")
-                              : undefined
-                          }
-                        >
+                        <td className="px-4 py-3 max-w-[min(18rem,28vw)] align-top">
                           {!q.templates || q.templates.length === 0 ? (
-                            <span className="text-xs italic text-muted-foreground/70">Orphan</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground line-clamp-2">
-                              {q.templates.map((t) => t.name).join(", ")}
+                            <span
+                              className="inline-flex max-w-full rounded-full border border-dashed border-muted-foreground/35 bg-muted/50 px-2 py-0.5 text-[11px] font-medium italic text-muted-foreground"
+                              title="Not linked to any preset template yet"
+                            >
+                              Orphan
                             </span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {q.templates.map((t) => (
+                                <span
+                                  key={t.id}
+                                  title={t.name}
+                                  className={cn(
+                                    "inline-flex max-w-full truncate rounded-full border px-2 py-0.5 text-[11px] font-medium leading-tight",
+                                    templatePillClass(t.id)
+                                  )}
+                                >
+                                  {t.name}
+                                </span>
+                              ))}
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -611,20 +644,48 @@ export default function QuestionBankPage() {
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Import questions from CSV</DialogTitle>
+            <DialogTitle>Bulk import from CSV</DialogTitle>
+            <DialogDescription>
+              Add many questions to the bank at once. Each row becomes a new question; existing rows are not updated or
+              merged.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-sm">
-            <p className="text-muted-foreground leading-relaxed">
-              UTF-8 CSV with a header row. Columns:{" "}
-              <span className="font-mono text-[11px] break-all">
-                text, type, description, options, is_required, category_name, sort_order
-              </span>
-              . Use <span className="font-mono">|</span> in <span className="font-mono">options</span> for{" "}
-              <span className="font-mono">single_select</span> / <span className="font-mono">multi_select</span>. This
-              only creates bank questions — add them to preset templates from{" "}
-              <span className="font-medium text-foreground">Admin → Templates</span>. Extra columns in older files are
-              ignored. Each import run adds new rows (no deduplication).
-            </p>
+            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                File requirements
+              </p>
+              <ul className="list-disc space-y-1 pl-4 text-muted-foreground leading-relaxed">
+                <li>
+                  Save as <span className="font-medium text-foreground">UTF-8</span> with a{" "}
+                  <span className="font-medium text-foreground">header row</span> (column names in the first line).
+                  Header names are matched case-insensitively; spaces or underscores both work.
+                </li>
+                <li>
+                  Expected columns:{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px] text-foreground">
+                    text, type, description, options, is_required, category_name, sort_order
+                  </code>
+                </li>
+                <li>
+                  For <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">single_select</code> and{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">multi_select</code>, separate
+                  choices in <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">options</code> with{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">|</code> (pipe).
+                </li>
+                <li>Extra columns (for example from older exports) are ignored.</li>
+              </ul>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                After import
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                New questions appear in this bank only. To use them on a preset questionnaire type, open{" "}
+                <span className="font-medium text-foreground">Admin → Templates</span> and add the questions to the
+                right template.
+              </p>
+            </div>
             <a
               href="/samples/question-bank-import-sample.csv"
               download
@@ -632,18 +693,19 @@ export default function QuestionBankPage() {
             >
               Download sample CSV
             </a>
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
               <Checkbox
                 id="import-cats"
+                className="mt-0.5"
                 checked={importCreateCategories}
                 onCheckedChange={(v) => setImportCreateCategories(v === true)}
               />
-              <Label htmlFor="import-cats" className="font-normal cursor-pointer">
-                Create missing categories (exact name match)
+              <Label htmlFor="import-cats" className="font-normal cursor-pointer leading-snug">
+                If a row names a category that does not exist yet, create it automatically (names must match exactly).
               </Label>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="csv-file">CSV file</Label>
+              <Label htmlFor="csv-file">Choose file</Label>
               <Input
                 id="csv-file"
                 type="file"

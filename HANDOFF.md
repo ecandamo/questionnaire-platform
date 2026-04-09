@@ -5,6 +5,7 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
 
 ## Current Status
 - State: **working** — full application built and compiles cleanly
+- Admin question bank: **Templates** column uses colored pills per template; CSV import dialog copy clarified (requirements, after-import, categories checkbox)
 - Working now:
   - Authentication (Better Auth, email/password, admin plugin)
   - Dashboard with Recharts charts (status counts, type breakdown, recent activity)
@@ -26,6 +27,8 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-09 (question bank UI polish):** Templates column shows each preset template as a rounded pill with deterministic accent color by template id; **Orphan** uses a dashed muted pill. **Bulk import from CSV** dialog: title + description, structured “File requirements” / “After import” sections, clearer category-auto-create label, header case/underscore note.
+
 - **2026-04-09 (CSV bank-only + templates column):** CSV import no longer reads or creates template links — only questions (+ optional categories). `GET /api/questions` includes `templates: { id, name }[]` per row for the question bank UI **Templates** column (**Orphan** when empty). Older CSVs with template columns are ignored (not validated).
 
 - **2026-04-09 (CSV question bank import):** Admin **Import CSV** on question bank page. New route `POST /api/questions/import` (multipart: `file`, `createMissingCategories`); **papaparse** dependency; validation + normalization in `src/lib/question-csv-import.ts`; manual rollback on mid-import failure (no Drizzle transaction with neon-http). Sample CSV `public/samples/question-bank-import-sample.csv`. Audit `action: "import"` on success.
@@ -79,7 +82,7 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - `src/lib/question-csv-import.ts` — bank-only CSV columns + validation
 - `src/app/api/questions/import/route.ts` — questions (+ optional categories) only; rollback `question` rows
 - `src/app/api/questions/route.ts` — list rows include `templates[]` from `template_question` join
-- `src/app/(dashboard)/admin/question-bank/page.tsx` — **Templates** column; import dialog copy
+- `src/app/(dashboard)/admin/question-bank/page.tsx` — **Templates** column (pills + Orphan); CSV import dialog
 - `public/samples/question-bank-import-sample.csv` — no template columns
 - `src/lib/question-sections.ts` — display numbering + section question IDs for bulk assign
 - `src/lib/collaborator-cleanup.ts` — delete collaborator-tied answers before removing assignments
@@ -105,7 +108,6 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - `src/app/respond/[token]/confirmation/page.tsx` — navy top bar with white logo
 - `src/app/(auth)/login/page.tsx` — uses ApiLogo instead of inline SVG
 - `src/components/layout/sidebar.tsx` — brand line Sales Questionnaires + typography; uses ApiLogo
-- `src/app/(dashboard)/admin/question-bank/page.tsx` — Archive menu item uses archive icon
 - `src/app/(dashboard)/admin/templates/page.tsx` — Deactivate menu item icon
 - `src/app/(dashboard)/admin/users/page.tsx` — role / ban menu item icons
 - `src/app/(dashboard)/dashboard-client.tsx` — unified welcome `h1` with exclamation
