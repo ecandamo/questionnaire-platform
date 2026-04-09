@@ -18,12 +18,24 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Response viewer + CSV export
   - Reopen submitted questionnaires
   - Admin: question bank with categories, templates, users (create/ban/role), audit log
+  - **Admin: CSV import** for question bank only — `POST /api/questions/import` (multipart); optional category auto-create; no template wiring (assign in **Admin → Templates**); sample at `/samples/question-bank-import-sample.csv`
+  - **Admin: question bank table** shows a **Templates** column (preset template names per row; **Orphan** = not on any template)
   - Client management
   - **Collaborative questionnaire answering** — owner invites contributors with scoped magic links; contributor sees only their assigned questions; progress panel; mailto + copy link sharing; submission gate; sender-side Team tab in dashboard; **owner share load creates response row** (Team panel visible before first save); **answers prefilled on owner view** with “Last updated by …” (DB `answer.last_updated_by_collaborator_id`); owner saves echo collaborator text without clearing attribution unless value changes; contributors blocked from POSTing non-assigned question IDs
 - Not finished:
-  - Import/export for questions (JSON) UI still scaffolded, not wired
+  - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-09 (CSV bank-only + templates column):** CSV import no longer reads or creates template links — only questions (+ optional categories). `GET /api/questions` includes `templates: { id, name }[]` per row for the question bank UI **Templates** column (**Orphan** when empty). Older CSVs with template columns are ignored (not validated).
+
+- **2026-04-09 (CSV question bank import):** Admin **Import CSV** on question bank page. New route `POST /api/questions/import` (multipart: `file`, `createMissingCategories`); **papaparse** dependency; validation + normalization in `src/lib/question-csv-import.ts`; manual rollback on mid-import failure (no Drizzle transaction with neon-http). Sample CSV `public/samples/question-bank-import-sample.csv`. Audit `action: "import"` on success.
+
+- **2026-04-09 (hard delete — questions & templates):** Added optional `DELETE ?permanent=true` to question bank and template APIs (mirrors existing questionnaire pattern). Default `DELETE` still soft-archives questions / deactivates templates. Admin UI: question bank and templates pages each gain a **Delete permanently** menu item with confirmation dialogs. No schema migration needed — existing FK cascade/set-null rules handle referential integrity.
+  - `src/app/api/questions/[id]/route.ts` — branches on `permanent=true`; hard delete + `action: "delete"` audit log
+  - `src/app/api/templates/[id]/route.ts` — same; also returns 404 when template row not found (previous deactivate path silently succeeded)
+  - `src/app/(dashboard)/admin/question-bank/page.tsx` — **Delete permanently** item added
+  - `src/app/(dashboard)/admin/templates/page.tsx` — **Delete permanently** item added; `TrashIcon` imported
+
 - **2026-04-01 (self-improvement):** Logged session learnings to `.learnings/LEARNINGS.md` (LRN-20260401-001–005: share URL hydration, collaborator delete order, team refresh sync, section numbering, ESLint/React diagnostics vs Cursor folder emphasis) and `.learnings/ERRORS.md` (ERR-20260401-001: resolved ESLint errors).
 
 - **2026-04-01 (Share Link tab):** `GET /api/questionnaires/[id]` returns `shareUrl` for the latest **active** share link (built like publish). `load()` sets parent `shareUrl` so banner + tab survive refresh. `ShareLinkPanel` uses the prop only (removed stale `useState` + no-op fetch).
@@ -64,6 +76,11 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/lib/question-csv-import.ts` — bank-only CSV columns + validation
+- `src/app/api/questions/import/route.ts` — questions (+ optional categories) only; rollback `question` rows
+- `src/app/api/questions/route.ts` — list rows include `templates[]` from `template_question` join
+- `src/app/(dashboard)/admin/question-bank/page.tsx` — **Templates** column; import dialog copy
+- `public/samples/question-bank-import-sample.csv` — no template columns
 - `src/lib/question-sections.ts` — display numbering + section question IDs for bulk assign
 - `src/lib/collaborator-cleanup.ts` — delete collaborator-tied answers before removing assignments
 - `src/components/shared/question-assignment-picker.tsx` — section + per-question assign UI
@@ -116,7 +133,7 @@ Key paths (design 2026-03-28):
 - `src/app/respond/[token]/confirmation/page.tsx`
 
 ## Open Issues
-- Import/export for questions (JSON) is scaffolded but UI not yet wired
+- JSON import/export for questions remains optional if product wants parity with CSV-only workflow
 - `command.tsx` is a lightweight custom implementation — could be replaced with cmdk if needed
 
 ## Next Best Step
@@ -147,7 +164,7 @@ Key paths (design 2026-03-28):
 - DB connection is lazy (Proxy pattern) to avoid module-level crash at build time without env vars
 - Published questionnaires create a snapshot of questions — structure frozen at publish time
 - Share tokens are 32-byte crypto random base64url strings
-- Soft deletes / archiving used for questions and questionnaires to preserve history
+- Soft deletes / archiving used for questions and questionnaires to preserve history; **hard delete** available on all three via `DELETE ?permanent=true` (admin-only for questionnaires, admin-only implied for questions and templates since those routes already require admin)
 - `command.tsx` built without cmdk dependency (keeps bundle lighter)
 - Recharts used for dashboard charts (as specified)
 - `@dnd-kit` for drag-and-drop question reordering in builder

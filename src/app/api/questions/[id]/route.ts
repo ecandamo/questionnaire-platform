@@ -58,22 +58,37 @@ export async function DELETE(
   if (adminError) return adminError
 
   const { id } = await params
+  const permanent = req.nextUrl.searchParams.get("permanent") === "true"
 
-  // Soft archive instead of hard delete to preserve history
-  const [updated] = await db
-    .update(question)
-    .set({ status: "archived", updatedAt: new Date() })
-    .where(eq(question.id, id))
-    .returning()
+  if (permanent) {
+    const [existing] = await db.select().from(question).where(eq(question.id, id))
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-  if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    await db.delete(question).where(eq(question.id, id))
 
-  await logAudit({
-    userId: session!.user.id,
-    action: "archive",
-    entityType: "question",
-    entityId: id,
-  })
+    await logAudit({
+      userId: session!.user.id,
+      action: "delete",
+      entityType: "question",
+      entityId: id,
+    })
+  } else {
+    // Soft archive instead of hard delete to preserve history
+    const [updated] = await db
+      .update(question)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(question.id, id))
+      .returning()
+
+    if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await logAudit({
+      userId: session!.user.id,
+      action: "archive",
+      entityType: "question",
+      entityId: id,
+    })
+  }
 
   return NextResponse.json({ success: true })
 }

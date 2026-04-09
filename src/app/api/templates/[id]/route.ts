@@ -96,18 +96,37 @@ export async function DELETE(
   if (adminError) return adminError
 
   const { id } = await params
+  const permanent = req.nextUrl.searchParams.get("permanent") === "true"
 
-  await db
-    .update(questionnaireTemplate)
-    .set({ isActive: false, updatedAt: new Date() })
+  const [existing] = await db
+    .select()
+    .from(questionnaireTemplate)
     .where(eq(questionnaireTemplate.id, id))
 
-  await logAudit({
-    userId: session!.user.id,
-    action: "deactivate",
-    entityType: "template",
-    entityId: id,
-  })
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  if (permanent) {
+    await db.delete(questionnaireTemplate).where(eq(questionnaireTemplate.id, id))
+
+    await logAudit({
+      userId: session!.user.id,
+      action: "delete",
+      entityType: "template",
+      entityId: id,
+    })
+  } else {
+    await db
+      .update(questionnaireTemplate)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(questionnaireTemplate.id, id))
+
+    await logAudit({
+      userId: session!.user.id,
+      action: "deactivate",
+      entityType: "template",
+      entityId: id,
+    })
+  }
 
   return NextResponse.json({ success: true })
 }

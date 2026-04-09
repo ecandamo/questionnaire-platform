@@ -1,0 +1,6 @@
+text,type,description,options,is_required,category_name,sort_order
+"What is the legal entity name?",short_text,,,false,,0
+"What is your primary contact email?",short_text,,,true,,1
+"Estimated annual revenue (USD)",currency,,,false,,2
+"Pick your region",single_select,"Choose one",North America|EMEA|APAC,false,,3
+"A standalone bank question",long_text,Optional help text,,false,General,4

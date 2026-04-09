@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { question, questionCategory } from "@/lib/db/schema"
+import { question, questionCategory, questionnaireTemplate, templateQuestion } from "@/lib/db/schema"
 import { getRequestSession, requireAdmin } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
-import { and, asc, eq, ilike, or } from "drizzle-orm"
+import { and, asc, eq, ilike, inArray, or } from "drizzle-orm"
 
 function requireAuth(session: Awaited<ReturnType<typeof getRequestSession>>) {
   if (!session) {
@@ -58,7 +58,40 @@ export async function GET(req: NextRequest) {
     .where(and(...conditions))
     .orderBy(asc(question.sortOrder), asc(question.text))
 
-  return NextResponse.json(questions)
+  const questionIds = questions.map((q) => q.id)
+  const templatesByQuestionId = new Map<string, { id: string; name: string }[]>()
+
+  if (questionIds.length > 0) {
+    const links = await db
+      .select({
+        questionId: templateQuestion.questionId,
+        templateId: questionnaireTemplate.id,
+        templateName: questionnaireTemplate.name,
+      })
+      .from(templateQuestion)
+      .innerJoin(
+        questionnaireTemplate,
+        eq(templateQuestion.templateId, questionnaireTemplate.id)
+      )
+      .where(inArray(templateQuestion.questionId, questionIds))
+
+    for (const row of links) {
+      const list = templatesByQuestionId.get(row.questionId) ?? []
+      if (!list.some((t) => t.id === row.templateId)) {
+        list.push({ id: row.templateId, name: row.templateName })
+      }
+      templatesByQuestionId.set(row.questionId, list)
+    }
+  }
+
+  const withTemplates = questions.map((q) => {
+    const templates = (templatesByQuestionId.get(q.id) ?? []).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    )
+    return { ...q, templates }
+  })
+
+  return NextResponse.json(withTemplates)
 }
 
 export async function POST(req: NextRequest) {

@@ -34,6 +34,7 @@ import {
   SearchIcon,
   TagIcon,
   TrashIcon,
+  UploadIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -53,6 +54,8 @@ interface Question {
   status: string
   options: string[] | null
   description: string | null
+  /** Preset templates that include this bank question (empty = orphan for templates) */
+  templates?: { id: string; name: string }[]
 }
 
 interface Category {
@@ -86,6 +89,11 @@ export default function QuestionBankPage() {
     options: "",
   })
   const [catForm, setCatForm] = React.useState({ name: "", description: "", sortOrder: "0" })
+
+  const [showImportDialog, setShowImportDialog] = React.useState(false)
+  const [importFile, setImportFile] = React.useState<File | null>(null)
+  const [importing, setImporting] = React.useState(false)
+  const [importCreateCategories, setImportCreateCategories] = React.useState(false)
 
   async function loadData() {
     setLoading(true)
@@ -161,6 +169,13 @@ export default function QuestionBankPage() {
     else toast.error("Failed to archive")
   }
 
+  async function handleDeleteQuestion(id: string) {
+    if (!confirm("Permanently delete this question? It will be removed from the bank and from any templates. Existing questionnaires keep their own copy. This cannot be undone.")) return
+    const res = await fetch(`/api/questions/${id}?permanent=true`, { method: "DELETE" })
+    if (res.ok) { toast.success("Question deleted permanently"); loadData() }
+    else toast.error("Failed to delete")
+  }
+
   function openAddCategory() {
     setEditingCategory(null)
     setCatForm({ name: "", description: "", sortOrder: "0" })
@@ -198,6 +213,41 @@ export default function QuestionBankPage() {
     else toast.error("Failed to delete")
   }
 
+  async function handleImportCsv() {
+    if (!importFile) {
+      toast.error("Choose a CSV file")
+      return
+    }
+    setImporting(true)
+    const fd = new FormData()
+    fd.set("file", importFile)
+    if (importCreateCategories) fd.set("createMissingCategories", "true")
+    const res = await fetch("/api/questions/import", { method: "POST", body: fd })
+    const data = await res.json().catch(() => ({}))
+    setImporting(false)
+    if (res.ok && data.success) {
+      const c = data.created ?? {}
+      toast.success(`Imported ${c.questions ?? 0} question(s)`)
+      setShowImportDialog(false)
+      setImportFile(null)
+      setImportCreateCategories(false)
+      loadData()
+    } else {
+      if (Array.isArray(data.errors) && data.errors.length > 0) {
+        const preview = data.errors
+          .slice(0, 5)
+          .map((e: { row: number; message: string }) => `Row ${e.row}: ${e.message}`)
+          .join("\n")
+        toast.error(data.error ?? "Import failed", {
+          description: preview + (data.errors.length > 5 ? "\n…" : ""),
+          duration: 8000,
+        })
+      } else {
+        toast.error(data.error ?? data.detail ?? "Import failed")
+      }
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
@@ -206,6 +256,10 @@ export default function QuestionBankPage() {
           <p className="text-sm text-muted-foreground mt-1">Manage all reusable questions for questionnaire templates</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+            <UploadIcon className="h-4 w-4" />
+            Import CSV
+          </Button>
           <Button variant="outline" onClick={openAddCategory}>
             <TagIcon className="h-4 w-4" />
             Add Category
@@ -292,6 +346,9 @@ export default function QuestionBankPage() {
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Question</th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Type</th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Category</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground max-w-56">
+                        Templates
+                      </th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
                       <th className="px-4 py-3" />
                     </tr>
@@ -312,6 +369,22 @@ export default function QuestionBankPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{q.categoryName ?? "—"}</td>
+                        <td
+                          className="px-4 py-3 max-w-56 align-top"
+                          title={
+                            q.templates && q.templates.length > 0
+                              ? q.templates.map((t) => t.name).join(", ")
+                              : undefined
+                          }
+                        >
+                          {!q.templates || q.templates.length === 0 ? (
+                            <span className="text-xs italic text-muted-foreground/70">Orphan</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground line-clamp-2">
+                              {q.templates.map((t) => t.name).join(", ")}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <QuestionStatusBadge status={q.status as QuestionStatus} />
                         </td>
@@ -333,6 +406,13 @@ export default function QuestionBankPage() {
                               >
                                 <ArchiveIcon className="mr-2 h-4 w-4" />
                                 Archive
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteQuestion(q.id)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <TrashIcon className="mr-2 h-4 w-4" />
+                                Delete permanently
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -514,6 +594,69 @@ export default function QuestionBankPage() {
             <Button onClick={handleSaveCategory} disabled={saving}>
               {saving && <Loader2Icon className="h-4 w-4 animate-spin" />}
               {editingCategory ? "Save Changes" : "Add Category"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showImportDialog}
+        onOpenChange={(open) => {
+          setShowImportDialog(open)
+          if (!open) {
+            setImportFile(null)
+            setImportCreateCategories(false)
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import questions from CSV</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm">
+            <p className="text-muted-foreground leading-relaxed">
+              UTF-8 CSV with a header row. Columns:{" "}
+              <span className="font-mono text-[11px] break-all">
+                text, type, description, options, is_required, category_name, sort_order
+              </span>
+              . Use <span className="font-mono">|</span> in <span className="font-mono">options</span> for{" "}
+              <span className="font-mono">single_select</span> / <span className="font-mono">multi_select</span>. This
+              only creates bank questions — add them to preset templates from{" "}
+              <span className="font-medium text-foreground">Admin → Templates</span>. Extra columns in older files are
+              ignored. Each import run adds new rows (no deduplication).
+            </p>
+            <a
+              href="/samples/question-bank-import-sample.csv"
+              download
+              className="inline-flex text-primary text-sm font-medium underline-offset-4 hover:underline"
+            >
+              Download sample CSV
+            </a>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="import-cats"
+                checked={importCreateCategories}
+                onCheckedChange={(v) => setImportCreateCategories(v === true)}
+              />
+              <Label htmlFor="import-cats" className="font-normal cursor-pointer">
+                Create missing categories (exact name match)
+              </Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="csv-file">CSV file</Label>
+              <Input
+                id="csv-file"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImportDialog(false)}>Cancel</Button>
+            <Button onClick={handleImportCsv} disabled={importing}>
+              {importing && <Loader2Icon className="h-4 w-4 animate-spin" />}
+              Import
             </Button>
           </DialogFooter>
         </DialogContent>

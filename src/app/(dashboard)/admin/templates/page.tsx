@@ -29,6 +29,7 @@ import {
   PencilIcon,
   PlusIcon,
   SearchIcon,
+  TrashIcon,
   XIcon,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -147,6 +148,13 @@ export default function TemplatesPage() {
     else toast.error("Failed")
   }
 
+  async function handleDeleteTemplate(id: string) {
+    if (!confirm("Permanently delete this template? The template definition will be removed and its link to existing questionnaires will be cleared. Existing questionnaires and their questions are unaffected. This cannot be undone.")) return
+    const res = await fetch(`/api/templates/${id}?permanent=true`, { method: "DELETE" })
+    if (res.ok) { toast.success("Template deleted permanently"); load() }
+    else toast.error("Failed to delete")
+  }
+
   const filteredBankQuestions = questions.filter(
     (q) =>
       !templateQuestions.some((tq) => tq.questionId === q.id) &&
@@ -222,6 +230,13 @@ export default function TemplatesPage() {
                               Deactivate
                             </DropdownMenuItem>
                           )}
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteTemplate(t.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <TrashIcon className="mr-2 h-4 w-4" />
+                            Delete permanently
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>

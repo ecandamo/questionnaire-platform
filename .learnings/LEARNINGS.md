@@ -327,6 +327,59 @@ Expose `onTeamChanged` from the team panel; parent implements refresh the same w
 
 ---
 
+## [LRN-20260409-001] best_practice
+
+**Logged**: 2026-04-09
+**Priority**: medium
+**Status**: pending
+**Area**: backend
+
+### Summary
+Use a **`DELETE ?permanent=true`** query-flag pattern to offer both soft (default) and hard (permanent) delete on the same route, consistent across all admin-managed entities in this project.
+
+### Details
+Three entity types now follow this convention:
+- `questionnaire` — `DELETE /api/questionnaires/[id]?permanent=true` (admin-only): hard deletes row + all cascaded children via DB FK cascade.
+- `question` — `DELETE /api/questions/[id]?permanent=true` (admin-only): hard deletes row; `template_question` cascade-removes; `questionnaire_question.sourceQuestionId` → null (existing snapshots unaffected).
+- `template` — `DELETE /api/templates/[id]?permanent=true` (admin-only): hard deletes row; `template_question` cascade-removes; `questionnaire.templateId` → null (existing questionnaires unaffected).
+
+Default `DELETE` (no flag):
+- questions → `status: "archived"` (soft archive)
+- templates → `isActive: false` (deactivate)
+- questionnaires → `status: "archived"` (soft archive)
+
+Pattern: read `req.nextUrl.searchParams.get("permanent") === "true"`, require row exists (404 if not), branch, then `logAudit` with `action: "delete"` vs `action: "archive"/"deactivate"`.
+
+### Metadata
+- Source: implementation
+- Related Files: `src/app/api/questions/[id]/route.ts`, `src/app/api/templates/[id]/route.ts`, `src/app/api/questionnaires/[id]/route.ts`
+- Tags: api, delete, soft-delete, admin, drizzle
+
+---
+
+## [LRN-20260409-002] best_practice
+
+**Logged**: 2026-04-09
+**Priority**: medium
+**Status**: pending
+**Area**: backend + admin
+
+### Summary
+**Question bank CSV import** uses `POST /api/questions/import` with `multipart/form-data` (`file`, optional `createMissingCategories=true`). Parse with **papaparse**; validate row shape in `src/lib/question-csv-import.ts` before any DB writes. **Neon HTTP** driver has no Drizzle transaction in this repo — use **validate-all-then-insert** plus **manual rollback** (delete inserted `question` ids on failure). Import is **bank-only** (no `template_question` writes).
+
+### Details
+- **Options column:** pipe-separated (`|`), aligned with UI “one per line” mentally but CSV-friendly.
+- **Templates:** assign imported questions in **Admin → Templates** after import. `GET /api/questions` enriches each row with `templates: { id, name }[]` for the bank table (**Orphan** in UI when empty).
+- **Sort order:** CSV `sort_order` maps to `question.sortOrder`; default row index when omitted.
+- **Sample file:** `public/samples/question-bank-import-sample.csv`
+
+### Metadata
+- Source: implementation
+- Related Files: `src/app/api/questions/import/route.ts`, `src/lib/question-csv-import.ts`, `src/app/(dashboard)/admin/question-bank/page.tsx`
+- Tags: csv, import, admin, papaparse, drizzle
+
+---
+
 ## [LRN-20260401-005] best_practice
 
 **Logged**: 2026-04-01
