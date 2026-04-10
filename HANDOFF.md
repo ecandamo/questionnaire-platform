@@ -27,6 +27,8 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-10 (favicon):** Added `src/app/icon.svg` — API wordmark (navy `#273B6E` + green crosshair) on a white circular background; Next serves it at `/icon.svg` for browser tabs.
+
 - **2026-04-09 (question bank UI polish):** Templates column shows each preset template as a rounded pill with deterministic accent color by template id; **Orphan** uses a dashed muted pill. **Bulk import from CSV** dialog: title + description, structured “File requirements” / “After import” sections, clearer category-auto-create label, header case/underscore note.
 
 - **2026-04-09 (CSV bank-only + templates column):** CSV import no longer reads or creates template links — only questions (+ optional categories). `GET /api/questions` includes `templates: { id, name }[]` per row for the question bank UI **Templates** column (**Orphan** when empty). Older CSVs with template columns are ignored (not validated).
@@ -79,6 +81,8 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/app/icon.svg` — app favicon (API logo on white circle)
+
 - `src/lib/question-csv-import.ts` — bank-only CSV columns + validation
 - `src/app/api/questions/import/route.ts` — questions (+ optional categories) only; rollback `question` rows
 - `src/app/api/questions/route.ts` — list rows include `templates[]` from `template_question` join
