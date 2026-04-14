@@ -668,6 +668,11 @@ function SortableQuestionCard({
                   </span>
                 )}
               </div>
+              {question.type === "file_upload" && (
+                <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+                  Respondent uploads a file (PDF, Word, Excel, or image, up to 50 MB). Answers store a link to the file.
+                </p>
+              )}
             </div>
           </div>
         </div>

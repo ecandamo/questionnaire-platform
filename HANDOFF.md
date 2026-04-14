@@ -5,6 +5,7 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
 
 ## Current Status
 - State: **working** — full application built and compiles cleanly
+- New question type **`file_upload`**: respondents upload via **Vercel Blob client uploads** (`POST /api/blob` + `@vercel/blob/client` `upload()`); answer stores the public URL in `answer.value`. Requires **`BLOB_READ_WRITE_TOKEN`** (create Blob store in Vercel → link project). DB: run `npm run db:migrate` or `db:push` after pulling — migration `drizzle/0002_sharp_ben_parker.sql` adds enum value `file_upload`.
 - Admin question bank: **Templates** column uses colored pills per template; CSV import dialog copy clarified (requirements, after-import, categories checkbox)
 - Working now:
   - Authentication (Better Auth, email/password, admin plugin)
@@ -27,6 +28,8 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-14 (file upload question type):** Added `file_upload` to `question_type` enum, types, CSV import whitelist, question bank filter cast. **`POST /api/blob`** — `handleUpload` from `@vercel/blob/client` with allowed MIME types (PDF, Word, Excel, common images) and 50 MB max; **`@vercel/blob`** dependency. Respond page: file picker + progress + remove; response viewer: link + label helper `src/lib/blob-url-label.ts`; builder hint on `file_upload` cards. Migration `drizzle/0002_sharp_ben_parker.sql`.
+
 - **2026-04-14 (submit → confirmation UX):** Owner submit no longer sets `submitted` before `router.push` to `/respond/[token]/confirmation`, so the “Already Submitted” full-page state does not flash between submit and the thank-you page. “Already Submitted” still shows when the share link is opened after submission (API `responseStatus === "submitted"`).
 
 - **2026-04-14 (reopen + client link):** `POST /api/questionnaires/[id]/reopen` now resets all `response` rows for that questionnaire to `in_progress` and clears `submittedAt` (submit left them `submitted`, so `/api/share/[token]` and the respond page still showed “already submitted”). Collaborators with `invite_status = completed` are set back to `active`. Respond page syncs `submitted` from `responseStatus` on load/refresh (not only when true).
@@ -85,6 +88,13 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/lib/db/schema.ts`, `src/types/index.ts`, `src/lib/question-csv-import.ts`, `src/app/api/questions/route.ts` — `file_upload` question type
+- `src/app/api/blob/route.ts` — Vercel Blob client-upload token route
+- `src/app/respond/[token]/page.tsx`, `src/lib/blob-url-label.ts` — upload UI + URL label
+- `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`, `responses/page.tsx` — builder hint + response link
+- `drizzle/0002_sharp_ben_parker.sql`, `drizzle/meta/*` — enum migration
+- `package.json` — `@vercel/blob`
+
 - `src/app/api/questionnaires/[id]/reopen/route.ts` — reopen resets `response` + collaborator invite rows so share link works again
 - `src/app/respond/[token]/page.tsx` — `submitted` mirrors `responseStatus` after refetch; no `setSubmitted(true)` before confirmation navigation (avoids “Already Submitted” flash)
 
@@ -150,13 +160,14 @@ Key paths (design 2026-03-28):
 - `command.tsx` is a lightweight custom implementation — could be replaced with cmdk if needed
 
 ## Next Best Step
-1. Smoke-test: numbering skips section headers; assign a full section via Team UI; remove a collaborator and confirm their answers disappear from the owner view / DB.
-2. **Smoke-test collaborative flow** on branch `feature/collaborative-questionnaire-responses` (if not on `main`):
+1. Apply DB migration for `file_upload` (`npm run db:push` or `db:migrate`); provision Vercel Blob store and set **`BLOB_READ_WRITE_TOKEN`** locally + on Vercel; smoke-test upload on `/respond/[token]`.
+2. Smoke-test: numbering skips section headers; assign a full section via Team UI; remove a collaborator and confirm their answers disappear from the owner view / DB.
+3. **Smoke-test collaborative flow** on branch `feature/collaborative-questionnaire-responses` (if not on `main`):
    - Publish a questionnaire → open the respond link → add a collaborator → copy their link → open in a second browser → verify they see only assigned questions → mark complete → verify owner can then submit
-3. Merge branch to `main` when smoke-test passes
-3. Phase 2 (post-merge): Sender-side email invite (mailto: is already done); "reassign" questions after invite; show questionnaire-level collaborator count in the questionnaire list
-4. Continue feature work: question import/export UI is the main unfinished item
-5. Before deploy, set production env on hosting (`BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, DB URL, `NEXT_PUBLIC_APP_URL`) and run a full smoke test
+4. Merge branch to `main` when smoke-test passes
+5. Phase 2 (post-merge): Sender-side email invite (mailto: is already done); "reassign" questions after invite; show questionnaire-level collaborator count in the questionnaire list
+6. Continue feature work: question import/export UI is the main unfinished item
+7. Before deploy, set production env on hosting (`BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, DB URL, `NEXT_PUBLIC_APP_URL`, **`BLOB_READ_WRITE_TOKEN`** if using file uploads) and run a full smoke test
 
 ## Guardrails
 - Preserve working logic unless a change is necessary

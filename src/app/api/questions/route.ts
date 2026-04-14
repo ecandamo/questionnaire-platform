@@ -4,6 +4,7 @@ import { question, questionCategory, questionnaireTemplate, templateQuestion } f
 import { getRequestSession, requireAdmin } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
 import { and, asc, eq, ilike, inArray, or } from "drizzle-orm"
+import type { QuestionType } from "@/types"
 
 function requireAuth(session: Awaited<ReturnType<typeof getRequestSession>>) {
   if (!session) {
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
     conditions.push(eq(question.categoryId, categoryId))
   }
   if (type) {
-    conditions.push(eq(question.type, type as "short_text" | "long_text" | "number" | "currency" | "percentage" | "date" | "single_select" | "multi_select" | "yes_no" | "section_header"))
+    conditions.push(eq(question.type, type as QuestionType))
   }
   if (search) {
     conditions.push(ilike(question.text, `%${search}%`))

@@ -22,6 +22,7 @@ const QUESTION_TYPES: QuestionType[] = [
   "multi_select",
   "yes_no",
   "section_header",
+  "file_upload",
 ]
 
 export interface NormalizedQuestionCsvRow {

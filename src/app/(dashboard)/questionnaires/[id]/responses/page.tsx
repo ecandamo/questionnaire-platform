@@ -2,14 +2,15 @@
 
 import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeftIcon, DownloadIcon, Loader2Icon } from "lucide-react"
 import { format } from "date-fns"
+import { PaperclipIcon } from "lucide-react"
 import { QUESTION_TYPE_LABELS, type QuestionType } from "@/types"
+import { fileLabelFromBlobUrl } from "@/lib/blob-url-label"
 import { answerableDisplayNumbers } from "@/lib/question-sections"
 
 interface Question {
@@ -213,11 +214,23 @@ export default function ResponsesPage() {
                       </div>
                       <div className="ml-5">
                         {value ? (
-                          <div className="rounded-lg bg-muted/60 px-3 py-2 text-sm">
-                            {value}
-                          </div>
+                          q.type === "file_upload" ? (
+                            <a
+                              href={value}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm text-primary hover:underline font-medium"
+                            >
+                              <PaperclipIcon className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+                              <span className="truncate">{fileLabelFromBlobUrl(value)}</span>
+                            </a>
+                          ) : (
+                            <div className="rounded-lg bg-muted/60 px-3 py-2 text-sm">{value}</div>
+                          )
                         ) : (
-                          <p className="text-sm text-muted-foreground italic">No answer</p>
+                          <p className="text-sm text-muted-foreground italic">
+                            {q.type === "file_upload" ? "No file uploaded" : "No answer"}
+                          </p>
                         )}
                       </div>
                     </div>

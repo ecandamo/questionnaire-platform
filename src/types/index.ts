@@ -9,6 +9,7 @@ export type QuestionType =
   | "multi_select"
   | "yes_no"
   | "section_header"
+  | "file_upload"
 
 export type QuestionStatus = "active" | "inactive" | "archived"
 
@@ -56,6 +57,7 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   multi_select: "Multi Select",
   yes_no: "Yes / No",
   section_header: "Section Header",
+  file_upload: "File Upload",
 }
 
 export const QUESTION_TYPES_WITH_OPTIONS: QuestionType[] = [

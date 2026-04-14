@@ -24,6 +24,7 @@ export const questionTypeEnum = pgEnum("question_type", [
   "multi_select",
   "yes_no",
   "section_header",
+  "file_upload",
 ])
 
 export const questionStatusEnum = pgEnum("question_status", [

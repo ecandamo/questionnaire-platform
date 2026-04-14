@@ -23,13 +23,17 @@ import {
   CheckCircle2Icon,
   ClipboardListIcon,
   Loader2Icon,
+  PaperclipIcon,
   SaveIcon,
   SendIcon,
+  XIcon,
 } from "lucide-react"
+import { upload } from "@vercel/blob/client"
 import { toast } from "sonner"
 import { ApiLogo } from "@/components/shared/api-logo"
 import { CollaboratorPanel } from "@/components/shared/collaborator-panel"
 import { answerableDisplayNumbers } from "@/lib/question-sections"
+import { fileLabelFromBlobUrl } from "@/lib/blob-url-label"
 
 interface Question {
   id: string
@@ -500,6 +504,116 @@ export default function RespondPage() {
   )
 }
 
+function FileUploadQuestionInput({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (v: string) => void
+}) {
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = React.useState(false)
+  const [progress, setProgress] = React.useState(0)
+  const [error, setError] = React.useState<string | null>(null)
+
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file) return
+    setError(null)
+    setUploading(true)
+    setProgress(0)
+    try {
+      const safe = file.name.replace(/[^\w.\-()+ ]/g, "_").slice(0, 180) || "upload"
+      const pathname = `respond-uploads/${Date.now()}-${safe}`
+      const blob = await upload(pathname, file, {
+        access: "public",
+        handleUploadUrl: "/api/blob",
+        multipart: file.size > 90 * 1024 * 1024,
+        onUploadProgress: ({ percentage }) => {
+          setProgress(Math.round(percentage))
+        },
+      })
+      onChange(blob.url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed")
+    } finally {
+      setUploading(false)
+      setProgress(0)
+    }
+  }
+
+  function clear() {
+    setError(null)
+    onChange("")
+  }
+
+  const label = value ? fileLabelFromBlobUrl(value) : ""
+
+  return (
+    <div className="space-y-2">
+      <input
+        ref={inputRef}
+        type="file"
+        className="sr-only"
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,application/pdf"
+        onChange={onPick}
+        disabled={uploading}
+      />
+      {value ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm">
+          <PaperclipIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline font-medium truncate min-w-0 flex-1"
+          >
+            {label}
+          </a>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="shrink-0 text-muted-foreground hover:text-destructive"
+            onClick={clear}
+            aria-label="Remove file"
+          >
+            <XIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full max-w-sm justify-center border-dashed"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {uploading ? (
+            <>
+              <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+              Uploading{progress > 0 ? ` ${progress}%` : ""}…
+            </>
+          ) : (
+            <>
+              <PaperclipIcon className="h-4 w-4 mr-2 opacity-70" />
+              Choose file
+            </>
+          )}
+        </Button>
+      )}
+      {uploading && (
+        <Progress value={Math.max(progress, 8)} className="h-1 max-w-sm" />
+      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        PDF, Word, Excel, or image (PNG, JPG, GIF, WebP). Max 50 MB. Files upload directly to secure storage.
+      </p>
+    </div>
+  )
+}
+
 // ─── Question Field Component ─────────────────────────────────────────────────
 
 function QuestionField({
@@ -652,6 +766,10 @@ function QuestionField({
                 </div>
               ))}
             </div>
+          )}
+
+          {question.type === "file_upload" && (
+            <FileUploadQuestionInput value={value} onChange={onChange} />
           )}
         </div>
 
