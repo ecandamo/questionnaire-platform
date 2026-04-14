@@ -3,7 +3,7 @@ import { db } from "@/lib/db"
 import { user } from "@/lib/db/schema"
 import { getRequestSession, requireAdmin } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
-import { asc, eq } from "drizzle-orm"
+import { asc } from "drizzle-orm"
 
 export async function GET(req: NextRequest) {
   const session = await getRequestSession(req)

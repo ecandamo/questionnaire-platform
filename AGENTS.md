@@ -98,6 +98,8 @@ Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the
 - Log feature requests or missing capabilities to .learnings/FEATURE_REQUESTS.md
 - Before major tasks, review recent learnings to avoid repeating past mistakes
 - Periodically consolidate learnings — merge duplicates, remove outdated entries, promote broadly applicable ones to AGENTS.md
+- **Cursor / VS Code “emphasized” folders** under `src/` usually mean **ESLint or TypeScript diagnostics**. Run `npx eslint "src/**/*.{ts,tsx}"` (or narrow to `src/app/`) and clear warnings before merge.
+- **`react-hooks/exhaustive-deps`** on effects that call `load` / `fetchX`: define the fetcher with **`React.useCallback`** and list **`[load]`** (or `[fetchX]`) in the effect deps. For **interval autosaves**, keep latest form state in a **ref** and call a **stable** persist helper so the interval does not close over a stale `handleSave` or skip deps.
 <!-- END:self-improvement-rules -->
 
 <!-- BEGIN:handoff-workflow -->

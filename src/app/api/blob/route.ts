@@ -11,6 +11,8 @@ const ALLOWED_CONTENT_TYPES = [
   "image/jpeg",
   "image/gif",
   "image/webp",
+  "text/csv",
+  "application/csv",
 ] as const
 
 const MAX_BYTES = 50 * 1024 * 1024
@@ -22,7 +24,7 @@ function pathLooksSafe(pathname: string): boolean {
   const ext = base.split(".").pop()?.toLowerCase()
   return (
     ext != null &&
-    ["pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "gif", "webp"].includes(ext)
+    ["pdf", "doc", "docx", "xls", "xlsx", "csv", "png", "jpg", "jpeg", "gif", "webp"].includes(ext)
   )
 }
 
@@ -47,7 +49,7 @@ export async function POST(request: Request) {
       request,
       onBeforeGenerateToken: async (pathname) => {
         if (!pathLooksSafe(pathname)) {
-          throw new Error("Invalid file: use PDF, Word, Excel, or common image types only.")
+          throw new Error("Invalid file: use PDF, Word, Excel, CSV, or common image types only.")
         }
         return {
           allowedContentTypes: [...ALLOWED_CONTENT_TYPES],

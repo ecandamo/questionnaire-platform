@@ -396,6 +396,7 @@ Run `npx eslint src` after UI refactors. Move impure date/random work to `useEff
 ### Metadata
 - Source: session / diagnostics
 - Tags: eslint, react-compiler, cursor
+- See Also: LRN-20260414-009 (2026-04-14 recurrence: exhaustive-deps + `useCallback` / ref-based autosave)
 
 ---
 
@@ -587,5 +588,32 @@ When success UX lives on **another route**, prefer **navigation alone** (or an e
 
 ### Resolution
 - **Resolved**: 2026-04-14 — removed `setSubmitted(true)` before `router.push` to confirmation.
+
+---
+
+## [LRN-20260414-009] best_practice
+
+**Logged**: 2026-04-14T12:00:00Z
+**Priority**: medium
+**Status**: promoted
+**Area**: frontend / tooling
+
+### Summary
+**(1) Cross-session answer fields** (e.g. file upload/remove on tokenized respond pages): persist to the API **right after** the change, not only on a long **autosave** interval—otherwise other viewers (collaborators, second browser) still see the old DB value. **(2) Hooks lint:** `react-hooks/exhaustive-deps` on `useEffect(() => { load() }, [id])` is fixed by **`load` in `useCallback`** with correct deps and **`useEffect(..., [load])`**. **Interval saves** should read latest form state via a **ref** and call a **stable** `persistSnapshot` helper so the effect does not omit or stale-close over `handleSave` / `answers`.
+
+### Suggested Action
+- After changing shared answers from the client, trigger the same `POST …/answers` path used for manual save with an explicit snapshot when needed.
+- When ESLint reports missing `load`/`fetchX` in effect deps, prefer `useCallback` + `[callback]` over disabling the rule.
+
+### Metadata
+- Source: self-improvement workflow / session fixes
+- Related Files: `src/app/respond/[token]/page.tsx`, `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`, `src/components/shared/collaborator-panel.tsx`
+- Tags: eslint, react-hooks, autosave, collaboration, vercel-blob
+- See Also: LRN-20260401-005
+- Pattern-Key: hooks.exhaustive_deps.data_loaders
+
+### Resolution
+- **Promoted**: `AGENTS.md` (Self-Improvement), `CLAUDE.md` (Self-Improvement)
+- **Notes**: `npx eslint "src/**/*.{ts,tsx}"` now clean; respond page file upload/remove calls persist immediately; loaders wrapped in `useCallback` across dashboard + collaborator panel.
 
 ---

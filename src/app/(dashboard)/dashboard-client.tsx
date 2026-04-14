@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { QuestionnairStatusBadge } from "@/components/shared/status-badge"
 import {
@@ -22,7 +21,7 @@ import {
   PlusIcon,
 } from "lucide-react"
 import { format } from "date-fns"
-import type { QuestionnaireStatus, QuestionnaireType, QUESTIONNAIRE_TYPE_LABELS } from "@/types"
+import type { QuestionnaireStatus, QuestionnaireType } from "@/types"
 import { QUESTIONNAIRE_STATUS_LABELS, QUESTIONNAIRE_TYPE_LABELS as TYPE_LABELS } from "@/types"
 
 interface Props {

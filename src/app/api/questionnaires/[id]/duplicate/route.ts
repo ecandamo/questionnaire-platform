@@ -40,10 +40,16 @@ export async function POST(
 
   if (sourceQuestions.length > 0) {
     await db.insert(questionnaireQuestion).values(
-      sourceQuestions.map(({ id: _id, questionnaireId: _qid, createdAt: _ca, ...rest }) => ({
-        ...rest,
-        questionnaireId: newQ.id,
-      }))
+      sourceQuestions.map((row) => {
+        const { id: _omitId, questionnaireId: _omitQid, createdAt: _omitCreatedAt, ...rest } = row
+        void _omitId
+        void _omitQid
+        void _omitCreatedAt
+        return {
+          ...rest,
+          questionnaireId: newQ.id,
+        }
+      })
     )
   }
 

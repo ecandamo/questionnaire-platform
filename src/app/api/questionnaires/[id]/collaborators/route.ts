@@ -6,7 +6,6 @@ import {
   response,
   responseCollaborator,
   questionAssignment,
-  questionnaireQuestion,
   answer,
 } from "@/lib/db/schema"
 import { getRequestSession } from "@/lib/session"

@@ -79,11 +79,7 @@ export function CollaboratorPanel({
       ? window.location.origin
       : (process.env.NEXT_PUBLIC_APP_URL ?? "")
 
-  React.useEffect(() => {
-    fetchCollaborators()
-  }, [responseId])
-
-  async function fetchCollaborators() {
+  const fetchCollaborators = React.useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(
@@ -96,7 +92,11 @@ export function CollaboratorPanel({
     } finally {
       setLoading(false)
     }
-  }
+  }, [responseId, ownerToken])
+
+  React.useEffect(() => {
+    void fetchCollaborators()
+  }, [fetchCollaborators])
 
   async function handleInvite() {
     if (!inviteEmail.trim() || selectedQuestions.size === 0) {

@@ -208,16 +208,17 @@ export default function RespondPage() {
     [questionnaire, submitted, markedComplete, persistAnswersSnapshot],
   )
 
-  // Autosave every 30 seconds if there are answers
+  // Autosave every 30 seconds if there are answers (uses ref so we do not depend on `handleSave` / stale snapshots)
   React.useEffect(() => {
     if (!questionnaire || submitted || markedComplete) return
     const interval = setInterval(() => {
-      if (Object.keys(answers).length > 0) {
-        void handleSave(false)
+      const snap = answersRef.current
+      if (Object.keys(snap).length > 0) {
+        void persistAnswersSnapshot(snap, false)
       }
     }, 30000)
     return () => clearInterval(interval)
-  }, [questionnaire, answers, submitted, markedComplete])
+  }, [questionnaire, submitted, markedComplete, persistAnswersSnapshot])
 
   async function handleSubmit() {
     if (!questionnaire) return
@@ -235,11 +236,7 @@ export default function RespondPage() {
     const nameOk = respondentName.trim().length > 0
     const emailOk = respondentEmail.trim().length > 0 && isLikelyValidEmail(respondentEmail)
     if (!nameOk || !emailOk) {
-      toast.error(
-        !nameOk
-          ? "Please enter your name in Your Information."
-          : "Please enter a valid email address in Your Information."
-      )
+      toast.error("Name and email must be completed before submitting responses.")
       setShowSubmitConfirm(false)
       return
     }
@@ -415,9 +412,7 @@ export default function RespondPage() {
               Your Information
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {viewerRole === "owner"
-                ? "Name and email are required before you can submit this questionnaire."
-                : "Confirm your name and email before marking your section complete."}
+              Name and email must be completed before submitting responses.
             </p>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 pt-4">
@@ -554,9 +549,7 @@ export default function RespondPage() {
             )}
             {(!respondentName.trim() || !isLikelyValidEmail(respondentEmail)) && (
               <p className="text-destructive">
-                {!respondentName.trim()
-                  ? "Enter your name in Your Information."
-                  : "Enter a valid email in Your Information."}
+                Name and email must be completed before submitting responses.
               </p>
             )}
           </div>
@@ -632,7 +625,7 @@ function FileUploadQuestionInput({
         ref={inputRef}
         type="file"
         className="sr-only"
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,application/pdf"
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp,application/pdf,text/csv"
         onChange={onPick}
         disabled={uploading}
       />
@@ -684,7 +677,7 @@ function FileUploadQuestionInput({
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <p className="text-[11px] text-muted-foreground leading-relaxed">
-        PDF, Word, Excel, or image (PNG, JPG, GIF, WebP). Max 50 MB. Files upload directly to secure storage.
+        PDF, Word, Excel, CSV, or image (PNG, JPG, GIF, WebP). Max 50 MB. Files upload directly to secure storage.
       </p>
     </div>
   )

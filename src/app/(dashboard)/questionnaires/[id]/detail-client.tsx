@@ -150,18 +150,23 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
     [questions]
   )
 
-  async function load() {
+  const load = React.useCallback(async () => {
     setLoading(true)
     const res = await fetch(`/api/questionnaires/${id}`)
-    if (!res.ok) { router.push("/questionnaires"); return }
+    if (!res.ok) {
+      router.push("/questionnaires")
+      return
+    }
     const d = await res.json()
     setData(d)
     setQuestions(d.questions.sort((a: QQuestion, b: QQuestion) => a.sortOrder - b.sortOrder))
     setShareUrl(d.shareUrl ?? null)
     setLoading(false)
-  }
+  }, [id, router])
 
-  React.useEffect(() => { load() }, [id])
+  React.useEffect(() => {
+    void load()
+  }, [load])
 
   /** Persists the current `questions` list to the server (draft PATCH). */
   async function persistQuestionsToServer(): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -252,18 +257,18 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
     }
   }
 
-  async function loadBankQuestions() {
+  const loadBankQuestions = React.useCallback(async () => {
     setBankLoading(true)
     const params = new URLSearchParams({ status: "active" })
     if (bankSearch) params.set("search", bankSearch)
     const res = await fetch(`/api/questions?${params}`)
     if (res.ok) setBankQuestions(await res.json())
     setBankLoading(false)
-  }
+  }, [bankSearch])
 
   React.useEffect(() => {
-    if (showBankPicker) loadBankQuestions()
-  }, [showBankPicker, bankSearch])
+    if (showBankPicker) void loadBankQuestions()
+  }, [showBankPicker, loadBankQuestions])
 
   function addBankQuestion(bq: BankQuestion) {
     const already = questions.some((q) => q.sourceQuestionId === bq.id)
@@ -692,7 +697,7 @@ function SortableQuestionCard({
               </div>
               {question.type === "file_upload" && (
                 <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-                  Respondent uploads a file (PDF, Word, Excel, or image, up to 50 MB). Answers store a link to the file.
+                  Respondent uploads a file (PDF, Word, Excel, CSV, or image, up to 50 MB). Answers store a link to the file.
                 </p>
               )}
             </div>
@@ -872,7 +877,7 @@ function SenderAssignmentsPanel({
   const [inviteName, setInviteName] = React.useState("")
   const [selectedQuestions, setSelectedQuestions] = React.useState<Set<string>>(new Set())
 
-  async function fetchCollaborators() {
+  const fetchCollaborators = React.useCallback(async () => {
     setLoading(true)
     const res = await fetch(`/api/questionnaires/${questionnaireId}/collaborators`)
     if (res.ok) {
@@ -881,9 +886,11 @@ function SenderAssignmentsPanel({
       setResponseExists(data.responseExists ?? false)
     }
     setLoading(false)
-  }
+  }, [questionnaireId])
 
-  React.useEffect(() => { fetchCollaborators() }, [questionnaireId])
+  React.useEffect(() => {
+    void fetchCollaborators()
+  }, [fetchCollaborators])
 
   async function handleInvite() {
     if (!inviteEmail.trim() || selectedQuestions.size === 0) {

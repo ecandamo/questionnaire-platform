@@ -3,7 +3,7 @@ import { db } from "@/lib/db"
 import { question, questionCategory, questionnaireTemplate, templateQuestion } from "@/lib/db/schema"
 import { getRequestSession, requireAdmin } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
-import { and, asc, eq, ilike, inArray, or } from "drizzle-orm"
+import { and, asc, eq, ilike, inArray } from "drizzle-orm"
 import type { QuestionType } from "@/types"
 
 function requireAuth(session: Awaited<ReturnType<typeof getRequestSession>>) {

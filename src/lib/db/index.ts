@@ -21,7 +21,6 @@ export function getDb(): DB {
   return _db
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const db = new Proxy({} as DB, {
   get(_target, prop) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

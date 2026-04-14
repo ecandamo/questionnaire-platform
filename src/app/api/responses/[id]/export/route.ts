@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { response, answer, questionnaire, questionnaireQuestion } from "@/lib/db/schema"
+import {
+  response,
+  answer,
+  questionnaire,
+  questionnaireQuestion,
+  responseCollaborator,
+} from "@/lib/db/schema"
 import { getRequestSession } from "@/lib/session"
 import { asc, eq } from "drizzle-orm"
 import { format } from "date-fns"
@@ -35,10 +41,41 @@ export async function GET(
     ? await db.select().from(answer).where(eq(answer.responseId, resp.id))
     : []
 
-  const answerMap = new Map(answers.map((a) => [a.questionId, a.value]))
+  const answerByQuestionId = new Map(answers.map((a) => [a.questionId, a]))
 
-  const nameCell = `"${(resp?.respondentName ?? "").replace(/"/g, '""')}"`
-  const emailCell = `"${(resp?.respondentEmail ?? "").replace(/"/g, '""')}"`
+  const collaborators = resp
+    ? await db
+        .select({
+          id: responseCollaborator.id,
+          name: responseCollaborator.name,
+          email: responseCollaborator.email,
+        })
+        .from(responseCollaborator)
+        .where(eq(responseCollaborator.responseId, resp.id))
+    : []
+
+  const collabById = new Map(collaborators.map((c) => [c.id, c]))
+
+  function csvEscCell(s: string): string {
+    return `"${(s ?? "").replace(/"/g, '""')}"`
+  }
+
+  function respondentNameEmailForQuestion(questionnaireQuestionId: string): { name: string; email: string } {
+    const primaryName = (resp?.respondentName ?? "").trim()
+    const primaryEmail = (resp?.respondentEmail ?? "").trim()
+    const ans = answerByQuestionId.get(questionnaireQuestionId)
+    if (!ans?.lastUpdatedByCollaboratorId) {
+      return { name: primaryName, email: primaryEmail }
+    }
+    const c = collabById.get(ans.lastUpdatedByCollaboratorId)
+    if (!c) {
+      return { name: primaryName, email: primaryEmail }
+    }
+    return {
+      name: (c.name ?? "").trim(),
+      email: (c.email ?? "").trim(),
+    }
+  }
 
   // Build CSV
   const rows: string[][] = [
@@ -55,14 +92,15 @@ export async function GET(
 
   for (const q of questions) {
     if (q.isHidden) continue
+    const { name: rowName, email: rowEmail } = respondentNameEmailForQuestion(q.id)
     rows.push([
       `"${q.text.replace(/"/g, '""')}"`,
       q.type,
       q.isRequired ? "Yes" : "No",
-      `"${(answerMap.get(q.id) ?? "").replace(/"/g, '""')}"`,
+      `"${(answerByQuestionId.get(q.id)?.value ?? "").replace(/"/g, '""')}"`,
       resp?.submittedAt ? format(resp.submittedAt, "yyyy-MM-dd HH:mm") : "",
-      nameCell,
-      emailCell,
+      csvEscCell(rowName),
+      csvEscCell(rowEmail),
     ])
   }
 

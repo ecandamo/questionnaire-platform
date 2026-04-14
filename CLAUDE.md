@@ -65,6 +65,7 @@
 - Review .learnings/ at session start
 - Log corrections and errors to .learnings/
 - Consolidate periodically
+- If the IDE marks a folder (e.g. `src/app`) as having problems, run **`npx eslint "src/**/*.{ts,tsx}"`** — warnings often come from **`react-hooks/exhaustive-deps`**; fix with **`useCallback`** for data loaders and stable effect dependencies (or **refs** for interval-driven saves so closures stay fresh).
 
 ## Handoff Workflow
 

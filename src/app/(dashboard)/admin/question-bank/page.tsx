@@ -119,7 +119,7 @@ export default function QuestionBankPage() {
   const [importing, setImporting] = React.useState(false)
   const [importCreateCategories, setImportCreateCategories] = React.useState(false)
 
-  async function loadData() {
+  const loadData = React.useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
     if (search) params.set("search", search)
@@ -135,9 +135,11 @@ export default function QuestionBankPage() {
     setQuestions(qs ?? [])
     setCategories(cats ?? [])
     setLoading(false)
-  }
+  }, [search, categoryFilter, typeFilter, statusFilter])
 
-  React.useEffect(() => { loadData() }, [search, categoryFilter, typeFilter, statusFilter])
+  React.useEffect(() => {
+    void loadData()
+  }, [loadData])
 
   function openAddQuestion() {
     setEditingQuestion(null)

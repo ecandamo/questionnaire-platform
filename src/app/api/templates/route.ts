@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { questionnaireTemplate, templateQuestion, question } from "@/lib/db/schema"
+import { questionnaireTemplate, templateQuestion } from "@/lib/db/schema"
 import { getRequestSession, requireAdmin } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
-import { asc, eq } from "drizzle-orm"
+import { asc } from "drizzle-orm"
 
 function requireAuth(session: Awaited<ReturnType<typeof getRequestSession>>) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

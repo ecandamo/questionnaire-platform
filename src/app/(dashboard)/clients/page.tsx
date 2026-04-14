@@ -40,15 +40,17 @@ export default function ClientsPage() {
   const [form, setForm] = React.useState({ name: "", industry: "", contactName: "", contactEmail: "" })
   const [saving, setSaving] = React.useState(false)
 
-  async function load() {
+  const load = React.useCallback(async () => {
     setLoading(true)
     const params = search ? `?search=${encodeURIComponent(search)}` : ""
     const res = await fetch(`/api/clients${params}`)
     if (res.ok) setClients(await res.json())
     setLoading(false)
-  }
+  }, [search])
 
-  React.useEffect(() => { load() }, [search])
+  React.useEffect(() => {
+    void load()
+  }, [load])
 
   function openAdd() {
     setEditing(null)

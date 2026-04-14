@@ -24,7 +24,6 @@ interface Template {
 
 export function NewQuestionnaireClient() {
   const router = useRouter()
-  const [step, setStep] = React.useState(1)
   const [title, setTitle] = React.useState("")
   const [type, setType] = React.useState<QuestionnaireType | "">("")
   const [clientId, setClientId] = React.useState("")

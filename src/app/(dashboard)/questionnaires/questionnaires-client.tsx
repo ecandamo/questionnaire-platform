@@ -61,7 +61,7 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
   const [statusFilter, setStatusFilter] = React.useState("all")
   const [typeFilter, setTypeFilter] = React.useState("all")
 
-  async function load() {
+  const load = React.useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
     if (search) params.set("search", search)
@@ -71,11 +71,11 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
     const res = await fetch(`/api/questionnaires?${params}`)
     if (res.ok) setQuestionnaires(await res.json())
     setLoading(false)
-  }
+  }, [search, statusFilter, typeFilter])
 
   React.useEffect(() => {
-    load()
-  }, [search, statusFilter, typeFilter])
+    void load()
+  }, [load])
 
   async function handleDuplicate(id: string) {
     const res = await fetch(`/api/questionnaires/${id}/duplicate`, { method: "POST" })

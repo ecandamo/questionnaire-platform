@@ -10,7 +10,7 @@ import {
 } from "@/lib/db/schema"
 import { getRequestSession } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
-import { and, asc, desc, eq, ilike, inArray, or } from "drizzle-orm"
+import { and, asc, desc, eq } from "drizzle-orm"
 import type { QuestionnaireStatus, QuestionnaireType } from "@/types"
 
 function requireAuth(session: Awaited<ReturnType<typeof getRequestSession>>) {

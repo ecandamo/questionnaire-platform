@@ -28,7 +28,7 @@ async function seed() {
     .returning()
     .onConflictDoNothing()
 
-  const [techCat] = await db
+  await db
     .insert(questionCategory)
     .values({ name: "Technology", description: "Technology stack and systems", sortOrder: 3 })
     .returning()

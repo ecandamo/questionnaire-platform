@@ -1,6 +1,5 @@
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
-import { notFound } from "next/navigation"
 import { QuestionnaireDetailClient } from "./detail-client"
 
 export default async function QuestionnaireDetailPage({

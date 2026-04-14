@@ -28,6 +28,12 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-14 (self-improvement pass):** Logged **LRN-20260414-009** (promoted): cross-viewer file answers persist immediately; hooks/exhaustive-deps patterns (`useCallback` loaders, ref + stable persist for intervals). **AGENTS.md** + **CLAUDE.md** Self-Improvement sections now include **Cursor emphasized folders → run ESLint** and those fixes. Linked recurrence on **LRN-20260401-005**.
+
+- **2026-04-14 (ESLint / Cursor “emphasized” `src/app`):** Cleared **react-hooks/exhaustive-deps** and **no-unused-vars** across `src/app` (useCallback for data loaders; respond autosave uses `answersRef` + `persistAnswersSnapshot`); aligned **collaborator-panel**; removed dead eslint-disable in `db/index.ts` and unused **seed** `techCat` binding. `npx eslint "src/**/*.{ts,tsx}"` is clean.
+
+- **2026-04-14 (respond UX + CSV upload + export):** Submit / confirm dialog / “Your Information” use one line: **“Name and email must be completed before submitting responses.”** Blob upload allowlist adds **CSV** (`text/csv`, `application/csv`). Response **CSV export** sets **Respondent Name / Email per row** from `answer.last_updated_by_collaborator_id` when set (collaborator’s saved name + email), else primary `response` respondent.
+
 - **2026-04-14 (file upload + collaborators):** Removing or replacing a file on `/respond/[token]` now **POSTs answers immediately** after upload/remove (not only on 30s autosave), so collaborators and refreshed owner views match the DB — fixes “deleted file still showing” when the link was opened before autosave.
 
 - **2026-04-14 (respondent name/email + export CSV):** `/respond/[token]` requires non-empty name + valid email before **Submit** (owner) or **Mark Complete** (contributor); client + `POST …/answers`; confirm dialog shows gaps. Contributor complete persists `name`/`email` on `response_collaborator`. Response CSV export uses **Respondent Name** and **Respondent Email** columns (no single merged cell).
@@ -96,9 +102,11 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
-- `src/app/respond/[token]/page.tsx` — immediate save after file upload/remove; snapshot-based persist helper; owner name/email before submit; dialog hints
+- `src/app/respond/[token]/page.tsx` — immediate save after file upload/remove; snapshot-based persist; unified name/email copy; CSV in file accept + helper text
+- `src/app/api/blob/route.ts` — CSV MIME + extension allowlist
 - `src/app/api/responses/[id]/answers/route.ts` — owner submit validates name + email
-- `src/app/api/responses/[id]/export/route.ts` — CSV: separate name/email columns
+- `src/app/api/responses/[id]/export/route.ts` — CSV: per-question respondent name/email (collaborator vs primary)
+- `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx` — file_upload hint includes CSV
 
 - `CLAUDE.md` — “Questionnaires & public responses” (reopen / `response.status` invariant)
 - `.learnings/LEARNINGS.md` — LRN-20260414-001 promoted, LRN-20260414-002 resolved
