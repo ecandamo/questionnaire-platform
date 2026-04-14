@@ -54,6 +54,11 @@ interface QData {
 
 type ViewerRole = "owner" | "contributor"
 
+function isLikelyValidEmail(raw: string): boolean {
+  const s = raw.trim()
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
+}
+
 export default function RespondPage() {
   const params = useParams<{ token: string }>()
   const router = useRouter()
@@ -77,6 +82,12 @@ export default function RespondPage() {
   const [attributionByQuestionId, setAttributionByQuestionId] = React.useState<Record<string, string>>({})
   // All questions (unfiltered) used by CollaboratorPanel for assignment picker
   const [allQuestions, setAllQuestions] = React.useState<Question[]>([])
+
+  /** Ref keeps latest answers for immediate post-upload / post-remove saves (avoids stale closure vs 30s autosave). */
+  const answersRef = React.useRef<Record<string, string>>({})
+  React.useEffect(() => {
+    answersRef.current = answers
+  }, [answers])
 
   React.useEffect(() => {
     fetch(`/api/share/${token}`)
@@ -141,41 +152,61 @@ export default function RespondPage() {
     setAttributionByQuestionId(nextAttr)
   }, [token])
 
-  async function handleSave(showToast = true) {
-    if (!questionnaire) return
-    setSaving(true)
-    const res = await fetch(`/api/responses/${questionnaire.id}/answers`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token,
-        answers: Object.entries(answers).map(([questionId, value]) => ({ questionId, value })),
-        respondentName: respondentName || undefined,
-        respondentEmail: respondentEmail || undefined,
-        submit: false,
-      }),
-    })
-    if (res.ok) {
-      const data = await res.json()
-      if (data.responseId && !responseId) setResponseId(data.responseId)
-      if (viewerRole === "owner") {
-        const r2 = await fetch(`/api/share/${token}`)
-        if (r2.ok) {
-          const fresh = await r2.json()
-          const nextAttr: Record<string, string> = {}
-          for (const row of fresh.answers ?? []) {
-            if (row.answeredByLabel) nextAttr[row.questionId] = row.answeredByLabel
+  const persistAnswersSnapshot = React.useCallback(
+    async (snapshot: Record<string, string>, showToast: boolean): Promise<boolean> => {
+      if (!questionnaire) return false
+      setSaving(true)
+      const res = await fetch(`/api/responses/${questionnaire.id}/answers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          answers: Object.entries(snapshot).map(([questionId, value]) => ({ questionId, value })),
+          respondentName: respondentName || undefined,
+          respondentEmail: respondentEmail || undefined,
+          submit: false,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.responseId && !responseId) setResponseId(data.responseId)
+        if (viewerRole === "owner") {
+          const r2 = await fetch(`/api/share/${token}`)
+          if (r2.ok) {
+            const fresh = await r2.json()
+            const nextAttr: Record<string, string> = {}
+            for (const row of fresh.answers ?? []) {
+              if (row.answeredByLabel) nextAttr[row.questionId] = row.answeredByLabel
+            }
+            setAttributionByQuestionId(nextAttr)
           }
-          setAttributionByQuestionId(nextAttr)
         }
+        setLastSaved(new Date())
+        if (showToast) toast.success("Progress saved")
+        setSaving(false)
+        return true
       }
-      setLastSaved(new Date())
-      if (showToast) toast.success("Progress saved")
-    } else {
       if (showToast) toast.error("Failed to save")
-    }
-    setSaving(false)
+      else toast.error("Could not save your file change. Try again.")
+      setSaving(false)
+      return false
+    },
+    [questionnaire, token, respondentName, respondentEmail, viewerRole, responseId],
+  )
+
+  async function handleSave(showToast = true) {
+    await persistAnswersSnapshot(answers, showToast)
   }
+
+  const persistFileAnswerValue = React.useCallback(
+    async (questionId: string, nextValue: string) => {
+      if (!questionnaire || submitted || markedComplete) return
+      const snap = { ...answersRef.current, [questionId]: nextValue }
+      answersRef.current = snap
+      await persistAnswersSnapshot(snap, false)
+    },
+    [questionnaire, submitted, markedComplete, persistAnswersSnapshot],
+  )
 
   // Autosave every 30 seconds if there are answers
   React.useEffect(() => {
@@ -197,6 +228,18 @@ export default function RespondPage() {
     )
     if (requiredMissing.length > 0) {
       toast.error(`Please answer all required questions (${requiredMissing.length} remaining)`)
+      setShowSubmitConfirm(false)
+      return
+    }
+
+    const nameOk = respondentName.trim().length > 0
+    const emailOk = respondentEmail.trim().length > 0 && isLikelyValidEmail(respondentEmail)
+    if (!nameOk || !emailOk) {
+      toast.error(
+        !nameOk
+          ? "Please enter your name in Your Information."
+          : "Please enter a valid email address in Your Information."
+      )
       setShowSubmitConfirm(false)
       return
     }
@@ -368,11 +411,24 @@ export default function RespondPage() {
         {/* Respondent info */}
         <Card className="shadow-card">
           <CardHeader className="pb-3 border-b border-border">
-            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Your Information</p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              Your Information
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {viewerRole === "owner"
+                ? "Name and email are required before you can submit this questionnaire."
+                : "Confirm your name and email before marking your section complete."}
+            </p>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 pt-4">
             <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-sm">Your Name</Label>
+              <Label htmlFor="name" className="text-sm">
+                Your Name
+                <span className="text-destructive" aria-hidden>
+                  {" "}
+                  *
+                </span>
+              </Label>
               <Input
                 id="name"
                 value={respondentName}
@@ -381,7 +437,13 @@ export default function RespondPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-sm">Your Email</Label>
+              <Label htmlFor="email" className="text-sm">
+                Your Email
+                <span className="text-destructive" aria-hidden>
+                  {" "}
+                  *
+                </span>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -408,7 +470,8 @@ export default function RespondPage() {
         {viewerRole === "contributor" && (
           <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
             <p className="text-xs text-muted-foreground">
-              You&apos;ve been assigned specific questions to answer. Once done, click &quot;Mark Complete&quot; below.
+              You&apos;ve been assigned specific questions to answer. Confirm your name and email above, then click
+              &quot;Mark Complete&quot; when you&apos;re done.
             </p>
           </div>
         )}
@@ -429,6 +492,7 @@ export default function RespondPage() {
               onToggleMulti={(o) => toggleMultiSelect(q.id, o)}
               showAttribution={viewerRole === "owner"}
               answeredByLabel={attributionByQuestionId[q.id]}
+              persistFileAnswerValue={persistFileAnswerValue}
             />
           ))}
         </div>
@@ -488,6 +552,13 @@ export default function RespondPage() {
                 required question(s) unanswered
               </p>
             )}
+            {(!respondentName.trim() || !isLikelyValidEmail(respondentEmail)) && (
+              <p className="text-destructive">
+                {!respondentName.trim()
+                  ? "Enter your name in Your Information."
+                  : "Enter a valid email in Your Information."}
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSubmitConfirm(false)}>
@@ -507,9 +578,12 @@ export default function RespondPage() {
 function FileUploadQuestionInput({
   value,
   onChange,
+  onPersistNewValue,
 }: {
   value: string
   onChange: (v: string) => void
+  /** Persist to server right after upload or remove so other viewers (e.g. collaborators) see the same state. */
+  onPersistNewValue?: (next: string) => void | Promise<void>
 }) {
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = React.useState(false)
@@ -535,6 +609,7 @@ function FileUploadQuestionInput({
         },
       })
       onChange(blob.url)
+      await onPersistNewValue?.(blob.url)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed")
     } finally {
@@ -546,6 +621,7 @@ function FileUploadQuestionInput({
   function clear() {
     setError(null)
     onChange("")
+    void onPersistNewValue?.("")
   }
 
   const label = value ? fileLabelFromBlobUrl(value) : ""
@@ -624,6 +700,7 @@ function QuestionField({
   onToggleMulti,
   showAttribution,
   answeredByLabel,
+  persistFileAnswerValue,
 }: {
   question: Question
   displayNumber: number | null
@@ -632,6 +709,7 @@ function QuestionField({
   onToggleMulti: (option: string) => void
   showAttribution?: boolean
   answeredByLabel?: string
+  persistFileAnswerValue?: (questionId: string, nextValue: string) => void | Promise<void>
 }) {
   if (question.type === "section_header") {
     return (
@@ -769,7 +847,11 @@ function QuestionField({
           )}
 
           {question.type === "file_upload" && (
-            <FileUploadQuestionInput value={value} onChange={onChange} />
+            <FileUploadQuestionInput
+              value={value}
+              onChange={onChange}
+              onPersistNewValue={(next) => void persistFileAnswerValue?.(question.id, next)}
+            />
           )}
         </div>
 

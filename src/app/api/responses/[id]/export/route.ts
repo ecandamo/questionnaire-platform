@@ -37,9 +37,20 @@ export async function GET(
 
   const answerMap = new Map(answers.map((a) => [a.questionId, a.value]))
 
+  const nameCell = `"${(resp?.respondentName ?? "").replace(/"/g, '""')}"`
+  const emailCell = `"${(resp?.respondentEmail ?? "").replace(/"/g, '""')}"`
+
   // Build CSV
   const rows: string[][] = [
-    ["Question", "Type", "Required", "Answer", "Submitted At", "Respondent"],
+    [
+      "Question",
+      "Type",
+      "Required",
+      "Answer",
+      "Submitted At",
+      "Respondent Name",
+      "Respondent Email",
+    ],
   ]
 
   for (const q of questions) {
@@ -50,7 +61,8 @@ export async function GET(
       q.isRequired ? "Yes" : "No",
       `"${(answerMap.get(q.id) ?? "").replace(/"/g, '""')}"`,
       resp?.submittedAt ? format(resp.submittedAt, "yyyy-MM-dd HH:mm") : "",
-      `"${((resp?.respondentName ?? "") + " " + (resp?.respondentEmail ?? "")).trim()}"`,
+      nameCell,
+      emailCell,
     ])
   }
 

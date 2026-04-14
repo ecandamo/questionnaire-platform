@@ -164,9 +164,45 @@ export async function POST(
 
   // ── Handle contributor "mark complete" ────────────────────────────────────────
   if (submit && ctx.kind === "contributor") {
+    const [collabRow] = await db
+      .select()
+      .from(responseCollaborator)
+      .where(eq(responseCollaborator.id, ctx.collaboratorId))
+
+    if (!collabRow) {
+      return NextResponse.json({ error: "Collaborator not found" }, { status: 404 })
+    }
+
+    const finalCollabName =
+      typeof respondentName === "string"
+        ? respondentName.trim()
+        : (collabRow.name ?? "").trim()
+    const finalCollabEmail =
+      typeof respondentEmail === "string"
+        ? respondentEmail.trim()
+        : (collabRow.email ?? "").trim()
+    const collabEmailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(finalCollabEmail)
+    if (!finalCollabName) {
+      return NextResponse.json(
+        { error: "Your name is required to mark your section complete" },
+        { status: 400 }
+      )
+    }
+    if (!finalCollabEmail || !collabEmailOk) {
+      return NextResponse.json(
+        { error: "A valid email is required to mark your section complete" },
+        { status: 400 }
+      )
+    }
+
     await db
       .update(responseCollaborator)
-      .set({ inviteStatus: "completed", updatedAt: new Date() })
+      .set({
+        inviteStatus: "completed",
+        name: finalCollabName,
+        email: finalCollabEmail,
+        updatedAt: new Date(),
+      })
       .where(eq(responseCollaborator.id, ctx.collaboratorId))
 
     return NextResponse.json({ success: true, markedComplete: true })
@@ -174,6 +210,28 @@ export async function POST(
 
   // ── Handle owner full submit ──────────────────────────────────────────────────
   if (submit && ctx.kind === "owner") {
+    const finalName =
+      typeof respondentName === "string"
+        ? respondentName.trim()
+        : (resp.respondentName ?? "").trim()
+    const finalEmail =
+      typeof respondentEmail === "string"
+        ? respondentEmail.trim()
+        : (resp.respondentEmail ?? "").trim()
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(finalEmail)
+    if (!finalName) {
+      return NextResponse.json(
+        { error: "Respondent name is required to submit" },
+        { status: 400 }
+      )
+    }
+    if (!finalEmail || !emailOk) {
+      return NextResponse.json(
+        { error: "A valid respondent email is required to submit" },
+        { status: 400 }
+      )
+    }
+
     // Check all collaborators have completed their assigned questions
     const allCollaborators = await db
       .select()
@@ -216,8 +274,8 @@ export async function POST(
       .set({
         status: "submitted",
         submittedAt: new Date(),
-        respondentName: respondentName ?? resp.respondentName,
-        respondentEmail: respondentEmail ?? resp.respondentEmail,
+        respondentName: finalName,
+        respondentEmail: finalEmail,
         updatedAt: new Date(),
       })
       .where(eq(response.id, resp.id))

@@ -28,6 +28,10 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-14 (file upload + collaborators):** Removing or replacing a file on `/respond/[token]` now **POSTs answers immediately** after upload/remove (not only on 30s autosave), so collaborators and refreshed owner views match the DB — fixes “deleted file still showing” when the link was opened before autosave.
+
+- **2026-04-14 (respondent name/email + export CSV):** `/respond/[token]` requires non-empty name + valid email before **Submit** (owner) or **Mark Complete** (contributor); client + `POST …/answers`; confirm dialog shows gaps. Contributor complete persists `name`/`email` on `response_collaborator`. Response CSV export uses **Respondent Name** and **Respondent Email** columns (no single merged cell).
+
 - **2026-04-14 (self-improvement pass):** **LRN-20260414-001** promoted → **`CLAUDE.md`**. **LRN-20260414-002** resolved (questionnaires row menu). **2026-04-14 (follow-up):** **LRN-20260414-003–005** promoted (Drizzle CLI + `.env.local`, publish vs question `PATCH`, UUID client ids for `questionnaire_question`); **LRN-20260414-006–007** pending (Blob client/public pattern, secret hygiene). **ERR-20260414-001** resolved (drizzle-kit missing `DATABASE_URL`). **`CLAUDE.md` / `AGENTS.md`** updated with Drizzle env + draft/publish + UUID rules. Review `.learnings/LEARNINGS.md` / `ERRORS.md` for full entries.
 
 - **2026-04-14 (save draft / new question ids):** Custom and bank-added questions used `custom-<uuid>` / `temp-<uuid>` client ids; Postgres `uuid` columns reject those strings → PATCH save failed. New ids are plain `crypto.randomUUID()`. `PATCH /api/questionnaires/[id]` wraps question insert in try/catch and returns `{ error }`; builder toasts that message on save/publish pre-save failure.
@@ -92,6 +96,10 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/app/respond/[token]/page.tsx` — immediate save after file upload/remove; snapshot-based persist helper; owner name/email before submit; dialog hints
+- `src/app/api/responses/[id]/answers/route.ts` — owner submit validates name + email
+- `src/app/api/responses/[id]/export/route.ts` — CSV: separate name/email columns
+
 - `CLAUDE.md` — “Questionnaires & public responses” (reopen / `response.status` invariant)
 - `.learnings/LEARNINGS.md` — LRN-20260414-001 promoted, LRN-20260414-002 resolved
 - `HANDOFF.md` — this update
