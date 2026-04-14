@@ -72,8 +72,9 @@ import {
 import { answerableDisplayNumbers } from "@/lib/question-sections"
 import { QuestionAssignmentPicker } from "@/components/shared/question-assignment-picker"
 
-function newTempQuestionId(prefix: string) {
-  return `${prefix}-${globalThis.crypto.randomUUID()}`
+/** Client-side id for new rows; must be a real UUID — `questionnaire_question.id` is a Postgres uuid column. */
+function newClientQuestionId(): string {
+  return globalThis.crypto.randomUUID()
 }
 
 interface QQuestion {
@@ -162,8 +163,8 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
 
   React.useEffect(() => { load() }, [id])
 
-  async function handleSave() {
-    setSaving(true)
+  /** Persists the current `questions` list to the server (draft PATCH). */
+  async function persistQuestionsToServer(): Promise<{ ok: true } | { ok: false; error: string }> {
     const res = await fetch(`/api/questionnaires/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -182,16 +183,37 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
         })),
       }),
     })
-    if (res.ok) {
+    if (res.ok) return { ok: true }
+    const body = (await res.json().catch(() => ({}))) as { error?: string }
+    return {
+      ok: false,
+      error: typeof body.error === "string" ? body.error : `Save failed (${res.status})`,
+    }
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    const result = await persistQuestionsToServer()
+    if (result.ok) {
       toast.success("Draft saved")
+      await load()
     } else {
-      toast.error("Failed to save")
+      toast.error(result.error)
     }
     setSaving(false)
   }
 
   async function handlePublish() {
     setPublishing(true)
+    // Publish does not send questions — custom / edited drafts only exist in React state until Save.
+    // Always persist the current list first so the share link sees the same questions as the builder.
+    const saveResult = await persistQuestionsToServer()
+    if (!saveResult.ok) {
+      toast.error(saveResult.error)
+      setPublishing(false)
+      return
+    }
+
     const res = await fetch(`/api/questionnaires/${id}/publish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -250,7 +272,7 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
       return
     }
     const newQ: QQuestion = {
-      id: newTempQuestionId("temp"),
+      id: newClientQuestionId(),
       text: bq.text,
       type: bq.type,
       description: null,
@@ -268,7 +290,7 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
   function addCustomQuestion(q: Omit<QQuestion, "id" | "sortOrder">) {
     const newQ: QQuestion = {
       ...q,
-      id: newTempQuestionId("custom"),
+      id: newClientQuestionId(),
       sortOrder: questions.length,
     }
     setQuestions((prev) => [...prev, newQ])

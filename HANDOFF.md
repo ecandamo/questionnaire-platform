@@ -28,6 +28,8 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-14 (save draft / new question ids):** Custom and bank-added questions used `custom-<uuid>` / `temp-<uuid>` client ids; Postgres `uuid` columns reject those strings → PATCH save failed. New ids are plain `crypto.randomUUID()`. `PATCH /api/questionnaires/[id]` wraps question insert in try/catch and returns `{ error }`; builder toasts that message on save/publish pre-save failure.
+
 - **2026-04-14 (file upload question type):** Added `file_upload` to `question_type` enum, types, CSV import whitelist, question bank filter cast. **`POST /api/blob`** — `handleUpload` from `@vercel/blob/client` with allowed MIME types (PDF, Word, Excel, common images) and 50 MB max; **`@vercel/blob`** dependency. Respond page: file picker + progress + remove; response viewer: link + label helper `src/lib/blob-url-label.ts`; builder hint on `file_upload` cards. Migration `drizzle/0002_sharp_ben_parker.sql`.
 
 - **2026-04-14 (submit → confirmation UX):** Owner submit no longer sets `submitted` before `router.push` to `/respond/[token]/confirmation`, so the “Already Submitted” full-page state does not flash between submit and the thank-you page. “Already Submitted” still shows when the share link is opened after submission (API `responseStatus === "submitted"`).
@@ -88,6 +90,9 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx` — valid UUIDs for new questions; save error toast from API; publish still pre-saves questions
+- `src/app/api/questionnaires/[id]/route.ts` — try/catch on question insert, JSON error body
+
 - `src/lib/db/schema.ts`, `src/types/index.ts`, `src/lib/question-csv-import.ts`, `src/app/api/questions/route.ts` — `file_upload` question type
 - `src/app/api/blob/route.ts` — Vercel Blob client-upload token route
 - `src/app/respond/[token]/page.tsx`, `src/lib/blob-url-label.ts` — upload UI + URL label

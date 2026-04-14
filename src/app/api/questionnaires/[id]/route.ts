@@ -95,13 +95,18 @@ export async function PATCH(
   if (questionUpdates !== undefined) {
     await db.delete(questionnaireQuestion).where(eq(questionnaireQuestion.questionnaireId, id))
     if (questionUpdates.length > 0) {
-      await db.insert(questionnaireQuestion).values(
-        questionUpdates.map((q: Record<string, unknown>, i: number) => ({
-          ...q,
-          questionnaireId: id,
-          sortOrder: i,
-        }))
-      )
+      try {
+        await db.insert(questionnaireQuestion).values(
+          questionUpdates.map((q: Record<string, unknown>, i: number) => ({
+            ...q,
+            questionnaireId: id,
+            sortOrder: i,
+          }))
+        )
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Insert failed"
+        return NextResponse.json({ error: message }, { status: 400 })
+      }
     }
   }
 
