@@ -86,9 +86,7 @@ export default function RespondPage() {
         setAllQuestions(data.questions)
         setViewerRole(data.viewerRole ?? "owner")
         setResponseId(data.responseId ?? null)
-        if (data.responseStatus === "submitted") {
-          setSubmitted(true)
-        }
+        setSubmitted(data.responseStatus === "submitted")
         const initialAnswers: Record<string, string> = {}
         const attr: Record<string, string> = {}
         for (const row of data.answers ?? []) {
@@ -124,9 +122,7 @@ export default function RespondPage() {
     setQuestions(data.questions)
     setAllQuestions(data.questions)
     setResponseId(data.responseId ?? null)
-    if (data.responseStatus === "submitted") {
-      setSubmitted(true)
-    }
+    setSubmitted(data.responseStatus === "submitted")
     const nextAnswers: Record<string, string> = {}
     for (const row of data.answers ?? []) {
       nextAnswers[row.questionId] = row.value ?? ""
@@ -220,8 +216,8 @@ export default function RespondPage() {
         // Contributor finished their questions
         setMarkedComplete(true)
       } else {
-        // Owner submitted the whole questionnaire
-        setSubmitted(true)
+        // Owner submitted — go straight to confirmation. Do not set `submitted` here:
+        // that branch renders "Already Submitted" and would flash before navigation.
         router.push(`/respond/${token}/confirmation`)
       }
     } else {

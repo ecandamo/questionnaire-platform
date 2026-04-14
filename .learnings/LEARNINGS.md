@@ -398,3 +398,20 @@ Run `npx eslint src` after UI refactors. Move impure date/random work to `useEff
 - Tags: eslint, react-compiler, cursor
 
 ---
+
+## [LRN-20260414-001] best_practice
+
+**Logged**: 2026-04-14
+**Priority**: high
+**Status**: pending
+**Area**: backend
+
+### Summary
+Reopening a submitted questionnaire must reset the **`response`** row (e.g. `status` back to `in_progress`, clear `submittedAt`), not only `questionnaire.status` and `share_link`. The public `/api/share/[token]` payload includes `responseStatus`; the respond UI and `POST …/answers` both treat `submitted` on the response as final.
+
+### Metadata
+- Source: bugfix
+- Related Files: `src/app/api/questionnaires/[id]/reopen/route.ts`, `src/app/api/share/[token]/route.ts`
+- Tags: questionnaire, reopen, response
+
+---

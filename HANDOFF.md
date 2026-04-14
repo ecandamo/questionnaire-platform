@@ -27,6 +27,10 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-14 (submit → confirmation UX):** Owner submit no longer sets `submitted` before `router.push` to `/respond/[token]/confirmation`, so the “Already Submitted” full-page state does not flash between submit and the thank-you page. “Already Submitted” still shows when the share link is opened after submission (API `responseStatus === "submitted"`).
+
+- **2026-04-14 (reopen + client link):** `POST /api/questionnaires/[id]/reopen` now resets all `response` rows for that questionnaire to `in_progress` and clears `submittedAt` (submit left them `submitted`, so `/api/share/[token]` and the respond page still showed “already submitted”). Collaborators with `invite_status = completed` are set back to `active`. Respond page syncs `submitted` from `responseStatus` on load/refresh (not only when true).
+
 - **2026-04-10 (favicon):** Added `src/app/icon.svg` — API wordmark (navy `#273B6E` + green crosshair) on a white circular background; Next serves it at `/icon.svg` for browser tabs.
 
 - **2026-04-09 (question bank UI polish):** Templates column shows each preset template as a rounded pill with deterministic accent color by template id; **Orphan** uses a dashed muted pill. **Bulk import from CSV** dialog: title + description, structured “File requirements” / “After import” sections, clearer category-auto-create label, header case/underscore note.
@@ -81,6 +85,9 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/app/api/questionnaires/[id]/reopen/route.ts` — reopen resets `response` + collaborator invite rows so share link works again
+- `src/app/respond/[token]/page.tsx` — `submitted` mirrors `responseStatus` after refetch; no `setSubmitted(true)` before confirmation navigation (avoids “Already Submitted” flash)
+
 - `src/app/icon.svg` — app favicon (API logo on white circle)
 
 - `src/lib/question-csv-import.ts` — bank-only CSV columns + validation

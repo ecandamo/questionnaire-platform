@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { questionnaire, shareLink } from "@/lib/db/schema"
+import { questionnaire, shareLink, response, responseCollaborator } from "@/lib/db/schema"
 import { getRequestSession } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { addDays } from "date-fns"
 
 export async function POST(
@@ -30,11 +30,25 @@ export async function POST(
     .set({ status: "shared", submittedAt: null, updatedAt: new Date() })
     .where(eq(questionnaire.id, id))
 
-  // Reactivate the share link or extend expiry
+  // Reactivate the share link or extend expiry (submit sets it to closed)
   await db
     .update(shareLink)
     .set({ status: "active", expiresAt: addDays(new Date(), 30) })
     .where(eq(shareLink.questionnaireId, id))
+
+  // Allow the public link to work again: submit leaves response.status = submitted,
+  // which /api/share and POST …/answers treat as "already submitted".
+  await db
+    .update(response)
+    .set({ status: "in_progress", submittedAt: null, updatedAt: new Date() })
+    .where(eq(response.questionnaireId, id))
+
+  await db
+    .update(responseCollaborator)
+    .set({ inviteStatus: "active", updatedAt: new Date() })
+    .where(
+      and(eq(responseCollaborator.questionnaireId, id), eq(responseCollaborator.inviteStatus, "completed"))
+    )
 
   await logAudit({
     userId: session.user.id,
