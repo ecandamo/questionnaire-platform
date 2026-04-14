@@ -403,7 +403,7 @@ Run `npx eslint src` after UI refactors. Move impure date/random work to `useEff
 
 **Logged**: 2026-04-14
 **Priority**: high
-**Status**: pending
+**Status**: promoted
 **Area**: backend
 
 ### Summary
@@ -413,5 +413,179 @@ Reopening a submitted questionnaire must reset the **`response`** row (e.g. `sta
 - Source: bugfix
 - Related Files: `src/app/api/questionnaires/[id]/reopen/route.ts`, `src/app/api/share/[token]/route.ts`
 - Tags: questionnaire, reopen, response
+
+### Resolution
+- **Promoted**: `CLAUDE.md` — “Questionnaires & public responses”
+- **Notes**: Reopen route updated in code to reset `response` (+ collaborator `completed` → `active`); respond page syncs `submitted` from `responseStatus`.
+
+---
+
+## [LRN-20260414-002] best_practice
+
+**Logged**: 2026-04-14
+**Priority**: low
+**Status**: resolved
+**Area**: frontend / UX
+
+### Summary
+**Row-level overflow menus** (three dots) should stay **visible by default** when they are the primary way to reach actions (duplicate, archive, delete). Hiding the trigger with `opacity-0` until `group-hover` matches a “clean table” aesthetic but **hurts discoverability**; users may not realize actions exist.
+
+### Details
+The questionnaires table used `group` on `<tr>` and `opacity-0 group-hover:opacity-100` on the `DropdownMenuTrigger` button. Fix: remove those classes so the ghost icon button is always opaque; optional follow-up is muted idle color (`text-muted-foreground hover:text-foreground`) if contrast feels loud.
+
+When design notes in `HANDOFF.md` describe old behavior (“fades in on row hover”), update that line in the same change so future agents do not reintroduce the pattern by mistake.
+
+### Metadata
+- Source: user feedback + implementation
+- Related Files: `src/app/(dashboard)/questionnaires/questionnaires-client.tsx`, `HANDOFF.md`
+- Tags: accessibility, discoverability, tailwind, data-table
+
+### Resolution
+- **Resolved**: 2026-04-14 (self-improvement review)
+- **Notes**: `questionnaires-client.tsx` no longer uses hover-only opacity on the row actions trigger; `HANDOFF.md` lists row actions as always visible.
+
+---
+
+## [LRN-20260414-003] best_practice
+
+**Logged**: 2026-04-14
+**Priority**: high
+**Status**: promoted
+**Area**: config / tooling
+
+### Summary
+**`drizzle-kit push` (and `generate` / `migrate`) does not load `.env.local`.** Only the Next.js dev server loads that file by default, so `process.env.DATABASE_URL` is empty in `drizzle.config.ts` unless you export it in the shell or read env files explicitly.
+
+### Details
+Symptom: `Error Either connection "url" or "host", "database" are required for PostgreSQL database connection` when running `npm run db:push` despite `.env.local` containing `DATABASE_URL`.
+
+**Fix in this repo:** `drizzle.config.ts` calls `ensureDatabaseUrlFromEnvFiles()` to parse `DATABASE_URL` from `.env.local` then `.env` before `defineConfig`.
+
+### Suggested Action
+- In any Next + Drizzle project: either use `dotenv/config`, `node --env-file=.env.local`, or a small file reader in `drizzle.config.ts` so CLI commands match local app env.
+
+### Metadata
+- Source: session / user report
+- Related Files: `drizzle.config.ts`
+- Tags: drizzle, neon, env, drizzle-kit
+
+### Resolution
+- **Promoted**: `CLAUDE.md` (Database Initialization), `AGENTS.md` (Database section)
+
+---
+
+## [LRN-20260414-004] best_practice
+
+**Logged**: 2026-04-14
+**Priority**: high
+**Status**: promoted
+**Area**: backend / product
+
+### Summary
+**Custom questionnaires have zero `questionnaire_question` rows until `PATCH` saves the builder list.** **`POST …/publish`** only updates questionnaire status and creates `share_link`; it does not send questions. Publishing without persisting first yields an **empty respond page** (API returns `questions: []`).
+
+### Details
+Preset flows that `INSERT` template questions at questionnaire creation time mask the issue. **Custom** type creates the questionnaire row only; questions exist in React state until Save.
+
+**Fix:** `handlePublish` calls the same persist payload as Save before `POST /publish`.
+
+### Suggested Action
+- Any “publish” or “activate” action that snapshots content must either require an explicit save or auto-persist the draft in the same request.
+
+### Metadata
+- Source: bugfix / user report
+- Related Files: `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`, `src/app/api/questionnaires/[id]/publish/route.ts`
+- Tags: questionnaire, publish, draft
+
+### Resolution
+- **Promoted**: `CLAUDE.md` (Questionnaires & public responses), `AGENTS.md`
+
+---
+
+## [LRN-20260414-005] knowledge_gap
+
+**Logged**: 2026-04-14
+**Priority**: high
+**Status**: resolved
+**Area**: backend
+
+### Summary
+**Postgres `uuid` columns reject non-UUID strings.** Client-generated ids like `custom-<uuid>` or `temp-<uuid>` (string prefix + UUID) are **invalid** for `questionnaire_question.id`, so `INSERT` on draft save fails and the UI shows a generic “Failed to save”.
+
+### Details
+Use `crypto.randomUUID()` (or server-generated ids) for new rows intended for `uuid` PK columns.
+
+### Suggested Action
+- Grep for temp-id patterns before save paths that bulk-insert client ids.
+
+### Metadata
+- Source: bugfix
+- Related Files: `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`
+- Tags: postgres, uuid, drizzle
+
+### Resolution
+- **Resolved**: 2026-04-14 — `newClientQuestionId()` returns `randomUUID()` only; `PATCH` insert errors surfaced as JSON `error` + toast.
+
+---
+
+## [LRN-20260414-006] best_practice
+
+**Logged**: 2026-04-14
+**Priority**: medium
+**Status**: pending
+**Area**: backend / infra
+
+### Summary
+**Vercel Blob file uploads for this app:** use **client uploads** (`upload()` from `@vercel/blob/client` + `handleUpload` on `POST /api/blob`) so files are not limited by the **4.5 MB** Vercel Function request body cap. Store **`access: "public"`** if answers keep a plain URL in `answer.value` and the response viewer links directly — **private** blobs need signed reads or a proxy, which the current UI does not implement.
+
+### Metadata
+- Source: implementation / planning
+- Related Files: `src/app/api/blob/route.ts`, `src/app/respond/[token]/page.tsx`
+- Tags: vercel-blob, uploads, storage
+
+---
+
+## [LRN-20260414-007] best_practice
+
+**Logged**: 2026-04-14
+**Priority**: medium
+**Status**: pending
+**Area**: security / ops
+
+### Summary
+**Never paste full `DATABASE_URL` (or any secret-bearing connection string) into chat, tickets, or screenshots.** Treat it as compromised: **rotate the Neon password**, update Vercel + local env, redeploy.
+
+### Metadata
+- Source: session reminder
+- Tags: secrets, neon, ops
+
+---
+
+## [LRN-20260414-008] best_practice
+
+**Logged**: 2026-04-14
+**Priority**: medium
+**Status**: resolved
+**Area**: frontend / Next.js App Router
+
+### Summary
+After a successful **client-side submit**, do not set **local React state** that switches the *same* route to a different “terminal” UI **before** `router.push` to the real destination page. The next paint can show the wrong screen for a frame (or until navigation completes).
+
+### Details
+On `src/app/respond/[token]/page.tsx`, owner submit did `setSubmitted(true)` then `router.push(\`/respond/${token}/confirmation\`)`. The `submitted` branch renders a full-page **“Already Submitted”** message (intended when `GET /api/share/...` returns `responseStatus === "submitted"` on load). That branch ran **between** submit success and arrival on `/respond/[token]/confirmation`, so users saw a quick **Already Submitted** flash, then **Thank you!**.
+
+**Fix:** on successful owner submit, only `router.push(...)` to confirmation; leave `submitted` to be set from the API on later visits. Contributors who use `setMarkedComplete(true)` without navigation still need that in-page terminal state.
+
+### Suggested Action
+When success UX lives on **another route**, prefer **navigation alone** (or an explicit lightweight “Redirecting…” state) over reusing a state flag that means something else in-context (e.g. “already submitted on revisit”).
+
+### Metadata
+- Source: investigation + fix
+- Related Files: `src/app/respond/[token]/page.tsx`, `src/app/respond/[token]/confirmation/page.tsx`
+- Tags: react, nextjs, client-navigation, ux, state
+- See Also: HANDOFF.md (2026-04-14 submit → confirmation UX)
+
+### Resolution
+- **Resolved**: 2026-04-14 — removed `setSubmitted(true)` before `router.push` to confirmation.
 
 ---

@@ -28,6 +28,8 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-14 (self-improvement pass):** **LRN-20260414-001** promoted → **`CLAUDE.md`**. **LRN-20260414-002** resolved (questionnaires row menu). **2026-04-14 (follow-up):** **LRN-20260414-003–005** promoted (Drizzle CLI + `.env.local`, publish vs question `PATCH`, UUID client ids for `questionnaire_question`); **LRN-20260414-006–007** pending (Blob client/public pattern, secret hygiene). **ERR-20260414-001** resolved (drizzle-kit missing `DATABASE_URL`). **`CLAUDE.md` / `AGENTS.md`** updated with Drizzle env + draft/publish + UUID rules. Review `.learnings/LEARNINGS.md` / `ERRORS.md` for full entries.
+
 - **2026-04-14 (save draft / new question ids):** Custom and bank-added questions used `custom-<uuid>` / `temp-<uuid>` client ids; Postgres `uuid` columns reject those strings → PATCH save failed. New ids are plain `crypto.randomUUID()`. `PATCH /api/questionnaires/[id]` wraps question insert in try/catch and returns `{ error }`; builder toasts that message on save/publish pre-save failure.
 
 - **2026-04-14 (file upload question type):** Added `file_upload` to `question_type` enum, types, CSV import whitelist, question bank filter cast. **`POST /api/blob`** — `handleUpload` from `@vercel/blob/client` with allowed MIME types (PDF, Word, Excel, common images) and 50 MB max; **`@vercel/blob`** dependency. Respond page: file picker + progress + remove; response viewer: link + label helper `src/lib/blob-url-label.ts`; builder hint on `file_upload` cards. Migration `drizzle/0002_sharp_ben_parker.sql`.
@@ -84,12 +86,18 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Header**: Top bar holds Admin pill + user menu only (no duplicate page title; wayfinding via sidebar + main `h1`)
 - **Status badges**: All badges now include a colored dot indicator before the label
 - **Dashboard**: KPI cards with left-border color accent + `text-4xl` numbers; chart/section headers use `text-[10px] uppercase tracking-[0.08em]`; recent list rows cleaner
-- **Questionnaires list**: Table headers `text-[10px] uppercase tracking-[0.08em] bg-muted/30`; action menu fades in on row hover; stronger title weight
+- **Questionnaires list**: Table headers `text-[10px] uppercase tracking-[0.08em] bg-muted/30`; row actions menu always visible; stronger title weight
 - **Questionnaire detail**: Page title `text-3xl`; refined metadata separators; question cards use left-border accent for required questions, inline type tags replace Badge components
 - **Respondent form**: Sticky header uses `backdrop-blur-sm`; section headers use left border accent; progress bar taller; submit area has border-top
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `CLAUDE.md` — “Questionnaires & public responses” (reopen / `response.status` invariant)
+- `.learnings/LEARNINGS.md` — LRN-20260414-001 promoted, LRN-20260414-002 resolved
+- `HANDOFF.md` — this update
+
+- `src/app/(dashboard)/questionnaires/questionnaires-client.tsx` — row actions menu always visible (no hover-only opacity)
+
 - `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx` — valid UUIDs for new questions; save error toast from API; publish still pre-saves questions
 - `src/app/api/questionnaires/[id]/route.ts` — try/catch on question insert, JSON error body
 

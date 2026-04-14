@@ -234,3 +234,35 @@ Next.js / eslint-config-next stack enables strict React rules;explorer “emphas
 - See Also: LRN-20260401-005
 
 ---
+
+## [ERR-20260414-001] drizzle-kit-missing-database-url
+
+**Logged**: 2026-04-14
+**Priority**: medium
+**Status**: resolved
+**Area**: tooling
+
+### Summary
+`npm run db:push` failed with Drizzle Kit reporting that PostgreSQL connection `url` (or host/database) is required.
+
+### Error
+```
+Error  Either connection "url" or "host", "database" are required for PostgreSQL database connection
+```
+
+### Context
+`drizzle.config.ts` used `process.env.DATABASE_URL` only. **`drizzle-kit` does not load `.env.local`**, unlike `next dev`, so `DATABASE_URL` was undefined when running from the repo root with vars only in `.env.local`.
+
+### Suggested Fix
+Read `DATABASE_URL` from `.env.local` / `.env` inside `drizzle.config.ts`, or run `node --env-file=.env.local node_modules/drizzle-kit/bin.cjs push`, or export `DATABASE_URL` in the shell before `db:push`.
+
+### Resolution
+- **Resolved**: 2026-04-14
+- **Notes**: `drizzle.config.ts` gained `ensureDatabaseUrlFromEnvFiles()` + clear throw if still missing.
+
+### Metadata
+- Reproducible: yes
+- Related Files: `drizzle.config.ts`
+- See Also: LRN-20260414-003
+
+---

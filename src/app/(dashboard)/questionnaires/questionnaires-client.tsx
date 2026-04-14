@@ -214,7 +214,7 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
                 </thead>
                 <tbody>
                   {questionnaires.map((q, i) => (
-                    <tr key={q.id} className={`hover:bg-muted/40 transition-colors group ${i > 0 ? "border-t border-border" : ""}`}>
+                    <tr key={q.id} className={`hover:bg-muted/40 transition-colors ${i > 0 ? "border-t border-border" : ""}`}>
                       <td className="px-5 py-3.5 max-w-64">
                         <Link href={`/questionnaires/${q.id}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors truncate block">
                           {q.title}
@@ -234,7 +234,7 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
                       <td className="px-4 py-3.5">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon-sm">
                               <MoreHorizontalIcon className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>

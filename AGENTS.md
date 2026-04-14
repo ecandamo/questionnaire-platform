@@ -55,6 +55,10 @@ Never call `neon()`, `createClient()`, or any external service constructor at mo
 Next.js evaluates module-level code at build time — a missing env var will crash the build.
 Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the pattern).
 
+**Drizzle CLI:** `drizzle-kit` does not load `.env.local`; this repo’s `drizzle.config.ts` reads `DATABASE_URL` from `.env.local` / `.env` before `push` / `generate` / `migrate`.
+
+**Questionnaire drafts:** Custom questionnaires have no snapshot rows until `PATCH` saves questions; publish flows must persist questions first. New `questionnaire_question` client ids must be plain UUIDs (Postgres `uuid` column).
+
 ## Folder Structure
 
 - src/components/ui — shadcn/ui components

@@ -31,6 +31,13 @@
 
 - Never initialize Neon / Drizzle at module top-level — builds crash when DATABASE_URL is absent
 - Use lazy factory pattern (see src/lib/db/index.ts)
+- **Drizzle CLI** (`drizzle-kit push`, `generate`, `migrate`) does not load `.env.local` by default. `drizzle.config.ts` in this repo pre-reads `DATABASE_URL` from `.env.local` / `.env` so `npm run db:push` works without exporting vars manually.
+
+## Questionnaires & public responses
+
+- Owner submit sets `response.status` to `submitted` (and may set `share_link` to `closed`). **`POST …/questionnaires/[id]/reopen`** must reset matching **`response`** rows to `in_progress` and clear `submittedAt`, not only `questionnaire.status` / share link — `/api/share/[token]` returns `responseStatus`, and `POST …/responses/[id]/answers` rejects when the response is still `submitted`.
+- **Custom** questionnaires start with **no** `questionnaire_question` rows until **`PATCH /api/questionnaires/[id]`** saves the list. **Publish** must run that save first (or the user must click Save); otherwise the respond page loads **zero questions**.
+- New builder rows must use **`crypto.randomUUID()`** for `questionnaire_question.id` — Postgres `uuid` rejects prefixed strings like `custom-<uuid>` / `temp-<uuid>`.
 
 ## File Structure
 
