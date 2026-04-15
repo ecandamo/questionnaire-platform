@@ -37,12 +37,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 })
   }
 
+  const baseUrl = (process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL)?.replace(/\/$/, "")
+  if (!baseUrl) {
+    return NextResponse.json(
+      { error: "Server misconfiguration: set BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL" },
+      { status: 500 },
+    )
+  }
+
+  // Server-side fetch has no browser Origin; Better Auth rejects without it ("Missing or null Origin").
+  const origin = new URL(baseUrl).origin
+
   // Use Better Auth admin API to create user
-  const result = await fetch(`${process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL}/api/auth/admin/create-user`, {
+  const result = await fetch(`${baseUrl}/api/auth/admin/create-user`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       cookie: req.headers.get("cookie") ?? "",
+      Origin: origin,
     },
     body: JSON.stringify({ name, email, password, role: role ?? "user" }),
   })

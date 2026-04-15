@@ -5,6 +5,7 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
 
 ## Current Status
 - State: **working** — full application built and compiles cleanly
+- **Admin → Create user:** `POST /api/admin/users` server-fetches Better Auth `create-user` without a browser `Origin` header; Better Auth returned **"Missing or null Origin"**. Route now sends **`Origin`** derived from `BETTER_AUTH_URL` / `NEXT_PUBLIC_APP_URL` (and returns 500 if both unset).
 - New question type **`file_upload`**: respondents upload via **Vercel Blob client uploads** (`POST /api/blob` + `@vercel/blob/client` `upload()`); answer stores the public URL in `answer.value`. Requires **`BLOB_READ_WRITE_TOKEN`** (create Blob store in Vercel → link project). DB: run `npm run db:migrate` or `db:push` after pulling — migration `drizzle/0002_sharp_ben_parker.sql` adds enum value `file_upload`.
 - Admin question bank: **Templates** column uses colored pills per template; CSV import dialog copy clarified (requirements, after-import, categories checkbox)
 - Working now:
@@ -28,6 +29,8 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-14 (admin create user / Origin):** `src/app/api/admin/users/route.ts` — internal `fetch` to Better Auth admin `create-user` includes `Origin` from configured app base URL; avoids **Missing or null Origin** toast when creating users from Admin → Users.
+
 - **2026-04-14 (template required flag):** Admin **Templates** dialog copied bank questions with `isRequired: false` always; `addQuestion` now uses the bank row’s `isRequired` so `template_question.is_required` matches the question bank when linking questions.
 
 - **2026-04-14 (questionnaire type `pre_workshop`):** New preset **Pre-Workshop** — `QuestionnaireType` + DB enum (`drizzle/0003_pre_workshop_questionnaire_type.sql`); seed creates empty **Pre-Workshop** template if missing (admin links bank questions). Run **`npm run db:migrate`** or **`db:push`** after pull.
@@ -112,6 +115,8 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/app/api/admin/users/route.ts` — `Origin` header on Better Auth admin create-user server `fetch`; guard when base URL env missing
+
 - `src/app/(dashboard)/admin/templates/page.tsx` — `Question` includes `isRequired`; adding a bank question to a template copies bank required flag (was hardcoded false)
 
 - `src/types/index.ts`, `src/lib/db/schema.ts`, `drizzle/0003_pre_workshop_questionnaire_type.sql`, `drizzle/meta/*` — `pre_workshop` enum + snapshot
