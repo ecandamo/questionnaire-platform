@@ -13,7 +13,12 @@ export type QuestionType =
 
 export type QuestionStatus = "active" | "inactive" | "archived"
 
-export type QuestionnaireType = "data_request" | "hobson_roi" | "workshop" | "custom"
+export type QuestionnaireType =
+  | "data_request"
+  | "hobson_roi"
+  | "workshop"
+  | "pre_workshop"
+  | "custom"
 
 export type QuestionnaireStatus =
   | "draft"
@@ -35,6 +40,7 @@ export const QUESTIONNAIRE_TYPE_LABELS: Record<QuestionnaireType, string> = {
   data_request: "Data Request (Adhoc)",
   hobson_roi: "Hobson ROI",
   workshop: "Workshop",
+  pre_workshop: "Pre-Workshop",
   custom: "Custom Questionnaire",
 }
 

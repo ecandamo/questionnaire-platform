@@ -37,6 +37,7 @@ export const questionnaireTypeEnum = pgEnum("questionnaire_type", [
   "data_request",
   "hobson_roi",
   "workshop",
+  "pre_workshop",
   "custom",
 ])
 

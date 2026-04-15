@@ -1,0 +1,1 @@
+ALTER TYPE "public"."questionnaire_type" ADD VALUE 'pre_workshop' BEFORE 'custom';

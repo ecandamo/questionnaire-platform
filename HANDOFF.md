@@ -12,7 +12,7 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - Dashboard with Recharts charts (status counts, type breakdown, recent activity)
   - Questionnaire list with search/filters
   - Questionnaire builder with drag-and-drop reordering, hide/show, required toggle
-  - Preset template types (Data Request, Hobson ROI, Workshop) load questions from templates
+  - Preset template types (Data Request, Hobson ROI, Workshop, **Pre-Workshop**) load questions from templates
   - Custom type uses question bank picker
   - Publish → generates cryptographically secure share link
   - External respondent form (autosave, progress bar, all question types, submit)
@@ -28,6 +28,8 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-14 (questionnaire type `pre_workshop`):** New preset **Pre-Workshop** — `QuestionnaireType` + DB enum (`drizzle/0003_pre_workshop_questionnaire_type.sql`); seed creates empty **Pre-Workshop** template if missing (admin links bank questions). Run **`npm run db:migrate`** or **`db:push`** after pull.
+
 - **2026-04-14 (admin question bank UX):** Add/Edit **question** dialog matches template treatment (tall `90dvh` cap, ~`52rem` wide, scroll body, larger textareas for question / help text / options); **Help text** is a multi-line `Textarea`; category `Select` uses explicit `none` value when empty. Questions **table**: separate **Description** column; question + description use `wrap-break-word` (no truncation); wider page container; table in `overflow-x-auto` + `min-w-4xl`; template pills wrap with `wrap-break-word`. Save question failure toast shows API `error` when present.
 
 - **2026-04-14 (admin template dialog UX):** New/Edit template dialog is much wider/taller (`max-w` up to ~88rem, ~92dvh height); bank + selected lists use flex fill + tall scroll panes; question text and **question descriptions** wrap fully (no `truncate`); search matches description; category shown on bank rows.
@@ -108,6 +110,8 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/types/index.ts`, `src/lib/db/schema.ts`, `drizzle/0003_pre_workshop_questionnaire_type.sql`, `drizzle/meta/*` — `pre_workshop` enum + snapshot
+- `src/lib/db/seed.ts` — seed Pre-Workshop template row when absent
 - `src/app/api/templates/route.ts` — POST: correct `template_question` rows from `{ questionId, isRequired }[]`; guard missing template row
 - `src/app/(dashboard)/admin/question-bank/page.tsx` — question dialog + questions table layout and full text visibility
 - `src/app/(dashboard)/admin/templates/page.tsx` — larger template dialog; full question + description text; save failure toast uses server `error` when available

@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm"
 import { db } from "./index"
 import { question, questionCategory, questionnaireTemplate, templateQuestion } from "./schema"
 
@@ -160,6 +161,22 @@ async function seed() {
       ).onConflictDoNothing()
       console.log("Workshop template seeded")
     }
+  }
+
+  const preWorkshopExisting = await db
+    .select({ id: questionnaireTemplate.id })
+    .from(questionnaireTemplate)
+    .where(eq(questionnaireTemplate.type, "pre_workshop"))
+    .limit(1)
+
+  if (preWorkshopExisting.length === 0) {
+    await db.insert(questionnaireTemplate).values({
+      name: "Pre-Workshop",
+      type: "pre_workshop",
+      description:
+        "Intake and preparation before a workshop—add questions from the bank in Admin → Templates.",
+    })
+    console.log("Pre-Workshop template seeded (no questions; configure in Admin)")
   }
 
   console.log("Seed complete!")
