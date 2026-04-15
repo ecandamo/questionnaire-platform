@@ -59,6 +59,8 @@ Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the
 
 **Questionnaire drafts:** Custom questionnaires have no snapshot rows until `PATCH` saves questions; publish flows must persist questions first. New `questionnaire_question` client ids must be plain UUIDs (Postgres `uuid` column).
 
+**Better Auth from route handlers:** Server-side `fetch` to `/api/auth/...` (e.g. admin **create-user**) does not send browser headers. Set **`Origin`** and **`Referer`** from `BETTER_AUTH_URL` / `NEXT_PUBLIC_APP_URL` (see `src/app/api/admin/users/route.ts`) or Better Auth may reject with **Missing or null Origin**.
+
 ## Folder Structure
 
 - src/components/ui — shadcn/ui components
@@ -98,6 +100,7 @@ Always wrap in a lazy factory + Proxy pattern (see `src/lib/db/index.ts` for the
 - Log feature requests or missing capabilities to .learnings/FEATURE_REQUESTS.md
 - Before major tasks, review recent learnings to avoid repeating past mistakes
 - Periodically consolidate learnings — merge duplicates, remove outdated entries, promote broadly applicable ones to AGENTS.md
+- On request (or after non-obvious API/auth fixes), **run the self-improvement pass**: triage `.learnings/*.md`, append **LRN**/**ERR** with `resolved`/`promoted` when fixed, and promote concise rules to **`CLAUDE.md`** (project facts) rather than duplicating long incident text in agent files.
 - **Cursor / VS Code “emphasized” folders** under `src/` usually mean **ESLint or TypeScript diagnostics**. Run `npx eslint "src/**/*.{ts,tsx}"` (or narrow to `src/app/`) and clear warnings before merge.
 - **`react-hooks/exhaustive-deps`** on effects that call `load` / `fetchX`: define the fetcher with **`React.useCallback`** and list **`[load]`** (or `[fetchX]`) in the effect deps. For **interval autosaves**, keep latest form state in a **ref** and call a **stable** persist helper so the interval does not close over a stale `handleSave` or skip deps.
 <!-- END:self-improvement-rules -->

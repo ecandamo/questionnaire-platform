@@ -116,7 +116,7 @@ Before writing manual shadcn component code, check existing components to confir
 
 **Logged**: 2026-03-26T23:20:00Z
 **Priority**: medium
-**Status**: pending
+**Status**: resolved
 **Area**: backend
 
 ### Summary
@@ -144,13 +144,16 @@ Define a reusable `QuestionType` union and cast API input values to it before pa
 - Related Files: src/app/api/questions/route.ts
 - Tags: drizzle, typescript, enums
 
+### Resolution
+- **Resolved**: 2026-04-14 — `GET /api/questions` filters with `eq(question.type, type as QuestionType)`; keep using shared `QuestionType` for enum query params.
+
 ---
 
 ## [LRN-20260327-001] best_practice
 
 **Logged**: 2026-03-27T00:00:00Z
 **Priority**: low
-**Status**: pending
+**Status**: resolved
 **Area**: frontend
 
 ### Summary
@@ -169,13 +172,16 @@ For small brand logos that need color variants in different UI contexts, prefer 
 - Related Files: src/components/layout/sidebar.tsx, src/app/(auth)/login/page.tsx
 - Tags: svg, nextjs, branding
 
+### Resolution
+- **Resolved**: 2026-04-14 — Brand surfaces use shared `ApiLogo` / inline SVG pattern; entry kept as historical design rationale.
+
 ---
 
 ## [LRN-20260327-002] best_practice
 
 **Logged**: 2026-03-27T00:05:00Z
 **Priority**: medium
-**Status**: pending
+**Status**: resolved
 **Area**: frontend
 
 ### Summary
@@ -189,13 +195,16 @@ The sidebar CSS variables (`--sidebar`, `--sidebar-primary`, etc.) are independe
 - Related Files: src/app/globals.css, src/components/layout/sidebar.tsx
 - Tags: theming, branding, sidebar, oklch
 
+### Resolution
+- **Resolved**: 2026-04-14 — Sidebar tokens and layout match this direction; entry kept as design rationale.
+
 ---
 
 ## [LRN-20260326-005] best_practice
 
 **Logged**: 2026-03-26T23:25:00Z
 **Priority**: low
-**Status**: pending
+**Status**: resolved
 **Area**: frontend
 
 ### Summary
@@ -217,13 +226,16 @@ When adding Recharts tooltips, omit `formatter` unless necessary. If needed, cas
 - Related Files: src/app/(dashboard)/dashboard-client.tsx
 - Tags: recharts, typescript, charts
 
+### Resolution
+- **Resolved**: 2026-04-14 — Dashboard `Tooltip` usage omits `formatter`; guidance remains for future charts.
+
 ---
 
 ## [LRN-20260328-001] best_practice
 
 **Logged**: 2026-03-28T12:00:00Z
 **Priority**: medium
-**Status**: pending
+**Status**: resolved
 **Area**: frontend
 
 ### Summary
@@ -244,13 +256,16 @@ When pasting external button components: grep for `@radix-ui/react-slot`, verify
 - Related Files: src/components/ui/material-design-3-button.tsx, src/components/ui/button.tsx
 - Tags: shadcn, radix-ui, tailwind4, nextjs, button, ripple
 
+### Resolution
+- **Resolved**: 2026-04-14 — MD3 button + shim live in repo; use this entry when pasting new third-party button snippets.
+
 ---
 
 ## [LRN-20260401-001] best_practice
 
 **Logged**: 2026-04-01
 **Priority**: medium
-**Status**: pending
+**Status**: resolved
 **Area**: frontend + api
 
 ### Summary
@@ -268,13 +283,16 @@ Whenever a mutation returns a URL/token the user must see again later, persist i
 - Related Files: `src/app/api/questionnaires/[id]/route.ts`, `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`
 - Tags: share-link, hydration, react-state
 
+### Resolution
+- **Resolved**: 2026-04-14 — `GET /api/questionnaires/[id]` returns `shareUrl`; detail client hydrates `shareUrl` on `load()`; `ShareLinkPanel` is prop-driven.
+
 ---
 
 ## [LRN-20260401-002] best_practice
 
 **Logged**: 2026-04-01
 **Priority**: high
-**Status**: pending
+**Status**: resolved
 **Area**: backend
 
 ### Summary
@@ -288,13 +306,16 @@ Centralize in a helper (e.g. `deleteAnswersForRemovedCollaborator(responseId, co
 - Related Files: `src/lib/collaborator-cleanup.ts`, collaborator DELETE routes
 - Tags: collaboration, drizzle, cascade
 
+### Resolution
+- **Resolved**: 2026-04-14 — `deleteAnswersForRemovedCollaborator` runs before assignment delete on collaborator DELETE routes.
+
 ---
 
 ## [LRN-20260401-003] best_practice
 
 **Logged**: 2026-04-01
 **Priority**: medium
-**Status**: pending
+**Status**: resolved
 **Area**: frontend
 
 ### Summary
@@ -308,13 +329,16 @@ Expose `onTeamChanged` from the team panel; parent implements refresh the same w
 - Related Files: `src/app/respond/[token]/page.tsx`, `src/components/shared/collaborator-panel.tsx`
 - Tags: collaboration, data-sync
 
+### Resolution
+- **Resolved**: 2026-04-14 — `CollaboratorPanel` exposes `onTeamChanged`; respond page passes `refreshShareSnapshot`.
+
 ---
 
 ## [LRN-20260401-004] best_practice
 
 **Logged**: 2026-04-01
 **Priority**: medium
-**Status**: pending
+**Status**: resolved
 **Area**: frontend
 
 ### Summary
@@ -325,13 +349,16 @@ Expose `onTeamChanged` from the team panel; parent implements refresh the same w
 - Related Files: `src/lib/question-sections.ts`
 - Tags: questionnaire, ux
 
+### Resolution
+- **Resolved**: 2026-04-14 — `answerableDisplayNumbers` (and related helpers) used from respond, builder, and responses viewer.
+
 ---
 
 ## [LRN-20260409-001] best_practice
 
 **Logged**: 2026-04-09
 **Priority**: medium
-**Status**: pending
+**Status**: resolved
 **Area**: backend
 
 ### Summary
@@ -355,13 +382,16 @@ Pattern: read `req.nextUrl.searchParams.get("permanent") === "true"`, require ro
 - Related Files: `src/app/api/questions/[id]/route.ts`, `src/app/api/templates/[id]/route.ts`, `src/app/api/questionnaires/[id]/route.ts`
 - Tags: api, delete, soft-delete, admin, drizzle
 
+### Resolution
+- **Resolved**: 2026-04-14 — `permanent=true` branches verified on questions, templates, questionnaires DELETE routes.
+
 ---
 
 ## [LRN-20260409-002] best_practice
 
 **Logged**: 2026-04-09
 **Priority**: medium
-**Status**: pending
+**Status**: resolved
 **Area**: backend + admin
 
 ### Summary
@@ -378,13 +408,16 @@ Pattern: read `req.nextUrl.searchParams.get("permanent") === "true"`, require ro
 - Related Files: `src/app/api/questions/import/route.ts`, `src/lib/question-csv-import.ts`, `src/app/(dashboard)/admin/question-bank/page.tsx`
 - Tags: csv, import, admin, papaparse, drizzle
 
+### Resolution
+- **Resolved**: 2026-04-14 — Import route + `question-csv-import` + admin UI remain the reference implementation.
+
 ---
 
 ## [LRN-20260401-005] best_practice
 
 **Logged**: 2026-04-01
 **Priority**: medium
-**Status**: pending
+**Status**: promoted
 **Area**: tooling
 
 ### Summary
@@ -397,6 +430,10 @@ Run `npx eslint src` after UI refactors. Move impure date/random work to `useEff
 - Source: session / diagnostics
 - Tags: eslint, react-compiler, cursor
 - See Also: LRN-20260414-009 (2026-04-14 recurrence: exhaustive-deps + `useCallback` / ref-based autosave)
+
+### Resolution
+- **Promoted**: `AGENTS.md` (Self-Improvement), `CLAUDE.md` (Self-Improvement) — Cursor emphasized folders + `exhaustive-deps` / autosave patterns
+- **Notes**: 2026-04-14 triage — duplicate of thread in LRN-20260414-009; keep both entries linked via See Also.
 
 ---
 
@@ -533,7 +570,7 @@ Use `crypto.randomUUID()` (or server-generated ids) for new rows intended for `u
 
 **Logged**: 2026-04-14
 **Priority**: medium
-**Status**: pending
+**Status**: resolved
 **Area**: backend / infra
 
 ### Summary
@@ -544,13 +581,16 @@ Use `crypto.randomUUID()` (or server-generated ids) for new rows intended for `u
 - Related Files: `src/app/api/blob/route.ts`, `src/app/respond/[token]/page.tsx`
 - Tags: vercel-blob, uploads, storage
 
+### Resolution
+- **Resolved**: 2026-04-14 — Client upload + `POST /api/blob` + public URLs in answers match this guidance; re-open if switching to private blobs.
+
 ---
 
 ## [LRN-20260414-007] best_practice
 
 **Logged**: 2026-04-14
 **Priority**: medium
-**Status**: pending
+**Status**: resolved
 **Area**: security / ops
 
 ### Summary
@@ -559,6 +599,9 @@ Use `crypto.randomUUID()` (or server-generated ids) for new rows intended for `u
 ### Metadata
 - Source: session reminder
 - Tags: secrets, neon, ops
+
+### Resolution
+- **Resolved**: 2026-04-14 — Standing operational policy (not a defect); kept for onboarding. Rotate credentials if secrets ever leak.
 
 ---
 
@@ -615,5 +658,113 @@ When success UX lives on **another route**, prefer **navigation alone** (or an e
 ### Resolution
 - **Promoted**: `AGENTS.md` (Self-Improvement), `CLAUDE.md` (Self-Improvement)
 - **Notes**: `npx eslint "src/**/*.{ts,tsx}"` now clean; respond page file upload/remove calls persist immediately; loaders wrapped in `useCallback` across dashboard + collaborator panel.
+
+---
+
+## [LRN-20260414-010] best_practice
+
+**Logged**: 2026-04-14T18:00:00Z
+**Priority**: medium
+**Status**: promoted
+**Area**: backend
+
+### Summary
+**`POST` and `PATCH` on the same resource should accept the same nested payload shapes.** `POST /api/templates` treated `body.questions` as `string[]` (UUIDs) while the Admin UI and `PATCH` both send **`{ questionId, isRequired }[]`**, causing DB insert failures and a generic **“Failed to save template”** toast.
+
+### Suggested Action
+When adding a create handler after an update handler (or vice versa), diff the client `fetch` body and both route handlers; add a shared zod schema or typed mapper if the shape is non-trivial.
+
+### Metadata
+- Source: bugfix + user report
+- Related Files: `src/app/api/templates/route.ts`, `src/app/(dashboard)/admin/templates/page.tsx`
+- Tags: api, templates, drizzle, json
+- See Also: LRN-20260414-012 (bank `isRequired` must populate `isRequired` in template dialog rows)
+
+### Resolution
+- **Promoted**: `CLAUDE.md` — “Admin presets & Better Auth”
+- **Notes**: POST now maps `questionId` / `isRequired` like PATCH; save failure toast reads JSON `error` when present.
+
+---
+
+## [LRN-20260414-011] best_practice
+
+**Logged**: 2026-04-14T18:00:00Z
+**Priority**: medium
+**Status**: promoted
+**Area**: backend / auth
+
+### Summary
+**Better Auth endpoints invoked via server `fetch` may require an `Origin` header** matching the app base URL. Admin **Create user** called `create-user` without `Origin` and received **“Missing or null Origin”**.
+
+### Suggested Action
+For any internal `fetch` to Better Auth from Next route handlers, set **`Origin`** (and usually **`Referer`**) from **`BETTER_AUTH_URL`** / **`NEXT_PUBLIC_APP_URL`**; fail fast if neither is configured.
+
+### Metadata
+- Source: bugfix
+- Related Files: `src/app/api/admin/users/route.ts`
+- Tags: better-auth, headers, admin
+
+### Resolution
+- **Promoted**: `CLAUDE.md` — “Admin presets & Better Auth”; `AGENTS.md` — “Better Auth from route handlers”
+- **Notes**: Route derives base URL and sets `Origin` + `Referer` on the internal request; 500 if base URL env missing.
+
+---
+
+## [LRN-20260414-012] knowledge_gap
+
+**Logged**: 2026-04-14T20:30:00Z
+**Priority**: medium
+**Status**: resolved
+**Area**: frontend / admin
+
+### Summary
+Bank questions marked **required** did not appear required on questionnaires created from a **preset template** because Admin → Templates built each selected row with **`isRequired: false`**, ignoring `question.is_required`. `template_question.is_required` is the source of truth for snapshots, not the bank column alone.
+
+### Details
+- `GET /api/questions` already returns `isRequired`; the local `Question` type in `templates/page.tsx` omitted it.
+- `addQuestion()` always pushed `isRequired: false`, so POST/PATCH saved wrong flags. Seed code correctly used `q.isRequired` when linking seeded questions — only the admin UI was wrong.
+- Questionnaires created from a template read `template_question.isRequired` in `POST /api/questionnaires` when inserting `questionnaire_question`.
+
+### Suggested Action
+When UI materializes join-table rows from a catalog, copy overlapping columns from the catalog payload (or document intentional overrides). Diff `fetch` bodies vs handler expectations after any create/patch pair (see LRN-20260414-010).
+
+### Metadata
+- Source: user question + code review
+- Related Files: `src/app/(dashboard)/admin/templates/page.tsx`, `src/app/api/questionnaires/route.ts`
+- Tags: templates, question-bank, isRequired, admin
+- See Also: LRN-20260414-010
+
+### Resolution
+- **Resolved**: 2026-04-14 — `Question` includes `isRequired`; `addQuestion` sets `isRequired: q.isRequired`.
+- **Promoted**: `CLAUDE.md` — “Template vs bank required” under Admin presets
+
+---
+
+## [LRN-20260414-013] best_practice
+
+**Logged**: 2026-04-14T22:00:00Z
+**Priority**: low
+**Status**: resolved
+**Area**: docs / process
+
+### Summary
+Self-improvement pass after a fix: **dedupe logs**, **align code with promoted text**, and **mirror critical auth notes in `AGENTS.md`** so Cursor-only agents see them without opening `CLAUDE.md`.
+
+### Details
+- `ERR-20260414-003` and `LRN-20260414-011` already captured the Better Auth **Missing or null Origin** issue; avoid duplicate new entries for the same incident.
+- If `CLAUDE.md` says to send **`Referer`** as well as **`Origin`**, implement both so promoted docs stay truthful.
+- Quick backlog scan: search `.learnings/LEARNINGS.md` for **`Status: pending`** — periodically promote, resolve, or link duplicates.
+
+### Suggested Action
+After logging a learning, if the rule is promoted to one agent file, consider the other (`AGENTS.md` ↔ `CLAUDE.md`) when the behavior is stack-wide.
+
+### Metadata
+- Source: user request (self-improvement workflow)
+- Related Files: `.learnings/LEARNINGS.md`, `.learnings/ERRORS.md`, `AGENTS.md`, `src/app/api/admin/users/route.ts`
+- Tags: self-improvement, better-auth, documentation
+- See Also: LRN-20260414-011, ERR-20260414-003
+
+### Resolution
+- **Resolved**: 2026-04-14 — `AGENTS.md` mirrors Better Auth `Origin`/`Referer` guidance; `create-user` route sends both; dedupe noted for ERR/LRN pairs.
 
 ---

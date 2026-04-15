@@ -39,6 +39,12 @@
 - **Custom** questionnaires start with **no** `questionnaire_question` rows until **`PATCH /api/questionnaires/[id]`** saves the list. **Publish** must run that save first (or the user must click Save); otherwise the respond page loads **zero questions**.
 - New builder rows must use **`crypto.randomUUID()`** for `questionnaire_question.id` — Postgres `uuid` rejects prefixed strings like `custom-<uuid>` / `temp-<uuid>`.
 
+## Admin presets & Better Auth (server-side)
+
+- **`POST /api/templates`**: `questions` must use the **same JSON shape as `PATCH`** — an array of **`{ questionId, isRequired }`** objects. Treating `questions` as bare UUID strings breaks inserts (invalid `question_id`). Admin UI always sends objects; keep POST and PATCH handlers aligned.
+- **Template vs bank “required”:** `template_question.is_required` is what new questionnaires copy (`questionnaire_question.is_required`); it may differ per template from `question.is_required` on the bank row. Admin → Templates: when adding a bank question, send that row’s `isRequired` from `GET /api/questions` — do not hardcode `false` or every linked question saves as optional.
+- **Better Auth admin from API routes:** server-side `fetch` to Better Auth (e.g. admin **`create-user`**) has **no browser `Origin`**. Better Auth may return **"Missing or null Origin"**. Send **`Origin`** (and typically **`Referer`**) derived from **`BETTER_AUTH_URL`** or **`NEXT_PUBLIC_APP_URL`** — see `src/app/api/admin/users/route.ts`.
+
 ## File Structure
 
 - src/components/ui — shadcn/ui

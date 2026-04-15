@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
       "Content-Type": "application/json",
       cookie: req.headers.get("cookie") ?? "",
       Origin: origin,
+      Referer: `${origin}/`,
     },
     body: JSON.stringify({ name, email, password, role: role ?? "user" }),
   })

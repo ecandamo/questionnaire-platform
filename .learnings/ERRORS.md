@@ -266,3 +266,58 @@ Read `DATABASE_URL` from `.env.local` / `.env` inside `drizzle.config.ts`, or ru
 - See Also: LRN-20260414-003
 
 ---
+
+## [ERR-20260414-002] template-create-invalid-question-id
+
+**Logged**: 2026-04-14T18:00:00Z
+**Priority**: medium
+**Status**: resolved
+**Area**: backend
+
+### Summary
+Creating a template from Admin with one or more questions failed at `INSERT` into `template_question` because **`question_id`** was not a valid UUID (handler passed whole objects where the column expected UUID strings).
+
+### Error
+PostgreSQL / Drizzle rejected the row (invalid uuid) — surfaced to the user as generic **“Failed to save template”**.
+
+### Context
+- `POST /api/templates` mapped `questions` as `string[]`
+- Client sends `questions: [{ questionId, isRequired }, …]` (same as PATCH)
+
+### Suggested Fix
+Align POST handler with PATCH: `questionId: q.questionId`, `isRequired: q.isRequired ?? false`. Optionally return JSON `{ error }` and show it in the UI toast.
+
+### Resolution
+- **Resolved**: 2026-04-14
+- **Notes**: Fixed in `src/app/api/templates/route.ts`; templates page surfaces API `error` on failure.
+
+### Metadata
+- Reproducible: yes
+- Related Files: `src/app/api/templates/route.ts`
+- See Also: LRN-20260414-010
+
+---
+
+## [ERR-20260414-003] better-auth-create-user-missing-origin
+
+**Logged**: 2026-04-14T18:00:00Z
+**Priority**: high
+**Status**: resolved
+**Area**: backend / auth
+
+### Summary
+`POST /api/admin/users` proxied to Better Auth **`create-user`** without an **`Origin`** header; Better Auth responded with **Missing or null Origin**.
+
+### Context
+Server-side `fetch` has no browser origin; Better Auth validates `Origin` for admin API calls in this setup.
+
+### Resolution
+- **Resolved**: 2026-04-14
+- **Notes**: Route sets `Origin` + `Referer` from `BETTER_AUTH_URL` / `NEXT_PUBLIC_APP_URL`; returns 500 if both unset.
+
+### Metadata
+- Reproducible: yes
+- Related Files: `src/app/api/admin/users/route.ts`
+- See Also: LRN-20260414-011, LRN-20260414-013
+
+---
