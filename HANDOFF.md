@@ -28,6 +28,8 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+- **2026-04-14 (template required flag):** Admin **Templates** dialog copied bank questions with `isRequired: false` always; `addQuestion` now uses the bank row’s `isRequired` so `template_question.is_required` matches the question bank when linking questions.
+
 - **2026-04-14 (questionnaire type `pre_workshop`):** New preset **Pre-Workshop** — `QuestionnaireType` + DB enum (`drizzle/0003_pre_workshop_questionnaire_type.sql`); seed creates empty **Pre-Workshop** template if missing (admin links bank questions). Run **`npm run db:migrate`** or **`db:push`** after pull.
 
 - **2026-04-14 (admin question bank UX):** Add/Edit **question** dialog matches template treatment (tall `90dvh` cap, ~`52rem` wide, scroll body, larger textareas for question / help text / options); **Help text** is a multi-line `Textarea`; category `Select` uses explicit `none` value when empty. Questions **table**: separate **Description** column; question + description use `wrap-break-word` (no truncation); wider page container; table in `overflow-x-auto` + `min-w-4xl`; template pills wrap with `wrap-break-word`. Save question failure toast shows API `error` when present.
@@ -110,6 +112,8 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/app/(dashboard)/admin/templates/page.tsx` — `Question` includes `isRequired`; adding a bank question to a template copies bank required flag (was hardcoded false)
+
 - `src/types/index.ts`, `src/lib/db/schema.ts`, `drizzle/0003_pre_workshop_questionnaire_type.sql`, `drizzle/meta/*` — `pre_workshop` enum + snapshot
 - `src/lib/db/seed.ts` — seed Pre-Workshop template row when absent
 - `src/app/api/templates/route.ts` — POST: correct `template_question` rows from `{ questionId, isRequired }[]`; guard missing template row

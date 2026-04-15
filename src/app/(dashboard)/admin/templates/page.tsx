@@ -49,6 +49,7 @@ interface Question {
   type: string
   categoryName: string | null
   description: string | null
+  isRequired: boolean
 }
 
 interface TemplateQuestion {
@@ -118,7 +119,7 @@ export default function TemplatesPage() {
         text: q.text,
         type: q.type,
         description: q.description ?? null,
-        isRequired: false,
+        isRequired: q.isRequired,
       },
     ])
   }
