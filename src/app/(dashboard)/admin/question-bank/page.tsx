@@ -183,7 +183,14 @@ export default function QuestionBankPage() {
       setShowQuestionDialog(false)
       loadData()
     } else {
-      toast.error("Failed to save question")
+      let message = "Failed to save question"
+      try {
+        const data = (await res.json()) as { error?: string }
+        if (data?.error) message = data.error
+      } catch {
+        /* ignore */
+      }
+      toast.error(message)
     }
     setSaving(false)
   }
@@ -275,7 +282,7 @@ export default function QuestionBankPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6 max-w-[min(90rem,calc(100vw-2rem))]">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading text-3xl font-bold tracking-tight">Question Bank</h1>
@@ -366,35 +373,51 @@ export default function QuestionBankPage() {
                   </Button>
                 </div>
               ) : (
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-4xl table-auto text-sm">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Question</th>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Type</th>
+                      <th className="min-w-56 text-left px-4 py-3 font-medium text-muted-foreground">
+                        Question
+                      </th>
+                      <th className="min-w-48 text-left px-4 py-3 font-medium text-muted-foreground">
+                        Description
+                      </th>
+                      <th className="whitespace-nowrap text-left px-4 py-3 font-medium text-muted-foreground">Type</th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Category</th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground max-w-56">
                         Templates
                       </th>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                      <th className="px-4 py-3" />
+                      <th className="whitespace-nowrap text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
+                      <th className="px-4 py-3 w-12" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {questions.map((q) => (
-                      <tr key={q.id} className="hover:bg-muted/40 transition-colors">
-                        <td className="px-4 py-3 max-w-sm">
-                          <p className="font-medium truncate">{q.text}</p>
-                          {q.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{q.description}</p>
-                          )}
-                          {q.isRequired && <Badge variant="outline" className="text-xs mt-1">Required</Badge>}
-                        </td>
+                      <tr key={q.id} className="hover:bg-muted/40 transition-colors align-top">
                         <td className="px-4 py-3">
+                          <p className="font-medium leading-snug text-foreground wrap-break-word">{q.text}</p>
+                          {q.isRequired ? (
+                            <Badge variant="outline" className="mt-1.5 text-xs">
+                              Required
+                            </Badge>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {q.description ? (
+                            <p className="text-xs leading-relaxed wrap-break-word">{q.description}</p>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/70">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 align-top">
                           <Badge variant="secondary" className="text-xs">
                             {QUESTION_TYPE_LABELS[q.type as QuestionType] ?? q.type}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">{q.categoryName ?? "—"}</td>
+                        <td className="px-4 py-3 align-top text-muted-foreground wrap-break-word">
+                          {q.categoryName ?? "—"}
+                        </td>
                         <td className="px-4 py-3 max-w-[min(18rem,28vw)] align-top">
                           {!q.templates || q.templates.length === 0 ? (
                             <span
@@ -410,7 +433,7 @@ export default function QuestionBankPage() {
                                   key={t.id}
                                   title={t.name}
                                   className={cn(
-                                    "inline-flex max-w-full truncate rounded-full border px-2 py-0.5 text-[11px] font-medium leading-tight",
+                                    "inline-flex max-w-56 wrap-break-word rounded-full border px-2 py-0.5 text-left text-[11px] font-medium leading-snug sm:max-w-72",
                                     templatePillClass(t.id)
                                   )}
                                 >
@@ -456,6 +479,7 @@ export default function QuestionBankPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -523,21 +547,25 @@ export default function QuestionBankPage() {
 
       {/* Question Dialog */}
       <Dialog open={showQuestionDialog} onOpenChange={setShowQuestionDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editingQuestion ? "Edit Question" : "Add Question"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="flex h-[min(90dvh,880px)] max-h-[90dvh] w-[calc(100vw-1.25rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(52rem,calc(100vw-2rem))] sm:rounded-xl">
+          <div className="shrink-0 border-b border-border px-5 py-4 sm:px-6">
+            <DialogHeader className="text-left">
+              <DialogTitle className="text-xl">{editingQuestion ? "Edit Question" : "Add Question"}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4 sm:px-6">
             <div className="space-y-2">
-              <Label>Question Text <span className="text-destructive">*</span></Label>
+              <Label>Question text <span className="text-destructive">*</span></Label>
               <Textarea
                 value={qForm.text}
                 onChange={(e) => setQForm({ ...qForm, text: e.target.value })}
-                placeholder="Enter question text..."
-                rows={2}
+                placeholder="Enter question text…"
+                rows={5}
+                className="min-h-32 resize-y text-sm leading-relaxed"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Type</Label>
                 <Select value={qForm.type} onValueChange={(v) => setQForm({ ...qForm, type: v as QuestionType })}>
@@ -553,12 +581,15 @@ export default function QuestionBankPage() {
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select value={qForm.categoryId} onValueChange={(v) => setQForm({ ...qForm, categoryId: v })}>
+                <Select
+                  value={qForm.categoryId || "none"}
+                  onValueChange={(v) => setQForm({ ...qForm, categoryId: v === "none" ? "" : v })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No Category</SelectItem>
+                    <SelectItem value="none">No category</SelectItem>
                     {categories.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
@@ -572,29 +603,38 @@ export default function QuestionBankPage() {
                 <Textarea
                   value={qForm.options}
                   onChange={(e) => setQForm({ ...qForm, options: e.target.value })}
-                  placeholder="Option A&#10;Option B&#10;Option C"
-                  rows={4}
+                  placeholder={"Option A\nOption B\nOption C"}
+                  rows={5}
+                  className="min-h-28 resize-y font-mono text-sm leading-relaxed"
                 />
               </div>
             )}
             <div className="space-y-2">
-              <Label>Help Text</Label>
-              <Input
+              <Label>Help text</Label>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Shown to respondents under the question (optional).
+              </p>
+              <Textarea
                 value={qForm.description}
                 onChange={(e) => setQForm({ ...qForm, description: e.target.value })}
-                placeholder="Optional context for respondents..."
+                placeholder="Optional context or instructions for respondents…"
+                rows={5}
+                className="min-h-28 resize-y text-sm leading-relaxed"
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5">
               <Checkbox
                 id="q-required"
                 checked={qForm.isRequired}
                 onCheckedChange={(v) => setQForm({ ...qForm, isRequired: v === true })}
               />
-              <Label htmlFor="q-required" className="font-normal cursor-pointer">Required by default</Label>
+              <Label htmlFor="q-required" className="cursor-pointer font-normal leading-snug">
+                Required by default
+              </Label>
             </div>
           </div>
-          <DialogFooter>
+
+          <DialogFooter className="shrink-0 gap-2 border-t border-border px-5 py-4 sm:px-6">
             <Button variant="outline" onClick={() => setShowQuestionDialog(false)}>Cancel</Button>
             <Button onClick={handleSaveQuestion} disabled={saving}>
               {saving && <Loader2Icon className="h-4 w-4 animate-spin" />}

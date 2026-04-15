@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   if (adminError) return adminError
 
   const body = await req.json()
-  const { name, type, description, questions: questionIds } = body
+  const { name, type, description, questions: questionRows } = body
 
   if (!name || !type) {
     return NextResponse.json({ error: "Name and type are required" }, { status: 400 })
@@ -40,14 +40,20 @@ export async function POST(req: NextRequest) {
     .values({ name, type, description })
     .returning()
 
-  if (questionIds?.length) {
+  if (!template) {
+    return NextResponse.json({ error: "Failed to create template" }, { status: 500 })
+  }
+
+  if (Array.isArray(questionRows) && questionRows.length > 0) {
     await db.insert(templateQuestion).values(
-      questionIds.map((qid: string, i: number) => ({
-        templateId: template.id,
-        questionId: qid,
-        sortOrder: i,
-        isRequired: false,
-      }))
+      questionRows.map(
+        (q: { questionId: string; isRequired?: boolean }, i: number) => ({
+          templateId: template.id,
+          questionId: q.questionId,
+          sortOrder: i,
+          isRequired: q.isRequired ?? false,
+        })
+      )
     )
   }
 

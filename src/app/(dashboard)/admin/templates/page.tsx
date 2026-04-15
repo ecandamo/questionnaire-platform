@@ -48,12 +48,14 @@ interface Question {
   text: string
   type: string
   categoryName: string | null
+  description: string | null
 }
 
 interface TemplateQuestion {
   questionId: string
   text: string
   type: string
+  description: string | null
   isRequired: boolean
 }
 
@@ -90,6 +92,7 @@ export default function TemplatesPage() {
         questionId: q.questionId as string,
         text: q.text as string,
         type: q.type as string,
+        description: (q.description as string | null) ?? null,
         isRequired: q.isRequired as boolean,
       }))
     )
@@ -110,7 +113,13 @@ export default function TemplatesPage() {
     }
     setTemplateQuestions((prev) => [
       ...prev,
-      { questionId: q.id, text: q.text, type: q.type, isRequired: false },
+      {
+        questionId: q.id,
+        text: q.text,
+        type: q.type,
+        description: q.description ?? null,
+        isRequired: false,
+      },
     ])
   }
 
@@ -136,7 +145,14 @@ export default function TemplatesPage() {
       setShowDialog(false)
       load()
     } else {
-      toast.error("Failed to save template")
+      let message = "Failed to save template"
+      try {
+        const data = (await res.json()) as { error?: string }
+        if (data?.error) message = data.error
+      } catch {
+        /* ignore */
+      }
+      toast.error(message)
     }
     setSaving(false)
   }
@@ -155,11 +171,14 @@ export default function TemplatesPage() {
     else toast.error("Failed to delete")
   }
 
-  const filteredBankQuestions = questions.filter(
-    (q) =>
-      !templateQuestions.some((tq) => tq.questionId === q.id) &&
-      (qSearch ? q.text.toLowerCase().includes(qSearch.toLowerCase()) : true)
-  )
+  const qSearchLower = qSearch.trim().toLowerCase()
+  const filteredBankQuestions = questions.filter((q) => {
+    if (templateQuestions.some((tq) => tq.questionId === q.id)) return false
+    if (!qSearchLower) return true
+    if (q.text.toLowerCase().includes(qSearchLower)) return true
+    const desc = q.description?.toLowerCase() ?? ""
+    return desc.includes(qSearchLower)
+  })
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -249,12 +268,15 @@ export default function TemplatesPage() {
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Edit Template" : "New Template"}</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto space-y-4 min-h-0">
-            <div className="grid grid-cols-2 gap-4">
+        <DialogContent className="flex h-[min(92dvh,920px)] max-h-[92dvh] w-[calc(100vw-1.25rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:left-[50%] sm:top-[50%] sm:max-w-[min(88rem,calc(100vw-2rem))] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-xl">
+          <div className="shrink-0 border-b border-border px-5 py-4 sm:px-6">
+            <DialogHeader className="text-left">
+              <DialogTitle className="text-xl">{editing ? "Edit Template" : "New Template"}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 py-4 sm:px-6">
+            <div className="grid shrink-0 grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Name <span className="text-destructive">*</span></Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Standard ROI Template" />
@@ -273,54 +295,79 @@ export default function TemplatesPage() {
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="shrink-0 space-y-2">
               <Label>Description</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} />
+              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="min-h-18 resize-y" />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 border-t border-border pt-4 lg:grid-cols-2 lg:gap-6">
               {/* Question Bank Picker */}
-              <div>
-                <p className="text-sm font-medium mb-2">Question Bank</p>
-                <div className="relative mb-2">
-                  <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <div className="flex min-h-[min(42dvh,360px)] flex-col gap-2 lg:min-h-0">
+                <p className="shrink-0 text-sm font-medium">Question Bank</p>
+                <div className="relative shrink-0">
+                  <SearchIcon className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search..."
+                    placeholder="Search question or description…"
                     value={qSearch}
                     onChange={(e) => setQSearch(e.target.value)}
-                    className="pl-8 h-8 text-xs"
+                    className="h-9 pl-8 text-sm"
                   />
                 </div>
-                <div className="space-y-1 max-h-60 overflow-y-auto">
+                <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto rounded-lg border border-border bg-muted/20 p-1.5">
                   {filteredBankQuestions.map((q) => (
                     <button
                       key={q.id}
+                      type="button"
                       onClick={() => addQuestion(q)}
-                      className="w-full text-left rounded-md px-2.5 py-2 text-xs hover:bg-muted transition-colors border border-border"
+                      className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-left text-sm shadow-sm transition-colors hover:bg-muted/60"
                     >
-                      <p className="font-medium truncate">{q.text}</p>
-                      <p className="text-muted-foreground">{QUESTION_TYPE_LABELS[q.type as QuestionType]}</p>
+                      <p className="font-medium leading-snug text-foreground wrap-break-word">{q.text}</p>
+                      {q.description ? (
+                        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground wrap-break-word">{q.description}</p>
+                      ) : null}
+                      <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
+                        {QUESTION_TYPE_LABELS[q.type as QuestionType]}
+                        {q.categoryName ? ` · ${q.categoryName}` : ""}
+                      </p>
                     </button>
                   ))}
                   {filteredBankQuestions.length === 0 && (
-                    <p className="text-xs text-muted-foreground py-4 text-center">No questions available</p>
+                    <p className="py-8 text-center text-sm text-muted-foreground">No questions available</p>
                   )}
                 </div>
               </div>
 
               {/* Selected Questions */}
-              <div>
-                <p className="text-sm font-medium mb-2">Template Questions ({templateQuestions.length})</p>
-                <div className="space-y-1 max-h-60 overflow-y-auto">
+              <div className="flex min-h-[min(42dvh,360px)] flex-col gap-2 lg:min-h-0">
+                <p className="shrink-0 text-sm font-medium">Template questions ({templateQuestions.length})</p>
+                <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto rounded-lg border border-border bg-muted/20 p-1.5">
                   {templateQuestions.length === 0 ? (
-                    <p className="text-xs text-muted-foreground py-4 text-center">No questions added yet</p>
+                    <p className="py-8 text-center text-sm text-muted-foreground">No questions added yet</p>
                   ) : (
                     templateQuestions.map((tq, i) => (
-                      <div key={tq.questionId} className="flex items-center gap-2 rounded-md px-2.5 py-2 bg-muted/60 text-xs">
-                        <span className="text-muted-foreground w-4 shrink-0">{i + 1}.</span>
-                        <p className="flex-1 font-medium truncate">{tq.text}</p>
-                        <button onClick={() => removeTemplateQ(tq.questionId)} className="text-muted-foreground hover:text-destructive">
-                          <XIcon className="h-3 w-3" />
+                      <div
+                        key={tq.questionId}
+                        className="flex gap-2 rounded-md border border-border bg-card px-3 py-2.5 text-sm shadow-sm"
+                      >
+                        <span className="w-6 shrink-0 pt-0.5 text-right text-xs font-medium text-muted-foreground tabular-nums">
+                          {i + 1}.
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium leading-snug text-foreground wrap-break-word">{tq.text}</p>
+                          {tq.description ? (
+                            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground wrap-break-word">{tq.description}</p>
+                          ) : null}
+                          <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
+                            {QUESTION_TYPE_LABELS[tq.type as QuestionType]}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeTemplateQ(tq.questionId)}
+                          className="shrink-0 self-start rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          aria-label="Remove from template"
+                        >
+                          <XIcon className="h-4 w-4" />
                         </button>
                       </div>
                     ))
@@ -329,7 +376,8 @@ export default function TemplatesPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
+
+          <DialogFooter className="shrink-0 gap-2 border-t border-border px-5 py-4 sm:px-6">
             <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2Icon className="h-4 w-4 animate-spin" />}
