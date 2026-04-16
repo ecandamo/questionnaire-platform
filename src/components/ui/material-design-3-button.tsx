@@ -17,6 +17,11 @@ const TOUCH_DELAY_MS = 150
 
 const EASING_STANDARD = "cubic-bezier(0.2, 0, 0, 1)"
 
+function getPrefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
+
 // --- 2. TYPES & STATE MACHINE ---
 enum RippleState {
   INACTIVE,
@@ -120,16 +125,22 @@ const useMaterialRipple = (disabled = false) => {
     if (!rippleEffectRef.current) return
 
     growAnimationRef.current?.cancel()
+
+    if (getPrefersReducedMotion()) {
+      return
+    }
+
     determineRippleSize()
 
     const { startPoint, endPoint } = getTranslationCoordinates(event)
 
+    // Set size via direct style mutation — keeps layout properties out of the
+    // Web Animations API keyframes so only transform (GPU-composited) is animated.
+    rippleEffectRef.current.style.width = rippleSizeRef.current
+    rippleEffectRef.current.style.height = rippleSizeRef.current
+
     growAnimationRef.current = rippleEffectRef.current.animate(
       {
-        top: [0, 0],
-        left: [0, 0],
-        height: [rippleSizeRef.current, rippleSizeRef.current],
-        width: [rippleSizeRef.current, rippleSizeRef.current],
         transform: [
           `translate(${startPoint.x}px, ${startPoint.y}px) scale(1)`,
           `translate(${endPoint.x}px, ${endPoint.y}px) scale(${rippleScaleRef.current})`,
@@ -267,7 +278,7 @@ const Ripple = React.forwardRef<
       />
       <div
         ref={rippleEffectRef}
-        className="absolute rounded-full opacity-0 bg-current"
+        className="absolute top-0 left-0 rounded-full opacity-0 bg-current"
         style={{
           background:
             "radial-gradient(closest-side, currentColor max(calc(100% - 70px), 65%), transparent 100%)",
@@ -283,7 +294,7 @@ Ripple.displayName = "Ripple"
 
 // --- 5. BUTTON COMPONENT ---
 const buttonVariants = cva(
-  "group relative inline-flex items-center justify-center whitespace-nowrap text-sm font-medium tracking-[0.01em] transition-all duration-[600ms] delay-[250ms] ease-[cubic-bezier(0.2,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-[0.38] disabled:shadow-none",
+  "group relative inline-flex items-center justify-center whitespace-nowrap text-sm font-medium tracking-[0.01em] transition-[box-shadow,border-radius,opacity] duration-[600ms] delay-[250ms] ease-[cubic-bezier(0.2,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-[0.38] disabled:shadow-none",
   {
     variants: {
       variant: {

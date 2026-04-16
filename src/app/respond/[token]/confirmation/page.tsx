@@ -13,7 +13,7 @@ export default function ConfirmationPage() {
         <div className="text-center max-w-md w-full space-y-8">
           {/* Success mark */}
           <div className="flex justify-center">
-            <div className="h-20 w-20 rounded-full bg-white ring-2 ring-success/20 shadow-lg flex items-center justify-center">
+            <div className="h-20 w-20 rounded-full bg-card ring-2 ring-success/20 shadow-lg flex items-center justify-center">
               <CheckCircle2Icon className="h-10 w-10 text-success" strokeWidth={1.5} />
             </div>
           </div>

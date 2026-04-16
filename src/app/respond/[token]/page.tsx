@@ -90,7 +90,8 @@ export default function RespondPage() {
   }, [answers])
 
   React.useEffect(() => {
-    fetch(`/api/share/${token}`)
+    const controller = new AbortController()
+    fetch(`/api/share/${token}`, { signal: controller.signal })
       .then((r) => {
         if (!r.ok) return r.json().then((e) => { throw new Error(e.error ?? "Link invalid") })
         return r.json()
@@ -118,9 +119,11 @@ export default function RespondPage() {
         setLoading(false)
       })
       .catch((e) => {
+        if (e.name === "AbortError") return
         setError(e.message)
         setLoading(false)
       })
+    return () => controller.abort()
   }, [token])
 
   const questionDisplayNumbers = React.useMemo(
@@ -309,8 +312,8 @@ export default function RespondPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="min-h-screen flex items-center justify-center" role="status" aria-label="Loading questionnaire">
+        <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden />
       </div>
     )
   }
@@ -350,7 +353,7 @@ export default function RespondPage() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center max-w-sm space-y-4">
           <div className="h-14 w-14 rounded-full bg-[color:var(--accent)]/10 flex items-center justify-center mx-auto">
-            <CheckCircle2Icon className="h-7 w-7 text-[color:var(--accent)]" />
+            <CheckCircle2Icon className="h-7 w-7 text-accent" />
           </div>
           <h1 className="font-heading text-3xl font-bold tracking-tight">Section Complete</h1>
           <p className="text-muted-foreground text-sm">
@@ -364,7 +367,7 @@ export default function RespondPage() {
   return (
     <div className="min-h-screen bg-muted/20">
       {/* Sticky header with progress */}
-      <div className="sticky top-0 z-10 bg-card/90 backdrop-blur-sm border-b border-border">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border/60">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
@@ -392,7 +395,7 @@ export default function RespondPage() {
                 variant="outline"
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="h-8"
+                className="h-10"
               >
                 {saving ? <Loader2Icon className="h-3.5 w-3.5 animate-spin" /> : <SaveIcon className="h-3.5 w-3.5" />}
                 Save
@@ -415,7 +418,7 @@ export default function RespondPage() {
               Name and email must be completed before submitting responses.
             </p>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4 pt-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
             <div className="space-y-1.5">
               <Label htmlFor="name" className="text-sm">
                 Your Name
@@ -572,11 +575,14 @@ function FileUploadQuestionInput({
   value,
   onChange,
   onPersistNewValue,
+  labelId,
 }: {
   value: string
   onChange: (v: string) => void
   /** Persist to server right after upload or remove so other viewers (e.g. collaborators) see the same state. */
   onPersistNewValue?: (next: string) => void | Promise<void>
+  /** ID of the question label element for aria-labelledby on the file trigger. */
+  labelId?: string
 }) {
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = React.useState(false)
@@ -658,6 +664,7 @@ function FileUploadQuestionInput({
           className="w-full max-w-sm justify-center border-dashed"
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
+          aria-labelledby={labelId}
         >
           {uploading ? (
             <>
@@ -706,13 +713,12 @@ function QuestionField({
 }) {
   if (question.type === "section_header") {
     return (
-      <div className="pt-6 pb-2">
-        <div className="border-l-2 border-primary pl-4">
-          <h2 className="font-heading text-base font-semibold text-foreground">{question.text}</h2>
-          {question.description && (
-            <p className="text-sm text-muted-foreground mt-0.5">{question.description}</p>
-          )}
-        </div>
+      <div className="pt-8 pb-1">
+        <h2 className="font-heading text-base font-semibold text-foreground">{question.text}</h2>
+        {question.description && (
+          <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{question.description}</p>
+        )}
+        <div className="h-px bg-border mt-3" />
       </div>
     )
   }
@@ -720,7 +726,7 @@ function QuestionField({
   const selectedMulti = value ? value.split(",").filter(Boolean) : []
 
   return (
-    <Card className={`shadow-card transition-all ${question.isRequired ? "border-l-2 border-l-primary/20" : ""}`}>
+    <Card className="shadow-card">
       <CardContent className="pt-4 space-y-3">
         <div>
           <div className="flex items-start gap-2.5">
@@ -732,12 +738,13 @@ function QuestionField({
               <span className="mt-1 shrink-0 w-4" aria-hidden />
             )}
             <div className="flex-1">
-              <p className="text-sm font-medium leading-snug">
+              <p id={`qlabel-${question.id}`} className="text-sm font-medium leading-snug">
                 {question.text}
-                {question.isRequired && <span className="text-destructive ml-1 font-normal">*</span>}
+                {question.isRequired && <span className="text-destructive ml-1 font-normal" aria-hidden>*</span>}
+                {question.isRequired && <span className="sr-only">(required)</span>}
               </p>
               {question.description && (
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{question.description}</p>
+                <p id={`qdesc-${question.id}`} className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{question.description}</p>
               )}
             </div>
           </div>
@@ -746,6 +753,8 @@ function QuestionField({
         <div className="ml-6">
           {question.type === "short_text" && (
             <Input
+              aria-labelledby={`qlabel-${question.id}`}
+              aria-describedby={question.description ? `qdesc-${question.id}` : undefined}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder="Your answer..."
@@ -754,6 +763,8 @@ function QuestionField({
 
           {question.type === "long_text" && (
             <Textarea
+              aria-labelledby={`qlabel-${question.id}`}
+              aria-describedby={question.description ? `qdesc-${question.id}` : undefined}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder="Your answer..."
@@ -764,17 +775,19 @@ function QuestionField({
           {(question.type === "number" || question.type === "currency" || question.type === "percentage") && (
             <div className="flex items-center gap-2">
               {question.type === "currency" && (
-                <span className="text-sm text-muted-foreground">$</span>
+                <span className="text-sm text-muted-foreground" aria-hidden>$</span>
               )}
               <Input
                 type="number"
+                aria-labelledby={`qlabel-${question.id}`}
+                aria-describedby={question.description ? `qdesc-${question.id}` : undefined}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder="0"
                 className="max-w-48"
               />
               {question.type === "percentage" && (
-                <span className="text-sm text-muted-foreground">%</span>
+                <span className="text-sm text-muted-foreground" aria-hidden>%</span>
               )}
             </div>
           )}
@@ -782,6 +795,8 @@ function QuestionField({
           {question.type === "date" && (
             <Input
               type="date"
+              aria-labelledby={`qlabel-${question.id}`}
+              aria-describedby={question.description ? `qdesc-${question.id}` : undefined}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               className="max-w-48"
@@ -789,11 +804,13 @@ function QuestionField({
           )}
 
           {question.type === "yes_no" && (
-            <div className="flex gap-3">
+            <div role="group" aria-labelledby={`qlabel-${question.id}`} className="flex gap-3">
               {["Yes", "No"].map((opt) => (
                 <button
                   key={opt}
+                  type="button"
                   onClick={() => onChange(value === opt ? "" : opt)}
+                  aria-pressed={value === opt}
                   className={`flex-1 max-w-28 rounded-lg border py-2.5 text-sm font-medium transition-colors ${
                     value === opt
                       ? "border-primary bg-primary text-primary-foreground"
@@ -808,7 +825,7 @@ function QuestionField({
 
           {question.type === "single_select" && question.options && (
             <Select value={value} onValueChange={onChange}>
-              <SelectTrigger>
+              <SelectTrigger aria-labelledby={`qlabel-${question.id}`}>
                 <SelectValue placeholder="Select an option..." />
               </SelectTrigger>
               <SelectContent>
@@ -820,7 +837,7 @@ function QuestionField({
           )}
 
           {question.type === "multi_select" && question.options && (
-            <div className="space-y-2">
+            <div role="group" aria-labelledby={`qlabel-${question.id}`} className="space-y-2">
               {question.options.map((opt) => (
                 <div key={opt} className="flex items-center gap-2">
                   <Checkbox
@@ -841,6 +858,7 @@ function QuestionField({
 
           {question.type === "file_upload" && (
             <FileUploadQuestionInput
+              labelId={`qlabel-${question.id}`}
               value={value}
               onChange={onChange}
               onPersistNewValue={(next) => void persistFileAnswerValue?.(question.id, next)}

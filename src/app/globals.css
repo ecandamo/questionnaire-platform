@@ -194,3 +194,10 @@
     @apply font-sans;
   }
 }
+
+/* Respect OS “Reduce motion” — spinners and other Tailwind spin animations */
+@media (prefers-reduced-motion: reduce) {
+  :where(.animate-spin) {
+    animation: none !important;
+  }
+}

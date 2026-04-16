@@ -38,22 +38,40 @@ export default function AuditLogPage() {
   const [offset, setOffset] = React.useState(0)
   const limit = 50
 
-  async function load(o = 0) {
-    setLoading(true)
-    const res = await fetch(`/api/admin/audit-log?limit=${limit}&offset=${o}`)
-    if (res.ok) {
-      const data = await res.json()
-      if (o === 0) {
-        setLogs(data)
-      } else {
-        setLogs((prev) => [...prev, ...data])
+  const load = React.useCallback(
+    async (o = 0, signal?: AbortSignal) => {
+      setLoading(true)
+      try {
+        const res = await fetch(
+          `/api/admin/audit-log?limit=${limit}&offset=${o}`,
+          { signal }
+        )
+        if (signal?.aborted) return
+        if (res.ok) {
+          const data = await res.json()
+          if (signal?.aborted) return
+          if (o === 0) {
+            setLogs(data)
+          } else {
+            setLogs((prev) => [...prev, ...data])
+          }
+          setOffset(o)
+        }
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return
+        throw e
+      } finally {
+        if (!signal?.aborted) setLoading(false)
       }
-      setOffset(o)
-    }
-    setLoading(false)
-  }
+    },
+    [limit]
+  )
 
-  React.useEffect(() => { load() }, [])
+  React.useEffect(() => {
+    const controller = new AbortController()
+    void load(0, controller.signal)
+    return () => controller.abort()
+  }, [load])
 
   return (
     <div className="space-y-6 max-w-6xl">

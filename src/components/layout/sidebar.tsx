@@ -88,15 +88,12 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
     <Link
       href={item.href}
       className={cn(
-        "relative flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors group",
+        "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
         active
           ? "bg-sidebar-primary/15 text-sidebar-primary font-semibold"
           : "text-sidebar-foreground/70 font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       )}
     >
-      {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 rounded-full bg-sidebar-primary" />
-      )}
       <Icon className={cn("h-4 w-4 shrink-0", active ? "text-sidebar-primary" : "text-sidebar-foreground/50")} />
       <span className="flex-1">{item.label}</span>
     </Link>

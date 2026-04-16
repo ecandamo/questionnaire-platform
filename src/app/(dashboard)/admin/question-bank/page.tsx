@@ -119,7 +119,7 @@ export default function QuestionBankPage() {
   const [importing, setImporting] = React.useState(false)
   const [importCreateCategories, setImportCreateCategories] = React.useState(false)
 
-  const loadData = React.useCallback(async () => {
+  const loadData = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
     const params = new URLSearchParams()
     if (search) params.set("search", search)
@@ -128,17 +128,26 @@ export default function QuestionBankPage() {
     if (statusFilter !== "all") params.set("status", statusFilter)
     else params.set("status", "all")
 
-    const [qs, cats] = await Promise.all([
-      fetch(`/api/questions?${params}`).then((r) => r.json()),
-      fetch("/api/categories").then((r) => r.json()),
-    ])
-    setQuestions(qs ?? [])
-    setCategories(cats ?? [])
-    setLoading(false)
+    try {
+      const [qs, cats] = await Promise.all([
+        fetch(`/api/questions?${params}`, { signal }).then((r) => r.json()),
+        fetch("/api/categories", { signal }).then((r) => r.json()),
+      ])
+      if (signal?.aborted) return
+      setQuestions(qs ?? [])
+      setCategories(cats ?? [])
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return
+      throw e
+    } finally {
+      if (!signal?.aborted) setLoading(false)
+    }
   }, [search, categoryFilter, typeFilter, statusFilter])
 
   React.useEffect(() => {
-    void loadData()
+    const controller = new AbortController()
+    void loadData(controller.signal)
+    return () => controller.abort()
   }, [loadData])
 
   function openAddQuestion() {
@@ -314,16 +323,24 @@ export default function QuestionBankPage() {
           {/* Filters */}
           <div className="flex gap-3 flex-wrap">
             <div className="relative flex-1 min-w-52">
-              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Label htmlFor="qbank-search" className="sr-only">
+                Search questions
+              </Label>
+              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden />
               <Input
+                id="qbank-search"
                 placeholder="Search questions..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8"
               />
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="qbank-filter-category" className="sr-only">
+                Filter by category
+              </Label>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger id="qbank-filter-category" className="w-40">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -333,8 +350,13 @@ export default function QuestionBankPage() {
                 ))}
               </SelectContent>
             </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="qbank-filter-type" className="sr-only">
+                Filter by type
+              </Label>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger id="qbank-filter-type" className="w-36">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
@@ -344,8 +366,13 @@ export default function QuestionBankPage() {
                 ))}
               </SelectContent>
             </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="qbank-filter-status" className="sr-only">
+                Filter by status
+              </Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger id="qbank-filter-status" className="w-32">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -355,6 +382,7 @@ export default function QuestionBankPage() {
                 <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
+            </div>
           </div>
 
           <Card className="shadow-card">
@@ -389,7 +417,9 @@ export default function QuestionBankPage() {
                         Templates
                       </th>
                       <th className="whitespace-nowrap text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                      <th className="px-4 py-3 w-12" />
+                      <th className="px-4 py-3 w-12 text-left font-medium text-muted-foreground">
+                        <span className="sr-only">Actions</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -449,8 +479,8 @@ export default function QuestionBankPage() {
                         <td className="px-4 py-3">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon-sm">
-                                <MoreHorizontalIcon className="h-4 w-4" />
+                              <Button variant="ghost" size="icon-sm" aria-label={`Actions for "${q.text.slice(0, 40)}"`}>
+                                <MoreHorizontalIcon className="h-4 w-4" aria-hidden />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -504,7 +534,9 @@ export default function QuestionBankPage() {
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Description</th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Order</th>
-                      <th className="px-4 py-3" />
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                        <span className="sr-only">Actions</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -516,8 +548,8 @@ export default function QuestionBankPage() {
                         <td className="px-4 py-3">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon-sm">
-                                <MoreHorizontalIcon className="h-4 w-4" />
+                              <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${c.name}`}>
+                                <MoreHorizontalIcon className="h-4 w-4" aria-hidden />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -556,8 +588,11 @@ export default function QuestionBankPage() {
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4 sm:px-6">
             <div className="space-y-2">
-              <Label>Question text <span className="text-destructive">*</span></Label>
+              <Label htmlFor="qbank-question-text">
+                Question text <span className="text-destructive">*</span>
+              </Label>
               <Textarea
+                id="qbank-question-text"
                 value={qForm.text}
                 onChange={(e) => setQForm({ ...qForm, text: e.target.value })}
                 placeholder="Enter question text…"
@@ -567,9 +602,9 @@ export default function QuestionBankPage() {
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Type</Label>
+                <Label htmlFor="qbank-question-type">Type</Label>
                 <Select value={qForm.type} onValueChange={(v) => setQForm({ ...qForm, type: v as QuestionType })}>
-                  <SelectTrigger>
+                  <SelectTrigger id="qbank-question-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -580,12 +615,12 @@ export default function QuestionBankPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Category</Label>
+                <Label htmlFor="qbank-question-category">Category</Label>
                 <Select
                   value={qForm.categoryId || "none"}
                   onValueChange={(v) => setQForm({ ...qForm, categoryId: v === "none" ? "" : v })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="qbank-question-category">
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
                   <SelectContent>
@@ -599,8 +634,9 @@ export default function QuestionBankPage() {
             </div>
             {QUESTION_TYPES_WITH_OPTIONS.includes(qForm.type) && (
               <div className="space-y-2">
-                <Label>Options (one per line)</Label>
+                <Label htmlFor="qbank-question-options">Options (one per line)</Label>
                 <Textarea
+                  id="qbank-question-options"
                   value={qForm.options}
                   onChange={(e) => setQForm({ ...qForm, options: e.target.value })}
                   placeholder={"Option A\nOption B\nOption C"}
@@ -610,16 +646,18 @@ export default function QuestionBankPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label>Help text</Label>
-              <p className="text-[11px] leading-relaxed text-muted-foreground">
+              <Label htmlFor="qbank-question-help">Help text</Label>
+              <p id="qbank-question-help-hint" className="text-[11px] leading-relaxed text-muted-foreground">
                 Shown to respondents under the question (optional).
               </p>
               <Textarea
+                id="qbank-question-help"
                 value={qForm.description}
                 onChange={(e) => setQForm({ ...qForm, description: e.target.value })}
                 placeholder="Optional context or instructions for respondents…"
                 rows={5}
                 className="min-h-28 resize-y text-sm leading-relaxed"
+                aria-describedby="qbank-question-help-hint"
               />
             </div>
             <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5">
@@ -652,16 +690,33 @@ export default function QuestionBankPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Name <span className="text-destructive">*</span></Label>
-              <Input value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })} placeholder="e.g. Financial Data" />
+              <Label htmlFor="qbank-cat-name">
+                Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="qbank-cat-name"
+                value={catForm.name}
+                onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
+                placeholder="e.g. Financial Data"
+              />
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
-              <Input value={catForm.description} onChange={(e) => setCatForm({ ...catForm, description: e.target.value })} />
+              <Label htmlFor="qbank-cat-description">Description</Label>
+              <Input
+                id="qbank-cat-description"
+                value={catForm.description}
+                onChange={(e) => setCatForm({ ...catForm, description: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
-              <Label>Sort Order</Label>
-              <Input type="number" value={catForm.sortOrder} onChange={(e) => setCatForm({ ...catForm, sortOrder: e.target.value })} className="w-24" />
+              <Label htmlFor="qbank-cat-sort">Sort Order</Label>
+              <Input
+                id="qbank-cat-sort"
+                type="number"
+                value={catForm.sortOrder}
+                onChange={(e) => setCatForm({ ...catForm, sortOrder: e.target.value })}
+                className="w-24"
+              />
             </div>
           </div>
           <DialogFooter>

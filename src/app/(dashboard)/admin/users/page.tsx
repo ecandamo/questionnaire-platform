@@ -41,14 +41,25 @@ export default function UsersPage() {
   const [saving, setSaving] = React.useState(false)
   const [form, setForm] = React.useState({ name: "", email: "", password: "", role: "user" })
 
-  async function load() {
+  const load = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
-    const res = await fetch("/api/admin/users")
-    if (res.ok) setUsers(await res.json())
-    setLoading(false)
-  }
+    try {
+      const res = await fetch("/api/admin/users", { signal })
+      if (signal?.aborted) return
+      if (res.ok) setUsers(await res.json())
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return
+      throw e
+    } finally {
+      if (!signal?.aborted) setLoading(false)
+    }
+  }, [])
 
-  React.useEffect(() => { load() }, [])
+  React.useEffect(() => {
+    const controller = new AbortController()
+    void load(controller.signal)
+    return () => controller.abort()
+  }, [load])
 
   async function handleCreate() {
     if (!form.name || !form.email || !form.password) {
@@ -133,7 +144,9 @@ export default function UsersPage() {
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Role</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Joined</th>
-                  <th className="px-4 py-3" />
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -166,8 +179,8 @@ export default function UsersPage() {
                     <td className="px-4 py-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm">
-                            <MoreHorizontalIcon className="h-4 w-4" />
+                          <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${u.name}`}>
+                            <MoreHorizontalIcon className="h-4 w-4" aria-hidden />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -208,16 +221,22 @@ export default function UsersPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Full Name <span className="text-destructive">*</span></Label>
+              <Label htmlFor="admin-user-name">
+                Full Name <span className="text-destructive">*</span>
+              </Label>
               <Input
+                id="admin-user-name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Jane Smith"
               />
             </div>
             <div className="space-y-2">
-              <Label>Email <span className="text-destructive">*</span></Label>
+              <Label htmlFor="admin-user-email">
+                Email <span className="text-destructive">*</span>
+              </Label>
               <Input
+                id="admin-user-email"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -225,8 +244,11 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Temporary Password <span className="text-destructive">*</span></Label>
+              <Label htmlFor="admin-user-password">
+                Temporary Password <span className="text-destructive">*</span>
+              </Label>
               <Input
+                id="admin-user-password"
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -234,9 +256,9 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label htmlFor="admin-user-role">Role</Label>
               <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
-                <SelectTrigger>
+                <SelectTrigger id="admin-user-role">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

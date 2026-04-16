@@ -76,7 +76,7 @@ export function QuestionnairStatusBadge({ status }: { status: QuestionnaireStatu
       variant="outline"
       className={cn("text-xs font-medium gap-1.5", config.className)}
     >
-      <span className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", config.dot)} />
+      <span aria-hidden="true" className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", config.dot)} />
       {config.label}
     </Badge>
   )
@@ -89,7 +89,7 @@ export function LinkStatusBadge({ status }: { status: LinkStatus }) {
       variant="outline"
       className={cn("text-xs font-medium gap-1.5", config.className)}
     >
-      <span className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", config.dot)} />
+      <span aria-hidden="true" className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", config.dot)} />
       {config.label}
     </Badge>
   )
@@ -102,7 +102,7 @@ export function QuestionStatusBadge({ status }: { status: QuestionStatus }) {
       variant="outline"
       className={cn("text-xs font-medium gap-1.5", config.className)}
     >
-      <span className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", config.dot)} />
+      <span aria-hidden="true" className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", config.dot)} />
       {config.label}
     </Badge>
   )

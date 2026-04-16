@@ -77,8 +77,8 @@ export function NewQuestionnaireClient() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon-sm" onClick={() => router.back()}>
-          <ArrowLeftIcon className="h-4 w-4" />
+        <Button variant="ghost" size="icon-sm" onClick={() => router.back()} aria-label="Go back">
+          <ArrowLeftIcon className="h-4 w-4" aria-hidden />
         </Button>
         <div>
           <h1 className="font-heading text-3xl font-bold tracking-tight">New Questionnaire</h1>

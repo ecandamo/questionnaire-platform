@@ -150,14 +150,16 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
     [questions]
   )
 
-  const load = React.useCallback(async () => {
+  const load = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
-    const res = await fetch(`/api/questionnaires/${id}`)
+    const res = await fetch(`/api/questionnaires/${id}`, { signal })
     if (!res.ok) {
+      if (signal?.aborted) return
       router.push("/questionnaires")
       return
     }
     const d = await res.json()
+    if (signal?.aborted) return
     setData(d)
     setQuestions(d.questions.sort((a: QQuestion, b: QQuestion) => a.sortOrder - b.sortOrder))
     setShareUrl(d.shareUrl ?? null)
@@ -165,7 +167,9 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
   }, [id, router])
 
   React.useEffect(() => {
-    void load()
+    const controller = new AbortController()
+    void load(controller.signal)
+    return () => controller.abort()
   }, [load])
 
   /** Persists the current `questions` list to the server (draft PATCH). */
@@ -257,17 +261,20 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
     }
   }
 
-  const loadBankQuestions = React.useCallback(async () => {
+  const loadBankQuestions = React.useCallback(async (signal?: AbortSignal) => {
     setBankLoading(true)
     const params = new URLSearchParams({ status: "active" })
     if (bankSearch) params.set("search", bankSearch)
-    const res = await fetch(`/api/questions?${params}`)
-    if (res.ok) setBankQuestions(await res.json())
-    setBankLoading(false)
+    const res = await fetch(`/api/questions?${params}`, { signal })
+    if (res.ok && !signal?.aborted) setBankQuestions(await res.json())
+    if (!signal?.aborted) setBankLoading(false)
   }, [bankSearch])
 
   React.useEffect(() => {
-    if (showBankPicker) void loadBankQuestions()
+    if (!showBankPicker) return
+    const controller = new AbortController()
+    void loadBankQuestions(controller.signal)
+    return () => controller.abort()
   }, [showBankPicker, loadBankQuestions])
 
   function addBankQuestion(bq: BankQuestion) {
@@ -335,8 +342,8 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <Button variant="ghost" size="icon-sm" onClick={() => router.back()} className="mt-1">
-            <ArrowLeftIcon className="h-4 w-4" />
+          <Button variant="ghost" size="icon-sm" onClick={() => router.back()} className="mt-1" aria-label="Go back">
+            <ArrowLeftIcon className="h-4 w-4" aria-hidden />
           </Button>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -498,9 +505,10 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Link Expiry (days)</Label>
+                <Label htmlFor="expiry-days">Link Expiry (days)</Label>
                 <div className="flex items-center gap-3">
                   <Input
+                    id="expiry-days"
                     type="number"
                     min={1}
                     max={365}
@@ -647,18 +655,17 @@ function SortableQuestionCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-lg border bg-card shadow-card transition-all hover:shadow-card-hover ${
-        question.isRequired ? "border-l-2 border-l-primary/30" : "border-border"
-      } ${question.isHidden ? "opacity-50" : ""}`}
+      className={`rounded-lg border border-border bg-card shadow-card transition-shadow hover:shadow-card-hover ${question.isHidden ? "opacity-50" : ""}`}
     >
       <div className="flex items-start gap-2 p-4">
         {canEdit && (
           <button
             {...attributes}
             {...listeners}
-            className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors touch-none"
+            className="flex items-center justify-center p-2 rounded-md cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors touch-none -ml-0.5"
+            aria-label={`Drag to reorder: ${question.text}`}
           >
-            <GripVerticalIcon className="h-4 w-4" />
+            <GripVerticalIcon className="h-4 w-4" aria-hidden />
           </button>
         )}
         <div className="flex-1 min-w-0">
@@ -707,25 +714,29 @@ function SortableQuestionCard({
         {canEdit && (
           <div className="flex items-center gap-0.5 shrink-0">
             <button
+              type="button"
               onClick={() => onUpdate({ isHidden: !question.isHidden })}
-              className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground/50 hover:text-foreground"
-              title={question.isHidden ? "Show question" : "Hide question"}
+              className="flex items-center justify-center p-2.5 rounded-md hover:bg-muted transition-colors text-muted-foreground/50 hover:text-foreground"
+              aria-label={question.isHidden ? "Show question" : "Hide question"}
             >
-              {question.isHidden ? <EyeIcon className="h-3.5 w-3.5" /> : <EyeOffIcon className="h-3.5 w-3.5" />}
+              {question.isHidden ? <EyeIcon className="h-3.5 w-3.5" aria-hidden /> : <EyeOffIcon className="h-3.5 w-3.5" aria-hidden />}
             </button>
             <div className="flex items-center gap-1.5 ml-1.5 mr-1">
               <Switch
                 checked={question.isRequired}
                 onCheckedChange={(v) => onUpdate({ isRequired: v })}
                 className="scale-75"
+                aria-label={`Mark "${question.text}" as required`}
               />
-              <span className="text-[10px] text-muted-foreground">Req</span>
+              <span className="text-[10px] text-muted-foreground" aria-hidden>Req</span>
             </div>
             <button
+              type="button"
               onClick={onRemove}
-              className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground/50 hover:text-destructive"
+              className="flex items-center justify-center p-2.5 rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground/50 hover:text-destructive"
+              aria-label={`Remove question: ${question.text}`}
             >
-              <TrashIcon className="h-3.5 w-3.5" />
+              <TrashIcon className="h-3.5 w-3.5" aria-hidden />
             </button>
           </div>
         )}
@@ -783,8 +794,9 @@ function AddCustomQuestionDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Question Text <span className="text-destructive">*</span></Label>
+            <Label htmlFor="custom-q-text">Question Text <span className="text-destructive" aria-hidden>*</span></Label>
             <Textarea
+              id="custom-q-text"
               placeholder="Enter your question..."
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -792,9 +804,9 @@ function AddCustomQuestionDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>Type</Label>
+            <Label htmlFor="custom-q-type">Type</Label>
             <Select value={type} onValueChange={(v) => setType(v as QuestionType)}>
-              <SelectTrigger>
+              <SelectTrigger id="custom-q-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -806,8 +818,9 @@ function AddCustomQuestionDialog({
           </div>
           {QUESTION_TYPES_WITH_OPTIONS.includes(type) && (
             <div className="space-y-2">
-              <Label>Options (one per line)</Label>
+              <Label htmlFor="custom-q-options">Options (one per line)</Label>
               <Textarea
+                id="custom-q-options"
                 placeholder="Option A&#10;Option B&#10;Option C"
                 value={options}
                 onChange={(e) => setOptions(e.target.value)}
@@ -816,8 +829,9 @@ function AddCustomQuestionDialog({
             </div>
           )}
           <div className="space-y-2">
-            <Label>Description / Help Text</Label>
+            <Label htmlFor="custom-q-desc">Description / Help Text</Label>
             <Input
+              id="custom-q-desc"
               placeholder="Optional context for respondents..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -877,19 +891,21 @@ function SenderAssignmentsPanel({
   const [inviteName, setInviteName] = React.useState("")
   const [selectedQuestions, setSelectedQuestions] = React.useState<Set<string>>(new Set())
 
-  const fetchCollaborators = React.useCallback(async () => {
+  const fetchCollaborators = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
-    const res = await fetch(`/api/questionnaires/${questionnaireId}/collaborators`)
-    if (res.ok) {
+    const res = await fetch(`/api/questionnaires/${questionnaireId}/collaborators`, { signal })
+    if (res.ok && !signal?.aborted) {
       const data = await res.json()
       setCollaborators(data.collaborators ?? [])
       setResponseExists(data.responseExists ?? false)
     }
-    setLoading(false)
+    if (!signal?.aborted) setLoading(false)
   }, [questionnaireId])
 
   React.useEffect(() => {
-    void fetchCollaborators()
+    const controller = new AbortController()
+    void fetchCollaborators(controller.signal)
+    return () => controller.abort()
   }, [fetchCollaborators])
 
   async function handleInvite() {
@@ -1001,9 +1017,9 @@ function SenderAssignmentsPanel({
                 : 0
               const statusIcon =
                 c.inviteStatus === "completed" ? (
-                  <CheckCircle2Icon className="h-3 w-3 text-[color:var(--accent)]" />
+                  <CheckCircle2Icon className="h-3 w-3 text-accent" />
                 ) : c.inviteStatus === "active" ? (
-                  <ClockIcon className="h-3 w-3 text-amber-500" />
+                  <ClockIcon className="h-3 w-3 text-warning" />
                 ) : (
                   <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
                 )
@@ -1021,8 +1037,8 @@ function SenderAssignmentsPanel({
                     <div className="flex items-center gap-2 mt-0.5">
                       <div className="flex-1 max-w-24 bg-muted rounded-full h-1 overflow-hidden">
                         <div
-                          className="h-full bg-[color:var(--accent)] rounded-full transition-all"
-                          style={{ width: `${progress}%` }}
+                          className="h-full w-full bg-[color:var(--accent)] rounded-full origin-left transition-transform"
+                          style={{ transform: `scaleX(${progress / 100})` }}
                         />
                       </div>
                       <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
@@ -1033,28 +1049,31 @@ function SenderAssignmentsPanel({
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button
-                      size="sm" variant="ghost" className="h-7 w-7 p-0"
-                      title="Copy link" onClick={() => copyLink(c.collaboratorUrl, c.id)}
+                      size="sm" variant="ghost" className="h-9 w-9 p-0"
+                      aria-label={`Copy link for ${c.name ?? c.email}`}
+                      onClick={() => copyLink(c.collaboratorUrl, c.id)}
                     >
                       {copiedId === c.id
-                        ? <CheckIcon className="h-3.5 w-3.5 text-[color:var(--accent)]" />
-                        : <CopyIcon className="h-3.5 w-3.5" />}
+                        ? <CheckIcon className="h-3.5 w-3.5 text-accent" aria-hidden />
+                        : <CopyIcon className="h-3.5 w-3.5" aria-hidden />}
                     </Button>
                     <Button
-                      size="sm" variant="ghost" className="h-7 w-7 p-0"
-                      title="Open in email" onClick={() => openInEmail(c.email, c.collaboratorUrl, c.name)}
+                      size="sm" variant="ghost" className="h-9 w-9 p-0"
+                      aria-label={`Send link by email to ${c.email}`}
+                      onClick={() => openInEmail(c.email, c.collaboratorUrl, c.name)}
                     >
-                      <MailIcon className="h-3.5 w-3.5" />
+                      <MailIcon className="h-3.5 w-3.5" aria-hidden />
                     </Button>
                     <Button
                       size="sm" variant="ghost"
-                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                      title="Remove" onClick={() => handleDelete(c.id, c.email)}
+                      className="h-9 w-9 p-0 text-destructive hover:text-destructive"
+                      aria-label={`Remove ${c.name ?? c.email}`}
+                      onClick={() => handleDelete(c.id, c.email)}
                       disabled={deletingId === c.id}
                     >
                       {deletingId === c.id
-                        ? <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
-                        : <TrashIcon className="h-3.5 w-3.5" />}
+                        ? <Loader2Icon className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                        : <TrashIcon className="h-3.5 w-3.5" aria-hidden />}
                     </Button>
                   </div>
                 </div>
@@ -1073,15 +1092,17 @@ function SenderAssignmentsPanel({
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-sm">Email <span className="text-destructive">*</span></Label>
+                <Label htmlFor="invite-email" className="text-sm">Email <span className="text-destructive" aria-hidden>*</span></Label>
                 <Input
+                  id="invite-email"
                   type="email" placeholder="colleague@company.com"
                   value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">Name (optional)</Label>
+                <Label htmlFor="invite-name" className="text-sm">Name (optional)</Label>
                 <Input
+                  id="invite-name"
                   placeholder="Jane Smith"
                   value={inviteName} onChange={(e) => setInviteName(e.target.value)}
                 />

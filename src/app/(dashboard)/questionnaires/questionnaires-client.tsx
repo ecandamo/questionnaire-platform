@@ -144,6 +144,7 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
         <div className="relative flex-1 min-w-52">
           <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
+            aria-label="Search questionnaires"
             placeholder="Search questionnaires..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -234,8 +235,8 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
                       <td className="px-4 py-3.5">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm">
-                              <MoreHorizontalIcon className="h-4 w-4" />
+                            <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${q.title}`}>
+                              <MoreHorizontalIcon className="h-4 w-4" aria-hidden />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">

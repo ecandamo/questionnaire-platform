@@ -40,16 +40,21 @@ export default function ClientsPage() {
   const [form, setForm] = React.useState({ name: "", industry: "", contactName: "", contactEmail: "" })
   const [saving, setSaving] = React.useState(false)
 
-  const load = React.useCallback(async () => {
+  const load = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
     const params = search ? `?search=${encodeURIComponent(search)}` : ""
-    const res = await fetch(`/api/clients${params}`)
+    const res = await fetch(`/api/clients${params}`, { signal })
+    if (signal?.aborted) return
     if (res.ok) setClients(await res.json())
     setLoading(false)
   }, [search])
 
   React.useEffect(() => {
-    void load()
+    const controller = new AbortController()
+    void load(controller.signal).catch((e: unknown) => {
+      if (e instanceof Error && e.name === "AbortError") return
+    })
+    return () => controller.abort()
   }, [load])
 
   function openAdd() {
@@ -110,8 +115,12 @@ export default function ClientsPage() {
       </div>
 
       <div className="relative max-w-sm">
-        <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <label htmlFor="client-search" className="sr-only">
+          Search clients
+        </label>
+        <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
         <Input
+          id="client-search"
           placeholder="Search clients..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -122,8 +131,12 @@ export default function ClientsPage() {
       <Card className="shadow-card">
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+            <div
+              className="flex items-center justify-center py-16"
+              role="status"
+              aria-label="Loading clients"
+            >
+              <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden />
             </div>
           ) : clients.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
@@ -142,7 +155,9 @@ export default function ClientsPage() {
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Industry</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Contact</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Added</th>
-                  <th className="px-4 py-3" />
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -164,8 +179,12 @@ export default function ClientsPage() {
                     <td className="px-4 py-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm">
-                            <MoreHorizontalIcon className="h-4 w-4" />
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Actions for ${c.name}`}
+                          >
+                            <MoreHorizontalIcon className="h-4 w-4" aria-hidden />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -198,28 +217,59 @@ export default function ClientsPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Company Name <span className="text-destructive">*</span></Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Acme Corp" />
+              <Label htmlFor="client-form-name">
+                Company Name{" "}
+                <span className="text-destructive" aria-hidden>
+                  *
+                </span>
+                <span className="sr-only">(required)</span>
+              </Label>
+              <Input
+                id="client-form-name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Acme Corp"
+                autoComplete="organization"
+                aria-required
+              />
             </div>
             <div className="space-y-2">
-              <Label>Industry</Label>
-              <Input value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} placeholder="Technology, Finance, etc." />
+              <Label htmlFor="client-form-industry">Industry</Label>
+              <Input
+                id="client-form-industry"
+                value={form.industry}
+                onChange={(e) => setForm({ ...form, industry: e.target.value })}
+                placeholder="Technology, Finance, etc."
+              />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Contact Name</Label>
-                <Input value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} placeholder="Jane Smith" />
+                <Label htmlFor="client-form-contact-name">Contact Name</Label>
+                <Input
+                  id="client-form-contact-name"
+                  value={form.contactName}
+                  onChange={(e) => setForm({ ...form, contactName: e.target.value })}
+                  placeholder="Jane Smith"
+                  autoComplete="name"
+                />
               </div>
               <div className="space-y-2">
-                <Label>Contact Email</Label>
-                <Input type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} placeholder="jane@acme.com" />
+                <Label htmlFor="client-form-contact-email">Contact Email</Label>
+                <Input
+                  id="client-form-contact-email"
+                  type="email"
+                  value={form.contactEmail}
+                  onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
+                  placeholder="jane@acme.com"
+                  autoComplete="email"
+                />
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2Icon className="h-4 w-4 animate-spin" />}
+            <Button onClick={handleSave} disabled={saving} aria-busy={saving}>
+              {saving && <Loader2Icon className="h-4 w-4 animate-spin" aria-hidden />}
               {editing ? "Save Changes" : "Add Client"}
             </Button>
           </DialogFooter>

@@ -316,6 +316,7 @@ function CollaboratorRow({
   onEmail: () => void
   onDelete: () => void
 }) {
+  const displayName = collaborator.name ?? collaborator.email
   const progress =
     collaborator.assignedCount > 0
       ? Math.round((collaborator.answeredCount / collaborator.assignedCount) * 100)
@@ -323,11 +324,11 @@ function CollaboratorRow({
 
   const statusIcon =
     collaborator.inviteStatus === "completed" ? (
-      <CheckCircle2Icon className="h-3 w-3 text-[color:var(--accent)]" />
+      <CheckCircle2Icon className="h-3 w-3 text-accent" aria-hidden />
     ) : collaborator.inviteStatus === "active" ? (
-      <ClockIcon className="h-3 w-3 text-amber-500" />
+      <ClockIcon className="h-3 w-3 text-warning" aria-hidden />
     ) : (
-      <div className="h-2 w-2 rounded-full bg-muted-foreground/30 mt-0.5" />
+      <div className="h-2 w-2 rounded-full bg-muted-foreground/30 mt-0.5" aria-hidden />
     )
 
   return (
@@ -348,8 +349,8 @@ function CollaboratorRow({
         <div className="flex items-center gap-2 mt-0.5">
           <div className="flex-1 max-w-24 bg-muted rounded-full h-1 overflow-hidden">
             <div
-              className="h-full bg-[color:var(--accent)] rounded-full transition-all"
-              style={{ width: `${progress}%` }}
+              className="h-full w-full bg-[color:var(--accent)] rounded-full origin-left transition-transform"
+              style={{ transform: `scaleX(${progress / 100})` }}
             />
           </div>
           <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
@@ -363,12 +364,12 @@ function CollaboratorRow({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 w-7 p-0"
-          title="Copy link"
+          className="h-9 w-9 p-0"
+          aria-label={`Copy link for ${displayName}`}
           onClick={onCopy}
         >
           {copied ? (
-            <CheckIcon className="h-3.5 w-3.5 text-[color:var(--accent)]" />
+            <CheckIcon className="h-3.5 w-3.5 text-accent" aria-hidden />
           ) : (
             <CopyIcon className="h-3.5 w-3.5" />
           )}
@@ -376,8 +377,8 @@ function CollaboratorRow({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 w-7 p-0"
-          title="Open in email"
+          className="h-9 w-9 p-0"
+          aria-label={`Send link by email to ${collaborator.email}`}
           onClick={onEmail}
         >
           <MailIcon className="h-3.5 w-3.5" />
@@ -385,8 +386,8 @@ function CollaboratorRow({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-          title="Remove collaborator"
+          className="h-9 w-9 p-0 text-destructive hover:text-destructive"
+          aria-label={`Remove ${displayName}`}
           onClick={onDelete}
           disabled={deleting}
         >

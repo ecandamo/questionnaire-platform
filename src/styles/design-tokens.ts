@@ -14,7 +14,7 @@
  * Accent:  API Green #78BC43 — action, success, highlight
  * Neutral: API Gray #7F7F7F + Light Blue-Gray #D4D9E1
  *
- * Typography: Plus Jakarta Sans (headings) + Inter (body)
+ * Typography: IBM Plex Sans (headings) + Source Sans 3 (body)
  * Style: Dark navy sidebar, clean white content surfaces
  */
 
@@ -120,13 +120,13 @@ export const designTokens = {
 
   fonts: {
     heading: {
-      family: "'Plus Jakarta Sans', sans-serif",
+      family: "'IBM Plex Sans', sans-serif",
       weights: { medium: 500, semibold: 600, bold: 700 },
       letterSpacing: '-0.025em',
     },
     body: {
-      family: "'Inter', sans-serif",
-      weights: { light: 300, regular: 400, medium: 500, semibold: 600 },
+      family: "'Source Sans 3', sans-serif",
+      weights: { regular: 400, medium: 500, semibold: 600 },
       letterSpacing: '0em',
     },
     mono: {

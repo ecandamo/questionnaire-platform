@@ -29,6 +29,76 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+
+- **2026-04-15 (post-`/audit` fixes — batch):** Addressed remaining Clients + dashboard audit items in one pass.
+  - **`clients/page.tsx`:** Search `id` + `sr-only` label; loading `role="status"`; table **Actions** column `sr-only` header; row menu `aria-label` + decorative icons `aria-hidden`; dialog: all fields `htmlFor`/`id`, required company name + `aria-required`, `autoComplete`, contact grid `grid-cols-1 sm:grid-cols-2`; save `aria-busy`.
+  - **`dashboard-client.tsx` + new `dashboard-chart-blocks.tsx`:** Recharts pie/bar moved to client-only dynamic import (`ssr: false`) with skeleton loading; **By Type** block gets `aria-labelledby` on wrapper + **sr-only `<table>`** (caption + scoped headers) for screen readers.
+  - **`detail-client.tsx`, `collaborator-panel.tsx`, `respond/[token]/page.tsx`:** `text-[color:var(--accent)]` → `text-accent`; copy-success `CheckIcon` gets `aria-hidden` where button already has `aria-label`.
+  - `npm run build`, `tsc --noEmit`, ESLint clean.
+
+- **2026-04-15 (adapt + optimize + polish + typeset — batch):**
+  - **`/adapt` — `collaborator-panel.tsx`:** Icon action buttons (copy / email / remove) `h-7 w-7` → `h-9 w-9` (36px tap targets on respond flow, matches dashboard Team panel).
+  - **`/optimize` — admin data loaders:** `AbortController` + optional `signal` on initial list loads: `question-bank/page.tsx` (`loadData` — parallel questions + categories), `templates/page.tsx` (`load`), `users/page.tsx` (`load`), `audit-log/page.tsx` (`load(o, signal)` — initial mount only; “Load more” calls `load(offset)` without abort). All handle `AbortError` and guard `setState` / `setLoading` when aborted.
+  - **`/polish` — Recharts legend:** `dashboard-client.tsx` — removed Recharts `<Legend />` (inaccessible SVG-only). Replaced with semantic `<ul role="list" aria-label="Questionnaire status breakdown">` under the pie: each `<li>` has a color swatch (`aria-hidden`) + visible label. `ClockIcon` in collaborator row was already `text-warning` from prior harden (no `text-amber-500` left).
+  - **`/typeset` — fonts:** `src/app/layout.tsx` — `Plus_Jakarta_Sans` + `Inter` → **`IBM_Plex_Sans`** (`--font-heading`, 500–700) + **`Source_Sans_3`** (`--font-sans`, 400–600). `src/styles/design-tokens.ts` reference updated; `.impeccable.md` typography section updated to match live stack.
+  - ESLint + `tsc --noEmit` clean.
+
+- **2026-04-15 (accessibility harden — /harden):** WCAG label associations, collaborator panel naming, and reduced motion:
+  - **Admin dialogs — `htmlFor` / `id`:** Question bank (`question-bank/page.tsx`): filters (sr-only labels + ids on search + three filter `SelectTrigger`s); Add/Edit Question dialog (question text, type, category, options, help text + `aria-describedby` on help textarea); Add/Edit Category dialog (name, description, sort order). Users (`users/page.tsx`): Create User (name, email, password, role trigger). Templates (`templates/page.tsx`): name, type, description, sr-only label + id on question bank search input.
+  - **`globals.css`:** `@media (prefers-reduced-motion: reduce)` sets `:where(.animate-spin) { animation: none !important; }` so all Tailwind spinners respect OS setting.
+  - **MD3 button (`material-design-3-button.tsx`):** `getPrefersReducedMotion()` helper; `startPressAnimation` skips Web Animations API ripple grow when reduced motion is on (still allows `pressed` state for focus/hover affordances).
+  - **Collaborator panel (`collaborator-panel.tsx`):** Replaced `title` with `aria-label` on copy / email / remove buttons (includes collaborator display name or email); `text-amber-500` → `text-warning` on active clock icon; decorative status icons marked `aria-hidden`.
+  - ESLint clean on touched files.
+
+- **2026-04-15 (polish — /polish):** Three P3 items from the `/audit` report:
+  - **Respond header glassmorphism (`respond/[token]/page.tsx`):** `backdrop-blur-sm` (4px) → `backdrop-blur-md` (12px) — 4px is imperceptible; 12px creates a real frosted-glass effect. Background changed from `bg-card/90` (near-opaque) → `bg-background/80` (20% transparent) for proper glass depth. Border softened from `border-border` → `border-border/60` to complement the translucent surface.
+  - **Badge dot decorations (`status-badge.tsx`):** Added `aria-hidden="true"` to all three colored dot `<span>` elements across `QuestionnairStatusBadge`, `LinkStatusBadge`, and `QuestionStatusBadge`. The text label already carries the semantic meaning; screen readers no longer encounter a meaningless presentational element.
+  - **Recharts PieChart (`dashboard-client.tsx`):** Two fixes: (1) `key={entry.name}` → `key={\`cell-${i}\`}` (Recharts-recommended index pattern, avoids potential reconciliation edge cases). (2) `fill={CHART_COLORS[i % ...]}` → `fill={entry.fill}` — the `statusData` array already maps each status to a semantic CSS variable (`STATUS_COLORS`: warning for in_progress, success for submitted, etc.) but that `fill` property was ignored; pie slices now render with semantic status colors instead of generic chart palette. Removed the now-unused `CHART_COLORS` constant entirely.
+  - ESLint clean (3 pre-existing `text-[color:var(--accent)]` shorthand warnings, unrelated).
+
+- **2026-04-15 (performance — /optimize):** Systematic animation and fetch cleanup across 8 files:
+  - **MD3 button ripple (`material-design-3-button.tsx`):** Removed `top`, `left`, `height`, `width` from Web Animations API keyframes — those are layout properties the browser must resolve through the layout engine even when constant. Now sets `style.width`/`style.height` as direct mutations before calling `.animate()`, and animates `transform` only (GPU-composited). Added `top-0 left-0` to the ripple element's Tailwind classes so it has an explicit CSS position. Base CVA `transition-all` → `transition-[box-shadow,border-radius,opacity]` — the three properties that actually change (shadow on elevated, border-radius on round press-morph, opacity on disabled).
+  - **Progress bars (3 locations):** All `style={{ width: progress% }}` + `transition-all` patterns replaced with `style={{ transform: scaleX(n) }}` + `transition-transform` + `origin-left w-full`. Covers `progress.tsx` indicator (already used translateX, just needed the class fixed), the collaborator progress strip in `detail-client.tsx`, and the same strip in `collaborator-panel.tsx`.
+  - **`transition-all` replacements:** `tabs.tsx` trigger → `transition-[color,background-color,box-shadow,border-color,opacity]`; `switch.tsx` → `transition-colors`; `badge.tsx` → `transition-colors`.
+  - **AbortController (4 fetch effects):** `respond/[token]/page.tsx` initial load; `detail-client.tsx` `load` callback (abort-guarded before state updates + router.push); `detail-client.tsx` `loadBankQuestions` (guards setState on `signal.aborted`); `detail-client.tsx` `SenderAssignmentsPanel.fetchCollaborators`. Each useEffect now returns `controller.abort` as cleanup, preventing stale-response state updates on fast navigations.
+  - ESLint clean after all changes (9 pre-existing `text-[color:var(--accent)]` shorthand warnings, unrelated).
+
+- **2026-04-15 (touch targets — /adapt):** Improved tap target sizes across both the external respond page and the internal builder/collaborator panel:
+  - **Respond save button**: `className="h-8"` → `"h-10"` — overrides the MD3 `size="sm"` h-8 to 40px, the practical web minimum for mobile tap targets.
+  - **Builder drag handle**: Added `flex items-center justify-center p-2 rounded-md -ml-0.5` — tap area expands from ~16px to ~32px while the visual icon stays compact. `mt-1` offset replaced by padding.
+  - **Builder hide/show + delete buttons**: `p-1.5` → `p-2.5` — tap area grows from ~26px to ~34px; added `type="button"` to both.
+  - **Collaborator panel action buttons** (copy link, open in email, remove): `h-7 w-7` → `h-9 w-9` — tap area grows from 28px to 36px.
+  - **Switch `scale-75`**: Left unchanged — `transform: scale()` is a visual transform only; the layout/hit area remains the full Switch size. This was a false-positive in the audit.
+  - **name/email grid**: Already fixed in `/harden` (`grid-cols-1 sm:grid-cols-2`). No further action needed.
+  - ESLint clean after all changes (6 pre-existing Tailwind shorthand suggestions, unrelated).
+
+- **2026-04-15 (dashboard layout — /layout):** Dissolved the standalone KPI card section entirely. Stats are now a compact inline row (`divide-x divide-border text-xs`) living directly under the dashboard h1, rendered only when `total > 0`. Numbers are `font-bold tabular-nums` with semantic colors (warning/success/muted-foreground). Header flex changed to `items-start` + `shrink-0` on the button. Overall page spacing `space-y-6` → `space-y-8`. Chart and recent-list section label typography updated: `text-[10px] uppercase tracking-[0.08em]` → `text-xs font-semibold` (more readable, less template-feel).
+
+- **2026-04-15 (anti-pattern polish — /polish):** Eliminated all 5 `border-left` accent stripe instances and other anti-patterns identified in `/audit`:
+  - **`api-logo.tsx`**: Removed hard-coded hex fills (`#273B6E`, `#ffffff`, `#78bc43`). Logo letterforms now use `currentColor` (controlled by `text-primary` / `text-white` Tailwind class via `cn`). Crosshair lines use `var(--color-accent)` — theme-aware and dark-mode safe. Added `import { cn }`.
+  - **`login/page.tsx`**: Replaced duplicate inline SVG (with hard-coded hex fills) with `<ApiLogo variant="navy" className="w-24" />` — single source of truth.
+  - **`confirmation/page.tsx`**: `bg-white` → `bg-card` on success icon circle — no longer breaks dark mode.
+  - **`sidebar.tsx`**: Removed absolute `<span>` left stripe on active nav items. Active state communicated by `bg-sidebar-primary/15` + `text-sidebar-primary` + `font-semibold` alone. Removed `relative` from link (no longer needed).
+  - **`dashboard-client.tsx`**: Replaced 4 `border-l-2` KPI cards with a single stat-strip card (`grid-cols-2 sm:grid-cols-4 divide-x`). Number size reduced `text-4xl` → `text-2xl`. Status communicated via number color: Total=`text-foreground`, In Progress=`text-warning`, Submitted=`text-success`, Draft=`text-muted-foreground`. Removed `accent` field from kpis array.
+  - **`respond/[token]/page.tsx`**: Section headers replaced `border-l-2 border-primary pl-4` with a heading + horizontal rule (`<div className="h-px bg-border mt-3" />`). Required question cards removed `border-l-2 border-l-primary/20` — `*` in question text is the required indicator.
+  - **`detail-client.tsx`**: Builder sortable cards removed `border-l-2 border-l-primary/30`. "Required" badge inside card is the indicator. Simplified className to `border-border` always.
+  - ESLint clean after all changes.
+
+- **2026-04-15 (accessibility harden — /harden):** Fixed every P1/P2 a11y issue from `/audit`:
+  - **Respond page `QuestionField`**: Added `id="qlabel-{id}"` to question text, `aria-labelledby` to all input types (short_text, long_text, number/currency/percentage, date, single_select), `role="group" aria-labelledby` on yes_no and multi_select groups, `aria-pressed` on yes/no buttons, `type="button"` on yes/no buttons. `FileUploadQuestionInput` now accepts and forwards `labelId`. Required asterisk marked `aria-hidden` with SR-only "(required)" text. Question description given `id` and wired to `aria-describedby`.
+  - **Respond page loading**: `role="status" aria-label="Loading questionnaire"` on spinner container.
+  - **Respond page mobile**: `grid-cols-1 sm:grid-cols-2` on name/email card — no longer pinches on narrow phones.
+  - **Login page**: Brand panel heading changed from `<h1>` to `<p aria-hidden>` (decorative); form "Sign in" heading promoted to `<h1>` (correct single h1 on every viewport). Submit button gets `aria-busy={loading}`.
+  - **Header**: Avatar/user trigger gets `aria-label="Open user menu for {name}"` — named on mobile where text is hidden.
+  - **Questionnaires list**: Search input gets `aria-label="Search questionnaires"`. Row actions button gets `aria-label="Actions for {title}"`.
+  - **Detail-client — builder**: Back button `aria-label="Go back"`. Drag handle `aria-label="Drag to reorder: {text}"`. Hide/show button uses `aria-label` (not `title`). Delete button `aria-label="Remove question: {text}"`. Required switch gets `aria-label`. "Req" label span marked `aria-hidden`.
+  - **Detail-client — settings**: Link Expiry input/label wired with `id`/`htmlFor`.
+  - **AddCustomQuestionDialog**: All label/input pairs wired: Question Text, Type (SelectTrigger accepts id), Options, Description/Help Text.
+  - **SenderAssignmentsPanel**: Collaborator action buttons (copy, email, remove) use `aria-label` with collaborator name/email. Invite dialog email/name inputs wired with `id`/`htmlFor`.
+  - **Theming**: `text-amber-500` → `text-warning` on active collaborator clock icon.
+  - ESLint clean after all changes.
+
+
 - **2026-04-14 (learnings backlog):** Closed every **`Status: pending`** in `.learnings/LEARNINGS.md` → **`resolved`** (verified in code) or **`promoted`** (rule already in `CLAUDE.md` / `AGENTS.md`). **`.learnings/*.md`** now has **zero** pending rows — new issues log as `pending` again until the next triage.
 
 - **2026-04-14 (self-improvement workflow):** Triaged `.learnings/`; **LRN-20260414-013** (dedupe logs, align promoted docs ↔ code, mirror auth note in **`AGENTS.md`**); admin route adds **`Referer`** on Better Auth `fetch`; **ERR-20260414-003** / **LRN-20260414-011** notes updated. Earlier same day: **LRN-20260414-012** + **CLAUDE.md** template vs bank required; **LRN-20260414-010/011**, **ERR-20260414-002/003**; ESLint clean.
@@ -119,6 +189,10 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `HANDOFF.md` — post-audit batch (Clients a11y, dashboard charts lazy + sr-only table, `text-accent`)
+- `src/app/(dashboard)/clients/page.tsx`, `src/app/(dashboard)/dashboard-client.tsx`, `src/app/(dashboard)/dashboard-chart-blocks.tsx` (new)
+- `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`, `src/components/shared/collaborator-panel.tsx`, `src/app/respond/[token]/page.tsx`
+
 - `.learnings/LEARNINGS.md`, `HANDOFF.md` — learnings triage: all LRNs `resolved` or `promoted` (zero `pending`)
 - `CLAUDE.md`, `AGENTS.md`, `.learnings/LEARNINGS.md`, `.learnings/ERRORS.md`, `HANDOFF.md` — self-improvement (**LRN-20260414-010/011/012/013**, ERR-20260414-002/003); **AGENTS.md** Better Auth server-`fetch` note; **LRN-013** process log
 - `src/app/api/admin/users/route.ts` — `Origin` + `Referer` on Better Auth admin create-user server `fetch`; guard when base URL env missing
@@ -232,6 +306,7 @@ Key paths (design 2026-03-28):
 - Follow existing project patterns unless there is a good reason not to
 
 ## Known Decisions
+- **Typography:** `next/font/google` — **IBM Plex Sans** (`--font-heading`, weights 500–700) + **Source Sans 3** (`--font-sans`, 400–600). Replaces Plus Jakarta Sans + Inter for a more distinctive B2B tooling feel.
 - **Buttons:** shadcn-style `Button` from `@/components/ui/button` is backed by `material-design-3-button.tsx`; drop-in external snippets that import `@radix-ui/react-slot` must use `radix-ui` + `Slot.Root` instead. Ripple is client-only; no extra global CSS required.
 - Branding: API Navy `#273B6E` = primary, API Green `#78BC43` = accent/active — all via CSS custom properties in `globals.css`
 - Sidebar uses API Navy background (`--sidebar` matches primary in light theme) with green active items

@@ -71,18 +71,29 @@ export default function TemplatesPage() {
   const [templateQuestions, setTemplateQuestions] = React.useState<TemplateQuestion[]>([])
   const [qSearch, setQSearch] = React.useState("")
 
-  async function load() {
+  const load = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
-    const [ts, qs] = await Promise.all([
-      fetch("/api/templates").then((r) => r.json()),
-      fetch("/api/questions?status=active").then((r) => r.json()),
-    ])
-    setTemplates(ts ?? [])
-    setQuestions(qs ?? [])
-    setLoading(false)
-  }
+    try {
+      const [ts, qs] = await Promise.all([
+        fetch("/api/templates", { signal }).then((r) => r.json()),
+        fetch("/api/questions?status=active", { signal }).then((r) => r.json()),
+      ])
+      if (signal?.aborted) return
+      setTemplates(ts ?? [])
+      setQuestions(qs ?? [])
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return
+      throw e
+    } finally {
+      if (!signal?.aborted) setLoading(false)
+    }
+  }, [])
 
-  React.useEffect(() => { load() }, [])
+  React.useEffect(() => {
+    const controller = new AbortController()
+    void load(controller.signal)
+    return () => controller.abort()
+  }, [load])
 
   async function openEdit(t: Template) {
     setEditing(t)
@@ -214,7 +225,9 @@ export default function TemplatesPage() {
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Type</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Description</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                  <th className="px-4 py-3" />
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -235,7 +248,9 @@ export default function TemplatesPage() {
                     <td className="px-4 py-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm"><MoreHorizontalIcon className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${t.name}`}>
+                            <MoreHorizontalIcon className="h-4 w-4" aria-hidden />
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openEdit(t)}>
@@ -279,13 +294,24 @@ export default function TemplatesPage() {
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 py-4 sm:px-6">
             <div className="grid shrink-0 grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Name <span className="text-destructive">*</span></Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Standard ROI Template" />
+                <Label htmlFor="tmpl-name">
+                  Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="tmpl-name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g. Standard ROI Template"
+                />
               </div>
               <div className="space-y-2">
-                <Label>Type <span className="text-destructive">*</span></Label>
+                <Label htmlFor="tmpl-type">
+                  Type <span className="text-destructive">*</span>
+                </Label>
                 <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                  <SelectTrigger id="tmpl-type">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
                   <SelectContent>
                     {Object.entries(QUESTIONNAIRE_TYPE_LABELS)
                       .filter(([v]) => v !== "custom")
@@ -297,8 +323,14 @@ export default function TemplatesPage() {
               </div>
             </div>
             <div className="shrink-0 space-y-2">
-              <Label>Description</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="min-h-18 resize-y" />
+              <Label htmlFor="tmpl-description">Description</Label>
+              <Textarea
+                id="tmpl-description"
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={3}
+                className="min-h-18 resize-y"
+              />
             </div>
 
             <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 border-t border-border pt-4 lg:grid-cols-2 lg:gap-6">
@@ -306,8 +338,12 @@ export default function TemplatesPage() {
               <div className="flex min-h-[min(42dvh,360px)] flex-col gap-2 lg:min-h-0">
                 <p className="shrink-0 text-sm font-medium">Question Bank</p>
                 <div className="relative shrink-0">
-                  <SearchIcon className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Label htmlFor="tmpl-bank-search" className="sr-only">
+                    Search question bank
+                  </Label>
+                  <SearchIcon className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
                   <Input
+                    id="tmpl-bank-search"
                     placeholder="Search question or description…"
                     value={qSearch}
                     onChange={(e) => setQSearch(e.target.value)}
