@@ -1,0 +1,22 @@
+<!-- Card: Radii -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+body{margin:0;padding:22px;background:#fff;font-family:var(--font-sans);color:var(--fg)}
+.row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.card{text-align:center}
+.box{height:70px;background:var(--navy-500);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;font-family:var(--font-mono)}
+.lbl{margin-top:6px;font-size:11px;font-weight:700}
+.lbl span{display:block;color:var(--fg-subtle);font-family:var(--font-mono);font-weight:400}
+h4{margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green-700)}
+</style></head><body>
+<h4>Corner Radii</h4>
+<div class="row">
+  <div class="card"><div class="box" style="border-radius:3px">xs</div><div class="lbl">Extra small<span>3px</span></div></div>
+  <div class="card"><div class="box" style="border-radius:6px">sm</div><div class="lbl">Small<span>6px</span></div></div>
+  <div class="card"><div class="box" style="border-radius:10px">md</div><div class="lbl">Medium<span>10px</span></div></div>
+  <div class="card"><div class="box" style="border-radius:14px">lg</div><div class="lbl">Large<span>14px</span></div></div>
+  <div class="card"><div class="box" style="border-radius:20px">xl</div><div class="lbl">XL<span>20px</span></div></div>
+  <div class="card"><div class="box" style="border-radius:9999px">pill</div><div class="lbl">Pill<span>full</span></div></div>
+</div>
+</body></html>

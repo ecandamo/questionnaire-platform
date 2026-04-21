@@ -1,0 +1,22 @@
+<!-- Card: Status colors -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+body{margin:0;padding:20px;font-family:var(--font-sans);background:#fff}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.card{border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+.bar{height:44px;display:flex;align-items:center;padding:0 12px;color:#fff;font-weight:700;font-size:13px;gap:8px}
+.bar .dot{width:8px;height:8px;border-radius:99px;background:#fff;opacity:.9}
+.body{padding:10px 12px;font-size:11px;line-height:1.4}
+.body b{display:block;font-size:12px}
+.body span{color:var(--fg-subtle);font-family:var(--font-mono);font-size:10.5px}
+h4{margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green-700)}
+</style></head><body>
+<h4>Status — Semantic</h4>
+<div class="row">
+  <div class="card"><div class="bar" style="background:#2E8F3E"><span class="dot"></span>Success</div><div class="body"><b>On-time arrival</b><span>#2E8F3E · bg #E9F6EC</span></div></div>
+  <div class="card"><div class="bar" style="background:#C47A0B"><span class="dot"></span>Warning</div><div class="body"><b>Delay flagged</b><span>#C47A0B · bg #FDF3E0</span></div></div>
+  <div class="card"><div class="bar" style="background:#C6342C"><span class="dot"></span>Danger</div><div class="body"><b>IROPS triggered</b><span>#C6342C · bg #FBECEB</span></div></div>
+  <div class="card"><div class="bar" style="background:#273B6E"><span class="dot"></span>Info</div><div class="body"><b>Booking updated</b><span>#273B6E · bg #EEF1F8</span></div></div>
+</div>
+</body></html>

@@ -1,0 +1,251 @@
+/* ============================================================
+   API Global Solutions — Colors & Type
+   Live tokens for the API design system.
+   ============================================================ */
+
+/* ── Webfonts ───────────────────────────────────────────────
+   Approved typography for API Global Solutions:
+   • Mulish        — display / UI (replaces Sailec)
+   • Questrial     — documents (replaces Century Gothic)
+   • JetBrains Mono — data / code / PNRs / money           */
+@import url('https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800&family=Questrial&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* ───────── BRAND PALETTE (from API brand guidelines) ───────── */
+  --api-navy:        #273B6E;   /* C97 M86 Y29 K16  — primary */
+  --api-green:       #78BC43;   /* C58 M2  Y100 K0  — secondary */
+  --api-gray:        #7F7F7F;   /* C52 M43 Y43 K8   — neutral */
+  --api-light-gray:  #D4D9E1;   /* C16 M10 Y6 K0    — surface tint */
+  --api-white:       #FFFFFF;
+  --api-black:       #0B1020;   /* tuned navy-black */
+
+  /* Navy ramp (derived for UI use) */
+  --navy-50:  #EEF1F8;
+  --navy-100: #D9DFEE;
+  --navy-200: #B3BFDC;
+  --navy-300: #8592BE;
+  --navy-400: #556C9E;
+  --navy-500: #273B6E;        /* brand navy */
+  --navy-600: #1F3160;
+  --navy-700: #18264B;
+  --navy-800: #121D3A;
+  --navy-900: #0B1428;
+
+  /* Green ramp */
+  --green-50:  #F2FAEA;
+  --green-100: #DCF1C4;
+  --green-200: #BAE391;
+  --green-300: #9CD668;
+  --green-400: #8AC852;
+  --green-500: #78BC43;        /* brand green */
+  --green-600: #61A331;
+  --green-700: #4A8524;
+  --green-800: #35641A;
+  --green-900: #244611;
+
+  /* Neutral ramp (cool, slightly navy-tinted) */
+  --ink-50:  #F7F8FB;
+  --ink-100: #EEF0F5;
+  --ink-200: #D4D9E1;          /* brand light gray */
+  --ink-300: #B6BECB;
+  --ink-400: #8C95A6;
+  --ink-500: #7F7F7F;          /* brand mid gray */
+  --ink-600: #5B6472;
+  --ink-700: #3F4754;
+  --ink-800: #262D39;
+  --ink-900: #11151E;
+
+  /* ───────── SEMANTIC TOKENS ───────── */
+  --bg:          #FFFFFF;
+  --bg-subtle:   var(--ink-50);
+  --bg-muted:    var(--ink-100);
+  --surface:     #FFFFFF;
+  --surface-2:   var(--ink-50);
+
+  --fg:          var(--ink-900);
+  --fg-muted:    var(--ink-700);
+  --fg-subtle:   var(--ink-500);
+  --fg-on-navy:  #FFFFFF;
+  --fg-on-green: #0B1428;
+
+  --primary:          var(--navy-500);
+  --primary-hover:    var(--navy-600);
+  --primary-active:   var(--navy-700);
+  --primary-fg:       #FFFFFF;
+
+  --accent:           var(--green-500);
+  --accent-hover:     var(--green-600);
+  --accent-active:    var(--green-700);
+  --accent-fg:        #0B1428;
+
+  --border:           #E4E7EE;
+  --border-strong:    var(--ink-300);
+  --ring:             color-mix(in oklab, var(--navy-500) 45%, transparent);
+
+  /* Status */
+  --success:  #2E8F3E;
+  --success-bg: #E9F6EC;
+  --warning:  #C47A0B;
+  --warning-bg: #FDF3E0;
+  --danger:   #C6342C;
+  --danger-bg:  #FBECEB;
+  --info:     var(--navy-500);
+  --info-bg:  var(--navy-50);
+
+  /* ───────── RADII ───────── */
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-pill: 9999px;
+
+  /* ───────── SHADOWS (navy-tinted) ───────── */
+  --shadow-xs:  0 1px 2px 0 rgb(39 59 110 / 0.05);
+  --shadow-sm:  0 1px 2px 0 rgb(39 59 110 / 0.06), 0 1px 3px 0 rgb(39 59 110 / 0.05);
+  --shadow-md:  0 4px 10px -2px rgb(39 59 110 / 0.10), 0 2px 4px -2px rgb(39 59 110 / 0.06);
+  --shadow-lg:  0 12px 24px -6px rgb(39 59 110 / 0.14), 0 4px 8px -4px rgb(39 59 110 / 0.08);
+  --shadow-xl:  0 24px 48px -12px rgb(39 59 110 / 0.22);
+  --shadow-ring: 0 0 0 4px color-mix(in oklab, var(--navy-500) 18%, transparent);
+
+  /* ───────── SPACING (4px base) ───────── */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ───────── TYPOGRAPHY ─────────
+     Display/UI: Mulish (approved — replaces Sailec)
+     Docs:       Questrial (approved — replaces Century Gothic)
+     Mono:       JetBrains Mono
+  */
+  --font-sans:    'Mulish', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Mulish', ui-sans-serif, system-ui, sans-serif;
+  --font-docs:    'Questrial', ui-sans-serif, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Type scale — designed on a 1.2 minor-third ratio at 16px base */
+  --fs-xs:   12px;
+  --fs-sm:   14px;
+  --fs-base: 16px;
+  --fs-md:   18px;
+  --fs-lg:   20px;
+  --fs-xl:   24px;
+  --fs-2xl:  30px;
+  --fs-3xl:  38px;
+  --fs-4xl:  48px;
+  --fs-5xl:  60px;
+  --fs-6xl:  76px;
+
+  --lh-tight:  1.1;
+  --lh-snug:   1.25;
+  --lh-normal: 1.5;
+  --lh-relaxed:1.65;
+
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-widest: 0.12em;
+
+  /* ───────── MOTION ───────── */
+  --ease-out:      cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out:   cubic-bezier(0.5, 0, 0.2, 1);
+  --dur-fast:   120ms;
+  --dur-base:   180ms;
+  --dur-slow:   280ms;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Semantic element styles — drop-in if you want them.
+   Scoped under .api-prose so they don't clobber frameworks.
+   ────────────────────────────────────────────────────────── */
+.api-prose,
+.api-typography {
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.api-prose h1, .h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-4xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  font-weight: 800;
+  color: var(--navy-700);
+  margin: 0;
+}
+.api-prose h2, .h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  font-weight: 700;
+  color: var(--navy-700);
+}
+.api-prose h3, .h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  line-height: var(--lh-snug);
+  font-weight: 700;
+  color: var(--fg);
+}
+.api-prose h4, .h4 {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  line-height: var(--lh-snug);
+  font-weight: 600;
+  color: var(--fg);
+}
+.api-prose .eyebrow, .eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--green-700);
+}
+.api-prose p, .body {
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  color: var(--fg-muted);
+}
+.api-prose .lead, .lead {
+  font-size: var(--fs-lg);
+  line-height: var(--lh-relaxed);
+  color: var(--fg-muted);
+}
+.api-prose small, .small {
+  font-size: var(--fs-sm);
+  color: var(--fg-subtle);
+}
+.api-prose code, code.api {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 6px;
+  background: var(--ink-100);
+  border-radius: var(--radius-xs);
+  color: var(--navy-700);
+}
+.api-prose .num, .num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Reset/common */
+.api-prose *, .api-typography * { box-sizing: border-box; }

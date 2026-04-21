@@ -1,0 +1,27 @@
+<!-- Card: Plus mark motif -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+body{margin:0;padding:20px;font-family:var(--font-sans);background:#fff}
+.wrap{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;align-items:stretch}
+.demo{background:#273B6E;border-radius:var(--radius-md);padding:16px;position:relative;overflow:hidden;min-height:180px;
+  background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.14) 1.2px, transparent 1.2px);
+  background-size:22px 22px;
+  display:flex;align-items:center;justify-content:center}
+.demo .plus{color:#78BC43;font-family:var(--font-display);font-weight:300;font-size:120px;line-height:1;letter-spacing:-.05em}
+.demo .cap{position:absolute;bottom:10px;left:14px;color:#fff;font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;opacity:.8}
+.notes{display:flex;flex-direction:column;gap:10px;justify-content:center}
+.notes h4{margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green-700);font-weight:700}
+.notes p{margin:0;font-size:13px;line-height:1.45;color:var(--fg-muted)}
+.mini{display:flex;gap:8px;margin-top:4px}
+.mini span{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:var(--ink-100);color:var(--navy-700);font-size:20px;font-weight:300}
+</style></head><body>
+<div class="wrap">
+  <div class="demo"><div class="plus">+</div><span class="cap">Signature "+" motif</span></div>
+  <div class="notes">
+    <h4>The Plus Sign</h4>
+    <p>The "+" inside the API logo is the brand's signature element. Its height defines the logo's clear-zone and is reused as decorative rhythm, dividers, and dot-grid backgrounds.</p>
+    <div class="mini"><span>+</span><span>+</span><span>+</span><span>+</span></div>
+  </div>
+</div>
+</body></html>

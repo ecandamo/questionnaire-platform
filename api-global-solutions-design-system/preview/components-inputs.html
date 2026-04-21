@@ -1,0 +1,44 @@
+<!-- Card: Form inputs -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+body{margin:0;padding:22px;background:#fff;font-family:var(--font-sans);color:var(--fg)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:block;font-size:12px;font-weight:600;color:var(--fg);margin-bottom:6px}
+.field{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;background:#fff;border:1px solid #D4D9E1;border-radius:8px;transition:all .15s}
+.field:hover{border-color:#B6BECB}
+.field.focus{border-color:#273B6E;box-shadow:0 0 0 4px rgba(39,59,110,.15)}
+.field.err{border-color:#C6342C;box-shadow:0 0 0 4px rgba(198,52,44,.12)}
+.field input{border:none;outline:none;flex:1;font-size:14px;font-family:inherit;background:transparent;color:var(--fg)}
+.ico{width:16px;height:16px;stroke:var(--fg-subtle);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.hint{font-size:11.5px;color:var(--fg-subtle);margin-top:6px;font-family:var(--font-mono)}
+.hint.err{color:#C6342C}
+.sel{display:flex;align-items:center;justify-content:space-between;height:40px;padding:0 12px;background:#fff;border:1px solid #D4D9E1;border-radius:8px;font-size:14px;color:var(--fg);cursor:pointer;transition:all .15s}
+.sel:hover{border-color:#B6BECB}
+.sel .chev{width:16px;height:16px;stroke:var(--fg-muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.sel .ph{color:var(--fg-subtle)}
+h4{margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green-700)}
+</style></head><body>
+<h4>Form Inputs</h4>
+<div class="grid">
+  <div>
+    <label>Airline / Operator</label>
+    <div class="field focus"><svg class="ico" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 10-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg><input value="Cathay Pacific"></div>
+    <div class="hint">IATA code CX</div>
+  </div>
+  <div>
+    <label>Property</label>
+    <div class="field"><svg class="ico" viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13M3 21h18M9 21v-7h6v7"/></svg><input placeholder="Search 12,000+ properties"></div>
+    <div class="hint">Filter by region, stars, amenities</div>
+  </div>
+  <div>
+    <label>Check-in</label>
+    <div class="sel"><span>May 18, 2026</span><svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+  </div>
+  <div>
+    <label>Rate plan</label>
+    <div class="field err"><input value=""></div>
+    <div class="hint err">Required field</div>
+  </div>
+</div>
+</body></html>

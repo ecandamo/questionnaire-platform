@@ -1,0 +1,24 @@
+<!-- Card: Shadows -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+body{margin:0;padding:26px 22px;background:#F7F8FB;font-family:var(--font-sans);color:var(--fg)}
+.row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.card{background:#fff;border-radius:10px;height:82px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;color:var(--navy-700);font-weight:700}
+.lbl{margin-top:8px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-subtle);text-align:center}
+.xs{box-shadow:0 1px 2px 0 rgb(39 59 110 / 0.05)}
+.sm{box-shadow:0 1px 2px 0 rgb(39 59 110 / 0.06), 0 1px 3px 0 rgb(39 59 110 / 0.05)}
+.md{box-shadow:0 4px 10px -2px rgb(39 59 110 / 0.10), 0 2px 4px -2px rgb(39 59 110 / 0.06)}
+.lg{box-shadow:0 12px 24px -6px rgb(39 59 110 / 0.14), 0 4px 8px -4px rgb(39 59 110 / 0.08)}
+.xl{box-shadow:0 24px 48px -12px rgb(39 59 110 / 0.22)}
+h4{margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green-700)}
+</style></head><body>
+<h4>Elevation — Navy-tinted shadows</h4>
+<div class="row">
+  <div><div class="card xs">xs</div><div class="lbl">Flat</div></div>
+  <div><div class="card sm">sm</div><div class="lbl">Rest</div></div>
+  <div><div class="card md">md</div><div class="lbl">Hover</div></div>
+  <div><div class="card lg">lg</div><div class="lbl">Menu</div></div>
+  <div><div class="card xl">xl</div><div class="lbl">Modal</div></div>
+</div>
+</body></html>

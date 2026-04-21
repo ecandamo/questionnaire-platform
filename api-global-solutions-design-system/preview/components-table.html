@@ -1,0 +1,28 @@
+<!-- Card: Table row -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+body{margin:0;padding:16px;background:#F7F8FB;font-family:var(--font-sans);color:var(--fg)}
+.tbl{background:#fff;border:1px solid #EEF0F5;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px 0 rgb(39 59 110 / 0.05)}
+.th,.tr{display:grid;grid-template-columns:1.3fr 1fr .9fr .9fr .8fr .6fr;align-items:center;padding:10px 14px;font-size:12.5px}
+.th{background:#F7F8FB;color:var(--fg-subtle);font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:10.5px;border-bottom:1px solid #EEF0F5}
+.tr{border-bottom:1px solid #F2F4F8}
+.tr:last-child{border:none}
+.tr:hover{background:#FAFBFD}
+.pnr{font-family:var(--font-mono);color:var(--navy-700);font-weight:600}
+.crew{color:var(--fg-muted)}
+.prop{color:var(--fg);font-weight:600}
+.badge{display:inline-flex;gap:5px;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+.g{background:#E9F6EC;color:#2E8F3E}
+.a{background:#FDF3E0;color:#C47A0B}
+.r{background:#FBECEB;color:#C6342C}
+.dot{width:5px;height:5px;border-radius:99px;background:currentColor}
+.amt{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
+</style></head><body>
+<div class="tbl">
+  <div class="th"><div>Property</div><div>Airline · Flight</div><div>PNR</div><div>Check-in</div><div>Status</div><div class="amt">Rooms</div></div>
+  <div class="tr"><div class="prop">Hilton Midtown</div><div class="crew">BA · BA 178</div><div class="pnr">7Y2QXP</div><div class="crew">May 18 · 22:40</div><div><span class="badge g"><span class="dot"></span>Confirmed</span></div><div class="amt">14</div></div>
+  <div class="tr"><div class="prop">Sofitel CDG</div><div class="crew">AF · AF 011</div><div class="pnr">K4QX11</div><div class="crew">May 18 · 06:15</div><div><span class="badge a"><span class="dot"></span>Pending</span></div><div class="amt">8</div></div>
+  <div class="tr"><div class="prop">Pullman HND</div><div class="crew">JL · JL 006</div><div class="pnr">M3T0PL</div><div class="crew">May 19 · 04:50</div><div><span class="badge r"><span class="dot"></span>IROPS</span></div><div class="amt">22</div></div>
+</div>
+</body></html>

@@ -1,0 +1,32 @@
+<!-- Card: Badges / pills -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+body{margin:0;padding:22px;background:#fff;font-family:var(--font-sans)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid transparent}
+.dot{width:6px;height:6px;border-radius:99px;background:currentColor}
+.b-green{background:#E9F6EC;color:#2E8F3E}
+.b-amber{background:#FDF3E0;color:#C47A0B}
+.b-red{background:#FBECEB;color:#C6342C}
+.b-navy{background:#EEF1F8;color:#273B6E}
+.b-ghost{background:#fff;color:var(--fg-muted);border-color:#D4D9E1}
+.tag{background:#F7F8FB;color:#273B6E;border:1px solid #D4D9E1;padding:2px 8px;border-radius:4px;font-size:11.5px;font-weight:600;font-family:var(--font-mono)}
+h4{margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green-700)}
+</style></head><body>
+<h4>Badges &amp; Status Pills</h4>
+<div class="row">
+  <span class="badge b-green"><span class="dot"></span>Confirmed</span>
+  <span class="badge b-amber"><span class="dot"></span>Pending</span>
+  <span class="badge b-red"><span class="dot"></span>IROPS</span>
+  <span class="badge b-navy"><span class="dot"></span>In review</span>
+  <span class="badge b-ghost"><span class="dot"></span>Draft</span>
+</div>
+<div class="row">
+  <span class="tag">JFK → LHR</span>
+  <span class="tag">BA 178</span>
+  <span class="tag">PNR · 7Y2QXP</span>
+  <span class="tag">4★ · Midtown</span>
+  <span class="tag">Crew · 14 pax</span>
+</div>
+</body></html>

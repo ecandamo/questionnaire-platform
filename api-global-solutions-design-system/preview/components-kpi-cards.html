@@ -1,0 +1,36 @@
+<!-- Card: Data card (KPI tile) -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+body{margin:0;padding:22px;background:#F7F8FB;font-family:var(--font-sans);color:var(--fg)}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{background:#fff;border-radius:12px;padding:16px;border:1px solid #EEF0F5;box-shadow:0 1px 2px 0 rgb(39 59 110 / 0.05)}
+.k{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-subtle)}
+.v{font-family:var(--font-display);font-size:32px;font-weight:800;letter-spacing:-.02em;color:var(--navy-700);line-height:1.05;margin-top:4px;font-variant-numeric:tabular-nums}
+.meta{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px}
+.up{color:#2E8F3E;font-weight:700}
+.down{color:#C6342C;font-weight:700}
+.sp{color:var(--fg-subtle)}
+.spark{height:34px;margin-top:10px}
+</style></head><body>
+<div class="row">
+  <div class="card">
+    <div class="k">Rooms confirmed (wk)</div>
+    <div class="v">3,241</div>
+    <div class="meta"><span class="up">↑ 4.2%</span><span class="sp">vs last wk</span></div>
+    <svg class="spark" viewBox="0 0 120 34" preserveAspectRatio="none"><path d="M0,26 L12,22 L24,24 L36,18 L48,20 L60,14 L72,16 L84,10 L96,12 L108,6 L120,8" fill="none" stroke="#78BC43" stroke-width="2"/></svg>
+  </div>
+  <div class="card">
+    <div class="k">IROPS events</div>
+    <div class="v">12</div>
+    <div class="meta"><span class="down">↑ 2</span><span class="sp">past 24h</span></div>
+    <svg class="spark" viewBox="0 0 120 34" preserveAspectRatio="none"><path d="M0,28 L20,22 L40,24 L60,18 L80,14 L100,20 L120,10" fill="none" stroke="#C6342C" stroke-width="2"/></svg>
+  </div>
+  <div class="card">
+    <div class="k">Avg. cost / room-night</div>
+    <div class="v">$138</div>
+    <div class="meta"><span class="up">↓ $4</span><span class="sp">mo/mo</span></div>
+    <svg class="spark" viewBox="0 0 120 34" preserveAspectRatio="none"><path d="M0,14 L20,18 L40,16 L60,20 L80,22 L100,24 L120,26" fill="none" stroke="#273B6E" stroke-width="2"/></svg>
+  </div>
+</div>
+</body></html>
