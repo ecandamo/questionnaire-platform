@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
-import { MenuIcon, ShieldIcon } from "lucide-react"
+import { MenuIcon } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { getDashboardHeaderMeta } from "@/lib/dashboard-header-meta"
 import { useDashboardTitle } from "@/components/layout/dashboard-title-context"
 import { cn } from "@/lib/utils"
@@ -51,12 +52,12 @@ export function Header({ isAdmin, onOpenMobileNav }: HeaderProps) {
         </div>
       </div>
 
-      {isAdmin && (
-        <div className="flex shrink-0 items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-0.5">
-          <ShieldIcon className="h-3 w-3 text-primary" aria-hidden />
-          <span className="text-[11px] font-medium text-primary">Admin</span>
-        </div>
-      )}
+      <Badge
+        variant={isAdmin ? "default" : "secondary"}
+        className="shrink-0 text-xs capitalize"
+      >
+        {isAdmin ? "admin" : "user"}
+      </Badge>
     </header>
   )
 }

@@ -39,7 +39,7 @@ export function getDashboardHeaderMeta(pathname: string): DashboardHeaderMeta {
   if (pathname.startsWith("/questionnaires")) {
     return {
       title: "Questionnaires",
-      subtitle: "Browse and manage drafts",
+      subtitle: "Browse and manage questionnaires",
     }
   }
 
