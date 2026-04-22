@@ -20,6 +20,7 @@ Esteban's starter template for all new projects.
 ## Design System
 Live design system lives in `src/app/globals.css` — edit there for style changes
 `src/styles/design-tokens.ts` is a reference document only, not the live source
+`api-global-solutions-design-system/` is an optional local reference folder and is gitignored; canonical brand assets used by the app are in `public/brand/`
 
 ## Design Philosophy
 - Target aesthetic: premium SaaS-level polish
