@@ -312,20 +312,20 @@ export default function RespondPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" role="status" aria-label="Loading questionnaire">
-        <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden />
+      <div className="flex min-h-[50vh] items-center justify-center" role="status" aria-label="Loading questionnaire">
+        <Loader2Icon className="h-6 w-6 animate-spin text-primary" aria-hidden />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center max-w-sm space-y-4">
+      <div className="flex min-h-[50vh] items-center justify-center p-4">
+        <div className="text-center max-w-sm space-y-4 rounded-2xl border border-border/80 bg-card/90 p-8 shadow-card">
           <div className="h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
             <ClipboardListIcon className="h-7 w-7 text-destructive" />
           </div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Link Unavailable</h1>
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">Link Unavailable</h1>
           <p className="text-muted-foreground text-sm">{error}</p>
         </div>
       </div>
@@ -334,12 +334,12 @@ export default function RespondPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center max-w-sm space-y-4">
+      <div className="flex min-h-[50vh] items-center justify-center p-4">
+        <div className="text-center max-w-sm space-y-4 rounded-2xl border border-border/80 bg-card/90 p-8 shadow-card">
           <div className="h-14 w-14 rounded-full bg-success/10 flex items-center justify-center mx-auto">
             <CheckCircle2Icon className="h-7 w-7 text-success" />
           </div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Already Submitted</h1>
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">Already Submitted</h1>
           <p className="text-muted-foreground text-sm">
             This questionnaire has already been submitted. Thank you!
           </p>
@@ -350,12 +350,12 @@ export default function RespondPage() {
 
   if (markedComplete) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center max-w-sm space-y-4">
+      <div className="flex min-h-[50vh] items-center justify-center p-4">
+        <div className="text-center max-w-sm space-y-4 rounded-2xl border border-border/80 bg-card/90 p-8 shadow-card">
           <div className="h-14 w-14 rounded-full bg-[color:var(--accent)]/10 flex items-center justify-center mx-auto">
             <CheckCircle2Icon className="h-7 w-7 text-accent" />
           </div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Section Complete</h1>
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">Section Complete</h1>
           <p className="text-muted-foreground text-sm">
             Thank you! Your answers have been saved. The questionnaire owner will handle final submission.
           </p>
@@ -365,44 +365,60 @@ export default function RespondPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      {/* Sticky header with progress */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border/60">
+    <div>
+      {/* Sticky header — matches confirmation page: API navy bar + white wordmark */}
+      <div className="sticky top-0 z-10 border-b border-white/5 bg-sidebar text-sidebar-foreground">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <ApiLogo variant="navy" className="w-14 shrink-0" />
-              <div className="w-px h-7 bg-border shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold truncate text-foreground">{questionnaire?.title}</p>
+            <div className="flex min-w-0 flex-1 items-stretch gap-2.5">
+              {/* Same order + typography as dashboard sidebar brand row */}
+              <div className="flex shrink-0 items-center gap-0 self-center">
+                <ApiLogo variant="white" className="h-6 w-[88px] shrink-0" />
+                <span className="min-w-0 -translate-x-4 text-[8.5px] font-bold uppercase leading-[1.15] tracking-[0.1em] text-sidebar-primary sm:text-[9px] sm:tracking-[0.11em]">
+                  <span className="block">Client</span>
+                  <span className="block">Questionnaires</span>
+                </span>
+              </div>
+              <div className="w-px shrink-0 bg-white/10 self-stretch min-h-[2.5rem]" aria-hidden />
+              <div className="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
+                <p className="truncate text-sm font-semibold text-sidebar-foreground">{questionnaire?.title}</p>
                 {questionnaire?.clientName && (
-                  <p className="text-xs text-muted-foreground leading-tight">{questionnaire.clientName}</p>
+                  <p className="text-xs leading-tight text-white/50">{questionnaire.clientName}</p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex shrink-0 items-center gap-3">
               {viewerRole === "contributor" && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 hidden sm:inline-flex">
+                <Badge
+                  variant="secondary"
+                  className="hidden border-0 bg-sidebar-primary/20 text-[10px] text-sidebar-primary px-1.5 sm:inline-flex"
+                >
                   Contributor
                 </Badge>
               )}
-              <div className="hidden sm:flex items-center gap-2.5">
-                <Progress value={progress} className="w-28 h-2" />
-                <span className="text-xs font-medium text-muted-foreground tabular-nums">{progress}%</span>
+              <div className="hidden items-center gap-2.5 sm:flex">
+                <Progress
+                  value={progress}
+                  className="h-2 w-28 bg-white/15 [&_[data-slot=progress-indicator]]:bg-sidebar-primary"
+                />
+                <span className="text-xs font-medium tabular-nums text-white/70">{progress}%</span>
               </div>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="h-10"
+                className="h-10 border-white/15 bg-white/5 text-sidebar-foreground hover:bg-white/10"
               >
                 {saving ? <Loader2Icon className="h-3.5 w-3.5 animate-spin" /> : <SaveIcon className="h-3.5 w-3.5" />}
                 Save
               </Button>
             </div>
           </div>
-          <Progress value={progress} className="mt-2.5 h-1.5 sm:hidden" />
+          <Progress
+            value={progress}
+            className="mt-2.5 h-1.5 bg-white/15 sm:hidden [&_[data-slot=progress-indicator]]:bg-sidebar-primary"
+          />
         </div>
       </div>
 
@@ -466,7 +482,7 @@ export default function RespondPage() {
 
         {/* Contributor hint */}
         {viewerRole === "contributor" && (
-          <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+          <div className="rounded-lg border border-primary/15 bg-gradient-to-r from-info-muted/80 to-secondary/10 px-4 py-3">
             <p className="text-xs text-muted-foreground">
               You&apos;ve been assigned specific questions to answer. Confirm your name and email above, then click
               &quot;Mark Complete&quot; when you&apos;re done.

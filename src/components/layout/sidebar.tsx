@@ -95,10 +95,12 @@ export function SidebarBody({
         className
       )}
     >
-      <div className="flex shrink-0 items-center gap-2 border-b border-white/5 px-4 py-5">
+      {/* h-16 matches main <Header /> height; keep subtle rail divider color */}
+      <div className="flex h-16 shrink-0 items-center gap-0 border-b border-white/5 px-4">
         <ApiLogo variant="white" className="h-6 w-[88px] shrink-0" />
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-sidebar-primary">
-          Sales
+        <span className="min-w-0 -translate-x-4 text-[8.5px] font-bold uppercase leading-[1.15] tracking-[0.1em] text-sidebar-primary sm:text-[9px] sm:tracking-[0.11em]">
+          <span className="block">Client</span>
+          <span className="block">Questionnaires</span>
         </span>
       </div>
 
@@ -191,7 +193,7 @@ interface SidebarProps {
 
 export function Sidebar({ isAdmin, userName, userEmail }: SidebarProps) {
   return (
-    <aside className="hidden h-full w-[232px] shrink-0 flex-col md:flex">
+    <aside className="hidden h-full w-[232px] shrink-0 flex-col border-r border-sidebar-border md:flex">
       <SidebarBody isAdmin={isAdmin} userName={userName} userEmail={userEmail} />
     </aside>
   )

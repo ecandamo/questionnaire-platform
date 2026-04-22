@@ -3,10 +3,14 @@ import { ApiLogo } from "@/components/shared/api-logo"
 
 export default function ConfirmationPage() {
   return (
-    <div className="min-h-screen bg-muted/20 flex flex-col">
-      {/* Branded top bar */}
-      <header className="flex h-16 shrink-0 items-center bg-primary px-6">
-        <ApiLogo variant="white" className="h-9 w-[118px]" />
+    <div className="flex min-h-screen flex-col">
+      {/* Branded top bar — green hairline ties to questionnaire header */}
+      <header className="flex h-16 shrink-0 items-center gap-0 border-b border-white/5 bg-sidebar px-4 text-sidebar-foreground sm:px-6">
+        <ApiLogo variant="white" className="h-6 w-[88px] shrink-0" />
+        <span className="min-w-0 -translate-x-4 text-[8.5px] font-bold uppercase leading-[1.15] tracking-[0.1em] text-sidebar-primary sm:text-[9px] sm:tracking-[0.11em]">
+          <span className="block">Client</span>
+          <span className="block">Questionnaires</span>
+        </span>
       </header>
 
       <div className="flex-1 flex items-center justify-center p-6">
