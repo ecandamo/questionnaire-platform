@@ -5,8 +5,8 @@ export default function ConfirmationPage() {
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col">
       {/* Branded top bar */}
-      <header className="bg-primary px-6 h-14 flex items-center shrink-0">
-        <ApiLogo variant="white" className="w-20" />
+      <header className="flex h-16 shrink-0 items-center bg-primary px-6">
+        <ApiLogo variant="white" className="h-9 w-[118px]" />
       </header>
 
       <div className="flex-1 flex items-center justify-center p-6">

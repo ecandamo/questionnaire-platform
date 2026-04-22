@@ -71,10 +71,20 @@ import {
 } from "@/types"
 import { answerableDisplayNumbers } from "@/lib/question-sections"
 import { QuestionAssignmentPicker } from "@/components/shared/question-assignment-picker"
+import { useDashboardTitle } from "@/components/layout/dashboard-title-context"
 
 /** Client-side id for new rows; must be a real UUID — `questionnaire_question.id` is a Postgres uuid column. */
 function newClientQuestionId(): string {
   return globalThis.crypto.randomUUID()
+}
+
+function isAbortError(e: unknown): boolean {
+  return (
+    (typeof DOMException !== "undefined" &&
+      e instanceof DOMException &&
+      e.name === "AbortError") ||
+    (e instanceof Error && e.name === "AbortError")
+  )
 }
 
 interface QQuestion {
@@ -121,6 +131,7 @@ interface Props {
 
 export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props) {
   const router = useRouter()
+  const { setOverride } = useDashboardTitle()
   const [data, setData] = React.useState<QuestionnaireDetail | null>(null)
   const [questions, setQuestions] = React.useState<QQuestion[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -140,6 +151,22 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
     setExpiryPreview(format(addDays(new Date(), expiryDays), "MMM d, yyyy"))
   }, [expiryDays])
 
+  React.useEffect(() => {
+    if (!data) return
+    const subtitle = [
+      QUESTIONNAIRE_TYPE_LABELS[data.type as QuestionnaireType],
+      data.clientName,
+    ]
+      .filter(Boolean)
+      .join(" · ")
+    setOverride({
+      eyebrow: "Questionnaires",
+      title: data.title,
+      subtitle: subtitle || undefined,
+    })
+    return () => setOverride(null)
+  }, [data, setOverride])
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -152,18 +179,23 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
 
   const load = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
-    const res = await fetch(`/api/questionnaires/${id}`, { signal })
-    if (!res.ok) {
+    try {
+      const res = await fetch(`/api/questionnaires/${id}`, { signal })
       if (signal?.aborted) return
-      router.push("/questionnaires")
-      return
+      if (!res.ok) {
+        router.push("/questionnaires")
+        return
+      }
+      const d = await res.json()
+      if (signal?.aborted) return
+      setData(d)
+      setQuestions(d.questions.sort((a: QQuestion, b: QQuestion) => a.sortOrder - b.sortOrder))
+      setShareUrl(d.shareUrl ?? null)
+      setLoading(false)
+    } catch (e) {
+      if (signal?.aborted || isAbortError(e)) return
+      setLoading(false)
     }
-    const d = await res.json()
-    if (signal?.aborted) return
-    setData(d)
-    setQuestions(d.questions.sort((a: QQuestion, b: QQuestion) => a.sortOrder - b.sortOrder))
-    setShareUrl(d.shareUrl ?? null)
-    setLoading(false)
   }, [id, router])
 
   React.useEffect(() => {
@@ -263,11 +295,17 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
 
   const loadBankQuestions = React.useCallback(async (signal?: AbortSignal) => {
     setBankLoading(true)
-    const params = new URLSearchParams({ status: "active" })
-    if (bankSearch) params.set("search", bankSearch)
-    const res = await fetch(`/api/questions?${params}`, { signal })
-    if (res.ok && !signal?.aborted) setBankQuestions(await res.json())
-    if (!signal?.aborted) setBankLoading(false)
+    try {
+      const params = new URLSearchParams({ status: "active" })
+      if (bankSearch) params.set("search", bankSearch)
+      const res = await fetch(`/api/questions?${params}`, { signal })
+      if (signal?.aborted) return
+      if (res.ok) setBankQuestions(await res.json())
+    } catch (e) {
+      if (signal?.aborted || isAbortError(e)) return
+    } finally {
+      if (!signal?.aborted) setBankLoading(false)
+    }
   }, [bankSearch])
 
   React.useEffect(() => {
@@ -346,15 +384,14 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
             <ArrowLeftIcon className="h-4 w-4" aria-hidden />
           </Button>
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="font-heading text-3xl font-bold tracking-tight">{data.title}</h1>
+            <div className="flex flex-wrap items-center gap-2.5">
               <QuestionnairStatusBadge status={data.status as QuestionnaireStatus} />
             </div>
-            <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
-              <span>{QUESTIONNAIRE_TYPE_LABELS[data.type as QuestionnaireType]}</span>
-              {data.clientName && <><span className="text-muted-foreground/40">/</span><span>{data.clientName}</span></>}
-              {data.ownerName && <><span className="text-muted-foreground/40">/</span><span>{data.ownerName}</span></>}
-            </div>
+            {data.ownerName ? (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                <span className="text-muted-foreground/80">Owner</span> {data.ownerName}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -893,13 +930,20 @@ function SenderAssignmentsPanel({
 
   const fetchCollaborators = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
-    const res = await fetch(`/api/questionnaires/${questionnaireId}/collaborators`, { signal })
-    if (res.ok && !signal?.aborted) {
-      const data = await res.json()
-      setCollaborators(data.collaborators ?? [])
-      setResponseExists(data.responseExists ?? false)
+    try {
+      const res = await fetch(`/api/questionnaires/${questionnaireId}/collaborators`, { signal })
+      if (signal?.aborted) return
+      if (res.ok) {
+        const data = await res.json()
+        if (signal?.aborted) return
+        setCollaborators(data.collaborators ?? [])
+        setResponseExists(data.responseExists ?? false)
+      }
+    } catch (e) {
+      if (signal?.aborted || isAbortError(e)) return
+    } finally {
+      if (!signal?.aborted) setLoading(false)
     }
-    if (!signal?.aborted) setLoading(false)
   }, [questionnaireId])
 
   React.useEffect(() => {

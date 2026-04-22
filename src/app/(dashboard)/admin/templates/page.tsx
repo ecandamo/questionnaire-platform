@@ -196,7 +196,6 @@ export default function TemplatesPage() {
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Templates</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage preset questionnaire templates</p>
         </div>
         <Button onClick={openAdd}>
@@ -241,7 +240,10 @@ export default function TemplatesPage() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">{t.description ?? "—"}</td>
                     <td className="px-4 py-3">
-                      <Badge variant={t.isActive ? "default" : "outline"} className="text-xs">
+                      <Badge
+                        variant={t.isActive ? "success" : "outline"}
+                        className={t.isActive ? "text-xs" : "text-xs text-muted-foreground"}
+                      >
                         {t.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </td>

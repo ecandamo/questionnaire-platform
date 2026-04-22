@@ -1,109 +1,88 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { QuestionnaireStatus, LinkStatus, QuestionStatus } from "@/types"
+import {
+  QUESTIONNAIRE_STATUS_LABELS,
+  type QuestionnaireStatus,
+  type LinkStatus,
+  type QuestionStatus,
+} from "@/types"
 
-const questionnaireStatusConfig: Record<
+const LINK_LABELS: Record<LinkStatus, string> = {
+  active: "Active",
+  expired: "Expired",
+  closed: "Closed",
+}
+
+const QUESTION_STATUS_LABELS: Record<QuestionStatus, string> = {
+  active: "Active",
+  inactive: "Inactive",
+  archived: "Archived",
+}
+
+function StatusDot() {
+  return (
+    <span
+      aria-hidden
+      className="inline-block size-1.5 shrink-0 rounded-full bg-current opacity-90"
+    />
+  )
+}
+
+const questionnaireVariant: Record<
   QuestionnaireStatus,
-  { label: string; dot: string; className: string }
+  { variant: React.ComponentProps<typeof Badge>["variant"]; className?: string }
 > = {
-  draft: {
-    label: "Draft",
-    dot: "bg-muted-foreground/50",
-    className: "bg-muted text-muted-foreground border-muted-foreground/20",
-  },
-  shared: {
-    label: "Shared",
-    dot: "bg-info",
-    className: "bg-info/10 text-info border-info/20",
-  },
-  in_progress: {
-    label: "In Progress",
-    dot: "bg-warning",
-    className: "bg-warning/10 text-warning border-warning/20",
-  },
-  submitted: {
-    label: "Submitted",
-    dot: "bg-success",
-    className: "bg-success/10 text-success border-success/20",
-  },
-  archived: {
-    label: "Archived",
-    dot: "bg-muted-foreground/30",
-    className: "bg-muted text-muted-foreground/60 border-muted-foreground/10",
-  },
+  draft: { variant: "outline", className: "text-muted-foreground border-muted-foreground/25" },
+  shared: { variant: "info" },
+  in_progress: { variant: "warning" },
+  submitted: { variant: "success" },
+  archived: { variant: "outline", className: "text-muted-foreground/80 border-muted-foreground/15" },
 }
 
-const linkStatusConfig: Record<LinkStatus, { label: string; dot: string; className: string }> = {
-  active: {
-    label: "Active",
-    dot: "bg-success",
-    className: "bg-success/10 text-success border-success/20",
-  },
-  expired: {
-    label: "Expired",
-    dot: "bg-destructive",
-    className: "bg-destructive/10 text-destructive border-destructive/20",
-  },
-  closed: {
-    label: "Closed",
-    dot: "bg-muted-foreground/50",
-    className: "bg-muted text-muted-foreground border-muted-foreground/20",
-  },
+const linkVariant: Record<
+  LinkStatus,
+  { variant: React.ComponentProps<typeof Badge>["variant"]; className?: string }
+> = {
+  active: { variant: "success" },
+  expired: { variant: "destructive" },
+  closed: { variant: "outline", className: "text-muted-foreground border-muted-foreground/25" },
 }
 
-const questionStatusConfig: Record<QuestionStatus, { label: string; dot: string; className: string }> = {
-  active: {
-    label: "Active",
-    dot: "bg-success",
-    className: "bg-success/10 text-success border-success/20",
-  },
-  inactive: {
-    label: "Inactive",
-    dot: "bg-warning",
-    className: "bg-warning/10 text-warning border-warning/20",
-  },
-  archived: {
-    label: "Archived",
-    dot: "bg-muted-foreground/30",
-    className: "bg-muted text-muted-foreground/60 border-muted-foreground/10",
-  },
+const questionVariant: Record<
+  QuestionStatus,
+  { variant: React.ComponentProps<typeof Badge>["variant"]; className?: string }
+> = {
+  active: { variant: "success" },
+  inactive: { variant: "warning" },
+  archived: { variant: "outline", className: "text-muted-foreground/80 border-muted-foreground/15" },
 }
 
 export function QuestionnairStatusBadge({ status }: { status: QuestionnaireStatus }) {
-  const config = questionnaireStatusConfig[status]
+  const { variant, className } = questionnaireVariant[status]
   return (
-    <Badge
-      variant="outline"
-      className={cn("text-xs font-medium gap-1.5", config.className)}
-    >
-      <span aria-hidden="true" className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", config.dot)} />
-      {config.label}
+    <Badge variant={variant} className={cn("text-xs font-semibold gap-1.5", className)}>
+      <StatusDot />
+      {QUESTIONNAIRE_STATUS_LABELS[status]}
     </Badge>
   )
 }
 
 export function LinkStatusBadge({ status }: { status: LinkStatus }) {
-  const config = linkStatusConfig[status]
+  const { variant, className } = linkVariant[status]
   return (
-    <Badge
-      variant="outline"
-      className={cn("text-xs font-medium gap-1.5", config.className)}
-    >
-      <span aria-hidden="true" className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", config.dot)} />
-      {config.label}
+    <Badge variant={variant} className={cn("text-xs font-semibold gap-1.5", className)}>
+      <StatusDot />
+      {LINK_LABELS[status]}
     </Badge>
   )
 }
 
 export function QuestionStatusBadge({ status }: { status: QuestionStatus }) {
-  const config = questionStatusConfig[status]
+  const { variant, className } = questionVariant[status]
   return (
-    <Badge
-      variant="outline"
-      className={cn("text-xs font-medium gap-1.5", config.className)}
-    >
-      <span aria-hidden="true" className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", config.dot)} />
-      {config.label}
+    <Badge variant={variant} className={cn("text-xs font-semibold gap-1.5", className)}>
+      <StatusDot />
+      {QUESTION_STATUS_LABELS[status]}
     </Badge>
   )
 }

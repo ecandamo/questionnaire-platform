@@ -294,7 +294,6 @@ export default function QuestionBankPage() {
     <div className="space-y-6 max-w-[min(90rem,calc(100vw-2rem))]">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Question Bank</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage all reusable questions for questionnaire templates</p>
         </div>
         <div className="flex gap-2">

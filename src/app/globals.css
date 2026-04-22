@@ -50,77 +50,88 @@
   /* Semantic status colors */
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-muted: var(--success-muted);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-muted: var(--warning-muted);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-info-muted: var(--info-muted);
+  --color-destructive-muted: var(--destructive-muted);
 
-  /* Dashboard-specific shadows */
-  --shadow-card: 0 1px 3px 0 rgb(39 59 110 / 0.05), 0 1px 2px -1px rgb(39 59 110 / 0.04);
-  --shadow-card-hover: 0 4px 12px -2px rgb(39 59 110 / 0.10), 0 2px 4px -2px rgb(39 59 110 / 0.05);
+  /* Dashboard-specific shadows (API design system — navy-tinted) */
+  --shadow-card: 0 1px 2px 0 rgb(39 59 110 / 0.06),
+    0 1px 3px 0 rgb(39 59 110 / 0.05);
+  --shadow-card-hover: 0 4px 10px -2px rgb(39 59 110 / 0.1),
+    0 2px 4px -2px rgb(39 59 110 / 0.06);
 }
 
-/* ─── Light Theme ─── */
+/* ─── Light Theme — api-global-solutions-design-system / colors_and_type.css ─── */
 :root {
-  /* Surface — cool off-white derived from API light blue-gray #D4D9E1 */
-  --background: oklch(0.975 0.006 255);
-  --foreground: oklch(0.22 0.07 264);       /* navy-tinted dark text */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.24 0.06 264);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.24 0.06 264);
+  /* Surface — page chrome ink-50, cards white (design system) */
+  --background: #f7f8fb;
+  --foreground: #11151e;
+  --card: #ffffff;
+  --card-foreground: #11151e;
+  --popover: #ffffff;
+  --popover-foreground: #11151e;
 
   /* Brand: API Navy #273B6E */
-  --primary: oklch(0.30 0.10 264);
-  --primary-foreground: oklch(1 0 0);
+  --primary: oklch(0.3 0.1 264);
+  --primary-foreground: #ffffff;
 
-  /* Brand: API Green (muted for secondary buttons/badges) #78BC43 */
+  /* Brand: API Green — secondary / tonal surfaces */
   --secondary: oklch(0.57 0.13 132);
-  --secondary-foreground: oklch(1 0 0);
+  --secondary-foreground: #ffffff;
 
-  /* Neutral Muted — derived from #D4D9E1 */
-  --muted: oklch(0.93 0.009 255);
-  --muted-foreground: oklch(0.50 0.02 264);
+  /* Neutrals — ink ramp */
+  --muted: #eef0f5;
+  --muted-foreground: #3f4754;
 
-  /* Brand: API Green #78BC43 */
-  --accent: oklch(0.70 0.17 132);
-  --accent-foreground: oklch(0.20 0.08 264);   /* dark navy on green */
+  /* Brand: API Green accent */
+  --accent: oklch(0.7 0.17 132);
+  --accent-foreground: #0b1428;
 
-  /* Error */
-  --destructive: oklch(0.577 0.245 27.325);
+  /* Danger — design system #C6342C */
+  --destructive: oklch(0.52 0.19 25);
+  --destructive-foreground: #ffffff;
 
-  /* Chrome — from #D4D9E1 */
-  --border: oklch(0.87 0.013 255);
-  --input: oklch(0.87 0.013 255);
-  --ring: oklch(0.30 0.10 264);
+  /* Chrome — design system borders */
+  --border: #e4e7ee;
+  --input: #e4e7ee;
+  --ring: color-mix(in oklab, #273b6e 45%, transparent);
 
-  /* Charts — navy + green primary, with supporting neutrals */
-  --chart-1: oklch(0.30 0.10 264);     /* API Navy */
-  --chart-2: oklch(0.70 0.17 132);     /* API Green */
-  --chart-3: oklch(0.53 0.01 0);       /* API Gray #7F7F7F */
-  --chart-4: oklch(0.44 0.14 290);     /* slate purple */
-  --chart-5: oklch(0.57 0.13 132);     /* mid green */
+  /* Charts — navy + green + gray */
+  --chart-1: oklch(0.3 0.1 264);
+  --chart-2: oklch(0.7 0.17 132);
+  --chart-3: #7f7f7f;
+  --chart-4: oklch(0.44 0.14 290);
+  --chart-5: oklch(0.57 0.13 132);
 
-  /* Radius base */
+  /* Radius: md 10px base (inputs, nav); cards use radius-xl → 14px */
   --radius: 0.625rem;
 
-  /* Sidebar — API Navy #273B6E (same L/C/H as --primary) */
-  --sidebar: oklch(0.30 0.10 264);
+  /* Sidebar — deep navy rail #0B1428 (design system; not same as primary CTA navy) */
+  --sidebar: #0b1428;
   --sidebar-foreground: oklch(0.93 0.006 255);
-  --sidebar-primary: oklch(0.70 0.17 132);           /* API Green for active items */
-  --sidebar-primary-foreground: oklch(0.19 0.08 264); /* dark navy text on green */
-  --sidebar-accent: oklch(0.36 0.10 264);             /* hover: lighter navy */
+  --sidebar-primary: #78bc43;
+  --sidebar-primary-foreground: #0b1428;
+  --sidebar-accent: #18264b;
   --sidebar-accent-foreground: oklch(0.96 0.004 255);
-  --sidebar-border: oklch(0.26 0.10 264);
-  --sidebar-ring: oklch(0.70 0.17 132);
+  --sidebar-border: #121d3a;
+  --sidebar-ring: #78bc43;
 
-  /* Semantic status */
-  --success: oklch(0.55 0.14 145);
-  --success-foreground: oklch(1 0 0);
-  --warning: oklch(0.58 0.16 70);
-  --warning-foreground: oklch(1 0 0);
-  --info: oklch(0.55 0.19 262);
-  --info-foreground: oklch(1 0 0);
+  /* Semantic status — matches preview/components-badges + colors_and_type.css */
+  --success: #2e8f3e;
+  --success-foreground: #ffffff;
+  --success-muted: #e9f6ec;
+  --warning: #c47a0b;
+  --warning-foreground: #ffffff;
+  --warning-muted: #fdf3e0;
+  --info: #273b6e;
+  --info-foreground: #ffffff;
+  --info-muted: #eef1f8;
+  --destructive-muted: #fbeceb;
 }
 
 /* ─── Dark Theme ─── */
@@ -151,6 +162,7 @@
 
   /* Error */
   --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(1 0 0);
 
   /* Chrome */
   --border: oklch(1 0 0 / 10%);
@@ -181,6 +193,11 @@
   --warning-foreground: oklch(0.17 0.06 264);
   --info: oklch(0.65 0.12 264);
   --info-foreground: oklch(0.17 0.06 264);
+  --info-muted: oklch(0.28 0.06 264);
+
+  --success-muted: oklch(0.28 0.06 145);
+  --warning-muted: oklch(0.3 0.06 70);
+  --destructive-muted: oklch(0.28 0.08 25);
 }
 
 @layer base {
@@ -192,6 +209,8 @@
   }
   html {
     @apply font-sans;
+    /* Mulish drives both body and heading (API design system) */
+    --font-heading: var(--font-sans);
   }
 }
 

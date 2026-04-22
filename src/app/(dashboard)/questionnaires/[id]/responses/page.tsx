@@ -105,7 +105,6 @@ export default function ResponsesPage() {
             <ArrowLeftIcon className="h-4 w-4" aria-hidden />
           </Button>
           <div>
-            <h1 className="font-heading text-3xl font-bold tracking-tight">Responses</h1>
             <p className="text-sm text-muted-foreground">{questionnaireTitle}</p>
           </div>
         </div>
@@ -141,11 +140,8 @@ export default function ResponsesPage() {
               <div>
                 <p className="text-muted-foreground text-xs">Status</p>
                 <Badge
-                  variant="outline"
-                  className={responseData.status === "submitted"
-                    ? "bg-success/10 text-success border-success/20 mt-0.5"
-                    : "bg-warning/10 text-warning border-warning/20 mt-0.5"
-                  }
+                  variant={responseData.status === "submitted" ? "success" : "warning"}
+                  className="mt-0.5"
                 >
                   {responseData.status === "submitted" ? "Submitted" : "In Progress"}
                 </Badge>

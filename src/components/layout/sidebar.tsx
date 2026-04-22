@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   ClipboardListIcon,
   LayoutDashboardIcon,
@@ -11,9 +11,23 @@ import {
   LayoutTemplateIcon,
   BuildingIcon,
   ActivityIcon,
+  LogOutIcon,
+  UserIcon,
+  SettingsIcon,
 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { ApiLogo } from "@/components/shared/api-logo"
+import { signOut } from "@/lib/auth-client"
+import { toast } from "sonner"
 
 interface NavItem {
   label: string
@@ -35,12 +49,39 @@ const adminNav: NavItem[] = [
   { label: "Audit Log", href: "/admin/audit-log", icon: ActivityIcon, adminOnly: true },
 ]
 
-interface SidebarProps {
+export interface SidebarBodyProps {
   isAdmin: boolean
+  userName: string
+  userEmail: string
+  /** Close mobile drawer after navigation */
+  onNavigate?: () => void
+  className?: string
 }
 
-export function Sidebar({ isAdmin }: SidebarProps) {
+export function SidebarBody({
+  isAdmin,
+  userName,
+  userEmail,
+  onNavigate,
+  className,
+}: SidebarBodyProps) {
   const pathname = usePathname()
+  const router = useRouter()
+
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+
+  async function handleSignOut() {
+    onNavigate?.()
+    await signOut()
+    toast.success("Signed out")
+    router.push("/login")
+    router.refresh()
+  }
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/"
@@ -48,54 +89,142 @@ export function Sidebar({ isAdmin }: SidebarProps) {
   }
 
   return (
-    <aside className="flex h-full w-60 flex-col bg-sidebar border-r border-sidebar-border">
-      {/* Brand */}
-      <div className="flex items-center gap-3 px-4 py-4">
-        <ApiLogo variant="white" className="w-16 shrink-0" />
-        <div>
-          <p className="text-sm font-normal text-sidebar-foreground leading-tight">
-            <span className="font-semibold">Sales</span> Questionnaires
-          </p>
-        </div>
+    <div
+      className={cn(
+        "flex min-h-0 flex-1 flex-col bg-sidebar text-sidebar-foreground",
+        className
+      )}
+    >
+      <div className="flex shrink-0 items-center gap-2 border-b border-white/5 px-4 py-5">
+        <ApiLogo variant="white" className="h-6 w-[88px] shrink-0" />
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-sidebar-primary">
+          Sales
+        </span>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-        {mainNav.map((item) => (
-          <NavLink key={item.href} item={item} active={isActive(item.href)} />
-        ))}
+      <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
+        <p className="px-3 pb-1 pt-2 text-[9.5px] font-bold uppercase tracking-[0.18em] text-white/30">
+          Workspace
+        </p>
+        <div className="space-y-0.5">
+          {mainNav.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              active={isActive(item.href)}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
 
         {isAdmin && (
           <>
-            <div className="pt-5 pb-1.5 px-1">
-              <p className="text-[10px] font-medium text-sidebar-foreground/40 uppercase tracking-widest">
-                Admin
-              </p>
+            <p className="px-3 pb-1 pt-5 text-[9.5px] font-bold uppercase tracking-[0.18em] text-white/30">
+              Admin
+            </p>
+            <div className="space-y-0.5">
+              {adminNav.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  active={isActive(item.href)}
+                  onNavigate={onNavigate}
+                />
+              ))}
             </div>
-            {adminNav.map((item) => (
-              <NavLink key={item.href} item={item} active={isActive(item.href)} />
-            ))}
           </>
         )}
       </nav>
+
+      <div className="flex shrink-0 items-center gap-3 border-t border-white/5 p-3">
+        <Avatar className="h-8 w-8 shrink-0">
+          <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[12.5px] font-semibold leading-tight">{userName}</p>
+          <p className="truncate text-[10.5px] text-white/50">{userEmail}</p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="shrink-0 rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+              aria-label="Account menu"
+            >
+              <SettingsIcon className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="end" className="w-52">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-semibold">{userName}</p>
+                <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled>
+              <UserIcon className="mr-2 h-4 w-4" />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleSignOut}
+              className="text-destructive focus:text-destructive"
+            >
+              <LogOutIcon className="mr-2 h-4 w-4" />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  )
+}
+
+interface SidebarProps {
+  isAdmin: boolean
+  userName: string
+  userEmail: string
+}
+
+export function Sidebar({ isAdmin, userName, userEmail }: SidebarProps) {
+  return (
+    <aside className="hidden h-full w-[232px] shrink-0 flex-col md:flex">
+      <SidebarBody isAdmin={isAdmin} userName={userName} userEmail={userEmail} />
     </aside>
   )
 }
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({
+  item,
+  active,
+  onNavigate,
+}: {
+  item: NavItem
+  active: boolean
+  onNavigate?: () => void
+}) {
   const Icon = item.icon
   return (
     <Link
       href={item.href}
+      onClick={() => onNavigate?.()}
       className={cn(
-        "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] transition-colors",
         active
-          ? "bg-sidebar-primary/15 text-sidebar-primary font-semibold"
-          : "text-sidebar-foreground/70 font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          ? "bg-primary font-semibold text-white shadow-none"
+          : "font-medium text-white/60 hover:bg-white/5 hover:text-white"
       )}
     >
-      <Icon className={cn("h-4 w-4 shrink-0", active ? "text-sidebar-primary" : "text-sidebar-foreground/50")} />
-      <span className="flex-1">{item.label}</span>
+      <Icon
+        className={cn(
+          "h-4 w-4 shrink-0",
+          active ? "text-sidebar-primary" : "text-white/50"
+        )}
+      />
+      <span className="flex-1 text-left">{item.label}</span>
     </Link>
   )
 }

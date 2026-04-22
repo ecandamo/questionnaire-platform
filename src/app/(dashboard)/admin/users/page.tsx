@@ -115,7 +115,6 @@ export default function UsersPage() {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Users</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage platform users and their roles</p>
         </div>
         <Button onClick={() => setShowDialog(true)}>
@@ -164,11 +163,8 @@ export default function UsersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <Badge
-                        variant="outline"
-                        className={u.banned
-                          ? "text-xs bg-destructive/10 text-destructive border-destructive/20"
-                          : "text-xs bg-success/10 text-success border-success/20"
-                        }
+                        variant={u.banned ? "destructive" : "success"}
+                        className="text-xs"
                       >
                         {u.banned ? "Deactivated" : "Active"}
                       </Badge>

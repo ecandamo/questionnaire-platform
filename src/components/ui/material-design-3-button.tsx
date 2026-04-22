@@ -15,7 +15,8 @@ const SOFT_EDGE_CONTAINER_RATIO = 0.35
 const ANIMATION_FILL = "forwards"
 const TOUCH_DELAY_MS = 150
 
-const EASING_STANDARD = "cubic-bezier(0.2, 0, 0, 1)"
+/* API design system motion — colors_and_type.css */
+const EASING_STANDARD = "cubic-bezier(0.2, 0.8, 0.2, 1)"
 
 function getPrefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false
@@ -294,7 +295,7 @@ Ripple.displayName = "Ripple"
 
 // --- 5. BUTTON COMPONENT ---
 const buttonVariants = cva(
-  "group relative inline-flex items-center justify-center whitespace-nowrap text-sm font-medium tracking-[0.01em] transition-[box-shadow,border-radius,opacity] duration-[600ms] delay-[250ms] ease-[cubic-bezier(0.2,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-[0.38] disabled:shadow-none",
+  "group relative inline-flex items-center justify-center whitespace-nowrap text-sm font-medium tracking-[0.01em] transition-[box-shadow,border-radius,opacity,transform] duration-[180ms] ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-[0.38] disabled:shadow-none data-[pressed=true]:duration-[120ms]",
   {
     variants: {
       variant: {
@@ -328,7 +329,8 @@ const buttonVariants = cva(
     defaultVariants: {
       variant: "filled",
       size: "default",
-      shape: "round",
+      /* Design system: 14px corners on primary-style controls (radius-xl) */
+      shape: "square",
     },
   }
 )

@@ -126,8 +126,7 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Questionnaires</h1>
-          <p className="text-sm text-muted-foreground mt-1.5">
+          <p className="text-sm text-muted-foreground">
             {isAdmin ? "All questionnaires on the platform" : "Your questionnaires"}
           </p>
         </div>

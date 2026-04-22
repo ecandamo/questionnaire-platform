@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import type { ComponentProps } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,17 +20,20 @@ interface AuditEntry {
   userEmail: string | null
 }
 
-const ACTION_COLORS: Record<string, string> = {
-  create: "bg-success/10 text-success border-success/20",
-  update: "bg-info/10 text-info border-info/20",
-  delete: "bg-destructive/10 text-destructive border-destructive/20",
-  archive: "bg-warning/10 text-warning border-warning/20",
-  publish: "bg-primary/10 text-primary border-primary/20",
-  submit: "bg-success/10 text-success border-success/20",
-  reopen: "bg-warning/10 text-warning border-warning/20",
-  duplicate: "bg-secondary/10 text-secondary border-secondary/20",
-  create_user: "bg-info/10 text-info border-info/20",
-  deactivate: "bg-destructive/10 text-destructive border-destructive/20",
+const ACTION_BADGE_VARIANT: Record<
+  string,
+  NonNullable<ComponentProps<typeof Badge>["variant"]>
+> = {
+  create: "success",
+  update: "info",
+  delete: "destructive",
+  archive: "warning",
+  publish: "default",
+  submit: "success",
+  reopen: "warning",
+  duplicate: "secondary",
+  create_user: "info",
+  deactivate: "destructive",
 }
 
 export default function AuditLogPage() {
@@ -76,7 +80,6 @@ export default function AuditLogPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="font-heading text-3xl font-bold tracking-tight">Audit Log</h1>
         <p className="text-sm text-muted-foreground mt-1">All user actions across the platform</p>
       </div>
 
@@ -122,8 +125,8 @@ export default function AuditLogPage() {
                         </td>
                         <td className="px-4 py-3">
                           <Badge
-                            variant="outline"
-                            className={`text-xs capitalize ${ACTION_COLORS[log.action] ?? "bg-muted"}`}
+                            variant={ACTION_BADGE_VARIANT[log.action] ?? "outline"}
+                            className="text-xs capitalize"
                           >
                             {log.action.replace(/_/g, " ")}
                           </Badge>

@@ -1,213 +1,235 @@
 /**
- * ⚠️  REFERENCE ONLY — This file documents the design system
- * but does NOT drive the UI directly.
+ * ⚠️  REFERENCE ONLY — does not drive the UI.
+ * Live tokens: `src/app/globals.css` (`:root`, `.dark`, `@theme inline`).
+ * Brand SVG paths: `src/lib/brand-assets.ts` → `/public/brand/`
  *
- * The live design system lives in src/app/globals.css
- * All Tailwind utilities pull from CSS variables defined there.
- *
- * When updating the design system, edit globals.css directly.
- * Keep this file in sync manually as a human-readable reference.
- *
- * Design Tokens — API Brand
- *
- * Primary: API Navy #273B6E — authority, trust, depth
- * Accent:  API Green #78BC43 — action, success, highlight
- * Neutral: API Gray #7F7F7F + Light Blue-Gray #D4D9E1
- *
- * Typography: IBM Plex Sans (headings) + Source Sans 3 (body)
- * Style: Dark navy sidebar, clean white content surfaces
+ * Last synced with globals.css for light theme hex + semantic status + shadows.
  */
 
+/**
+ * Snapshot of `:root` semantic colors from globals.css (light theme).
+ * oklch() values are quoted as-is where used in CSS.
+ */
+export const liveThemeLight = {
+  background: "#f7f8fb",
+  foreground: "#11151e",
+  card: "#ffffff",
+  cardForeground: "#11151e",
+  primary: "oklch(0.3 0.1 264)" as const,
+  primaryForeground: "#ffffff",
+  secondary: "oklch(0.57 0.13 132)" as const,
+  secondaryForeground: "#ffffff",
+  muted: "#eef0f5",
+  mutedForeground: "#3f4754",
+  accent: "oklch(0.7 0.17 132)" as const,
+  accentForeground: "#0b1428",
+  destructive: "oklch(0.52 0.19 25)" as const,
+  destructiveForeground: "#ffffff",
+  border: "#e4e7ee",
+  input: "#e4e7ee",
+  ring: "color-mix(in oklab, #273b6e 45%, transparent)",
+  radiusBase: "0.625rem",
+  sidebar: "#0b1428",
+  sidebarForeground: "oklch(0.93 0.006 255)" as const,
+  sidebarPrimary: "#78bc43",
+  sidebarPrimaryForeground: "#0b1428",
+  sidebarAccent: "#18264b",
+  sidebarBorder: "#121d3a",
+  success: "#2e8f3e",
+  successForeground: "#ffffff",
+  successMuted: "#e9f6ec",
+  warning: "#c47a0b",
+  warningForeground: "#ffffff",
+  warningMuted: "#fdf3e0",
+  info: "#273b6e",
+  infoForeground: "#ffffff",
+  infoMuted: "#eef1f8",
+  destructiveMuted: "#fbeceb",
+  shadowCard:
+    "0 1px 2px 0 rgb(39 59 110 / 0.06), 0 1px 3px 0 rgb(39 59 110 / 0.05)",
+  shadowCardHover:
+    "0 4px 10px -2px rgb(39 59 110 / 0.1), 0 2px 4px -2px rgb(39 59 110 / 0.06)",
+} as const
+
 export const designTokens = {
+  /** Use `liveThemeLight` for values that map 1:1 to `globals.css` :root */
+  liveLight: liveThemeLight,
+
   colors: {
     primary: {
-      50: '#EEF1F9',
-      100: '#D5DAF0',
-      200: '#ABB5E1',
-      300: '#7B8FCE',
-      400: '#5068BA',
-      500: '#3A52A0',
-      600: '#2E4285',
-      700: '#273B6E',  // API Navy
-      800: '#1E2E57',
-      900: '#152040',
-      950: '#0B1225',
-      DEFAULT: '#273B6E',
-      foreground: '#FFFFFF',
+      50: "#EEF1F8",
+      100: "#D9DFEE",
+      200: "#B3BFDC",
+      300: "#8592BE",
+      400: "#556C9E",
+      500: "#273B6E",
+      600: "#1F3160",
+      700: "#18264B",
+      800: "#121D3A",
+      900: "#0B1428",
+      DEFAULT: "#273B6E",
+      foreground: "#FFFFFF",
     },
 
     secondary: {
-      50: '#F2FAE8',
-      100: '#DCF2C4',
-      200: '#BAE58A',
-      300: '#96D458',
-      400: '#78BC43',  // API Green
-      500: '#62A334',
-      600: '#4E8829',
-      700: '#3B6D1F',
-      800: '#2A5116',
-      900: '#1B380D',
-      950: '#0D1F06',
-      DEFAULT: '#78BC43',
-      foreground: '#FFFFFF',
+      50: "#F2FAEA",
+      100: "#DCF1C4",
+      200: "#BAE391",
+      300: "#9CD668",
+      400: "#8AC852",
+      500: "#78BC43",
+      600: "#61A331",
+      700: "#4A8524",
+      800: "#35641A",
+      900: "#244611",
+      DEFAULT: "#78BC43",
+      foreground: "#FFFFFF",
     },
 
     accent: {
-      50: '#F2FAE8',
-      100: '#DCF2C4',
-      200: '#BAE58A',
-      300: '#96D458',
-      400: '#78BC43',  // API Green — same as secondary, used as accent
-      500: '#62A334',
-      600: '#4E8829',
-      700: '#3B6D1F',
-      800: '#2A5116',
-      900: '#1B380D',
-      950: '#0D1F06',
-      DEFAULT: '#78BC43',
-      foreground: '#1c2e57',  // dark navy on green
+      DEFAULT: "#78BC43",
+      foreground: "#0B1428",
     },
 
     neutral: {
-      50: '#F7F8FA',
-      100: '#EEF0F4',
-      200: '#D4D9E1',  // API Light Blue-Gray
-      300: '#B4BCC9',
-      400: '#8E98A8',
-      500: '#7F7F7F',  // API Gray
-      600: '#5E6472',
-      700: '#434959',
-      800: '#2C3142',
-      900: '#1A1F2E',
-      950: '#0D1018',
+      50: "#F7F8FB",
+      100: "#EEF0F5",
+      200: "#D4D9E1",
+      300: "#B6BECB",
+      400: "#8C95A6",
+      500: "#7F7F7F",
+      600: "#5B6472",
+      700: "#3F4754",
+      800: "#262D39",
+      900: "#11151E",
     },
 
     semantic: {
       success: {
-        light: '#DCF2C4',
-        DEFAULT: '#4E8829',
-        dark: '#3B6D1F',
-        foreground: '#FFFFFF',
+        light: "#E9F6EC",
+        DEFAULT: "#2E8F3E",
+        foreground: "#FFFFFF",
       },
       warning: {
-        light: '#FEF3C7',
-        DEFAULT: '#D97706',
-        dark: '#92400E',
-        foreground: '#FFFFFF',
+        light: "#FDF3E0",
+        DEFAULT: "#C47A0B",
+        foreground: "#FFFFFF",
       },
       error: {
-        light: '#FEE2E2',
-        DEFAULT: '#DC2626',
-        dark: '#991B1B',
-        foreground: '#FFFFFF',
+        light: "#FBECEB",
+        DEFAULT: "#C6342C",
+        foreground: "#FFFFFF",
       },
       info: {
-        light: '#EEF1F9',
-        DEFAULT: '#273B6E',
-        dark: '#1E2E57',
-        foreground: '#FFFFFF',
+        light: "#EEF1F8",
+        DEFAULT: "#273B6E",
+        foreground: "#FFFFFF",
       },
     },
 
     chart: {
-      1: '#273B6E',  // API Navy
-      2: '#78BC43',  // API Green
-      3: '#7F7F7F',  // API Gray
-      4: '#5068BA',  // Navy mid
-      5: '#4E8829',  // Dark green
+      1: "oklch(0.3 0.1 264)",
+      2: "oklch(0.7 0.17 132)",
+      3: "#7F7F7F",
+      4: "oklch(0.44 0.14 290)",
+      5: "oklch(0.57 0.13 132)",
     },
   },
 
   fonts: {
     heading: {
-      family: "'IBM Plex Sans', sans-serif",
-      weights: { medium: 500, semibold: 600, bold: 700 },
-      letterSpacing: '-0.025em',
+      family: "'Mulish', ui-sans-serif, system-ui, sans-serif",
+      weights: { medium: 500, semibold: 600, bold: 700, extrabold: 800 },
+      letterSpacing: "-0.025em",
     },
     body: {
-      family: "'Source Sans 3', sans-serif",
+      family: "'Mulish', ui-sans-serif, system-ui, sans-serif",
       weights: { regular: 400, medium: 500, semibold: 600 },
-      letterSpacing: '0em',
+      letterSpacing: "0em",
     },
     mono: {
-      family: "'JetBrains Mono', monospace",
+      family: "'JetBrains Mono', ui-monospace, monospace",
       weights: { regular: 400, medium: 500 },
-      letterSpacing: '0em',
+      letterSpacing: "0em",
     },
   },
 
   typography: {
-    xs: { size: '0.75rem', lineHeight: '1rem' },
-    sm: { size: '0.875rem', lineHeight: '1.25rem' },
-    base: { size: '1rem', lineHeight: '1.5rem' },
-    lg: { size: '1.125rem', lineHeight: '1.75rem' },
-    xl: { size: '1.25rem', lineHeight: '1.75rem' },
-    '2xl': { size: '1.5rem', lineHeight: '2rem' },
-    '3xl': { size: '1.875rem', lineHeight: '2.25rem' },
-    '4xl': { size: '2.25rem', lineHeight: '2.5rem' },
-    '5xl': { size: '3rem', lineHeight: '1' },
-    kpi: { size: '3rem', lineHeight: '1', letterSpacing: '-0.025em' },
+    xs: { size: "0.75rem", lineHeight: "1rem" },
+    sm: { size: "0.875rem", lineHeight: "1.25rem" },
+    base: { size: "1rem", lineHeight: "1.5rem" },
+    lg: { size: "1.125rem", lineHeight: "1.75rem" },
+    xl: { size: "1.25rem", lineHeight: "1.75rem" },
+    "2xl": { size: "1.5rem", lineHeight: "2rem" },
+    "3xl": { size: "1.875rem", lineHeight: "2.25rem" },
+    "4xl": { size: "2.25rem", lineHeight: "2.5rem" },
+    "5xl": { size: "3rem", lineHeight: "1" },
+    kpi: { size: "3rem", lineHeight: "1", letterSpacing: "-0.025em" },
   },
 
   spacing: {
-    px: '1px',
-    0: '0',
-    0.5: '0.125rem',
-    1: '0.25rem',
-    1.5: '0.375rem',
-    2: '0.5rem',
-    2.5: '0.625rem',
-    3: '0.75rem',
-    4: '1rem',
-    5: '1.25rem',
-    6: '1.5rem',
-    7: '1.75rem',
-    8: '2rem',
-    9: '2.25rem',
-    10: '2.5rem',
-    12: '3rem',
-    14: '3.5rem',
-    16: '4rem',
-    20: '5rem',
-    24: '6rem',
-    32: '8rem',
+    px: "1px",
+    0: "0",
+    0.5: "0.125rem",
+    1: "0.25rem",
+    1.5: "0.375rem",
+    2: "0.5rem",
+    2.5: "0.625rem",
+    3: "0.75rem",
+    4: "1rem",
+    5: "1.25rem",
+    6: "1.5rem",
+    7: "1.75rem",
+    8: "2rem",
+    9: "2.25rem",
+    10: "2.5rem",
+    12: "3rem",
+    14: "3.5rem",
+    16: "4rem",
+    20: "5rem",
+    24: "6rem",
+    32: "8rem",
   },
 
   borderRadius: {
-    none: '0',
-    sm: '0.25rem',
-    DEFAULT: '0.375rem',
-    md: '0.5rem',
-    lg: '0.75rem',
-    xl: '1rem',
-    '2xl': '1.5rem',
-    full: '9999px',
+    none: "0",
+    sm: "calc(var(--radius) * 0.6)",
+    md: "calc(var(--radius) * 0.8)",
+    lg: "var(--radius)",
+    xl: "calc(var(--radius) * 1.4)",
+    "2xl": "calc(var(--radius) * 1.8)",
+    full: "9999px",
+    /** Base `--radius` in globals */
+    baseVariable: "0.625rem",
   },
 
   shadows: {
-    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-    DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-    md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-    xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-    card: '0 1px 3px 0 rgb(39 59 110 / 0.05), 0 1px 2px -1px rgb(39 59 110 / 0.04)',
-    cardHover:
-      '0 4px 12px -2px rgb(39 59 110 / 0.1), 0 2px 4px -2px rgb(39 59 110 / 0.05)',
-    none: 'none',
+    card: liveThemeLight.shadowCard,
+    cardHover: liveThemeLight.shadowCardHover,
+    none: "none",
   },
 
   transitions: {
-    fast: '150ms ease-out',
-    DEFAULT: '200ms ease-out',
-    slow: '300ms ease-out',
+    fast: "120ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+    base: "180ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+    slow: "280ms cubic-bezier(0.5, 0, 0.2, 1)",
   },
 
   breakpoints: {
-    sm: '640px',
-    md: '768px',
-    lg: '1024px',
-    xl: '1280px',
-    '2xl': '1536px',
+    sm: "640px",
+    md: "768px",
+    lg: "1024px",
+    xl: "1280px",
+    "2xl": "1536px",
+  },
+
+  layout: {
+    /** Dashboard sidebar rail — matches Ops Hub kit */
+    sidebarWidthPx: 232,
+    /** Header bar — design system */
+    headerHeightPx: 64,
+    /** Main content max width — Tailwind max-w-7xl */
+    contentMaxPx: 1280,
   },
 
   zIndex: {
@@ -221,6 +243,6 @@ export const designTokens = {
     toast: 100,
     tooltip: 1000,
   },
-} as const;
+} as const
 
-export type DesignTokens = typeof designTokens;
+export type DesignTokens = typeof designTokens
