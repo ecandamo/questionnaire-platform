@@ -160,7 +160,6 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
       .filter(Boolean)
       .join(" · ")
     setOverride({
-      eyebrow: "Questionnaires",
       title: data.title,
       subtitle: subtitle || undefined,
     })

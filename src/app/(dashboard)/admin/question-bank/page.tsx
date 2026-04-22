@@ -291,7 +291,7 @@ export default function QuestionBankPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-[min(90rem,calc(100vw-2rem))]">
+    <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted-foreground mt-1">Manage all reusable questions for questionnaire templates</p>

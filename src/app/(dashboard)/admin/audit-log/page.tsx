@@ -78,7 +78,7 @@ export default function AuditLogPage() {
   }, [load])
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-6 max-w-7xl">
       <div>
         <p className="text-sm text-muted-foreground mt-1">All user actions across the platform</p>
       </div>

@@ -193,7 +193,7 @@ export default function TemplatesPage() {
   })
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted-foreground mt-1">Manage preset questionnaire templates</p>

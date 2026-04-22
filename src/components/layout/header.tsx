@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { MenuIcon, ShieldIcon } from "lucide-react"
 import { getDashboardHeaderMeta } from "@/lib/dashboard-header-meta"
 import { useDashboardTitle } from "@/components/layout/dashboard-title-context"
+import { cn } from "@/lib/utils"
 
 interface HeaderProps {
   isAdmin: boolean
@@ -18,9 +19,11 @@ export function Header({ isAdmin, onOpenMobileNav }: HeaderProps) {
 
   const defaults = React.useMemo(() => getDashboardHeaderMeta(pathname), [pathname])
 
-  const eyebrow = override?.eyebrow ?? defaults.eyebrow
   const title = override?.title ?? defaults.title
   const subtitle = override?.subtitle ?? defaults.subtitle
+
+  const kickerClass =
+    "truncate text-[10.5px] font-bold uppercase tracking-[0.12em] text-sidebar-primary"
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4 md:gap-6 md:px-7">
@@ -36,17 +39,15 @@ export function Header({ isAdmin, onOpenMobileNav }: HeaderProps) {
           </button>
         ) : null}
         <div className="min-w-0 flex-1">
-        {eyebrow ? (
-          <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-sidebar-primary">
-            {eyebrow}
-          </p>
-        ) : null}
-        <h1 className="mt-0.5 truncate font-extrabold leading-[1.15] tracking-[-0.015em] text-foreground text-[22px]">
-          {title}
-        </h1>
-        {subtitle ? (
-          <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{subtitle}</p>
-        ) : null}
+          {subtitle ? <p className={kickerClass}>{subtitle}</p> : null}
+          <h1
+            className={cn(
+              "truncate font-extrabold leading-[1.15] tracking-[-0.015em] text-foreground text-[22px]",
+              subtitle && "mt-0.5"
+            )}
+          >
+            {title}
+          </h1>
         </div>
       </div>
 

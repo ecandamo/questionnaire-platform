@@ -3,7 +3,6 @@
 import * as React from "react"
 
 export interface DashboardTitleOverride {
-  eyebrow?: string
   title?: string
   subtitle?: string
 }
