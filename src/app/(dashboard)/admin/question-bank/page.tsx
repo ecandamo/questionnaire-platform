@@ -27,6 +27,9 @@ import {
 import { QuestionStatusBadge } from "@/components/shared/status-badge"
 import {
   ArchiveIcon,
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
   BookOpenIcon,
   Loader2Icon,
   MoreHorizontalIcon,
@@ -89,6 +92,8 @@ function templatePillClass(templateId: string): string {
   return TEMPLATE_PILL_STYLES[hashTemplateId(templateId) % TEMPLATE_PILL_STYLES.length]
 }
 
+type QuestionBankTableSortColumn = "category" | "type"
+
 export default function QuestionBankPage() {
   const [questions, setQuestions] = React.useState<Question[]>([])
   const [categories, setCategories] = React.useState<Category[]>([])
@@ -118,6 +123,47 @@ export default function QuestionBankPage() {
   const [importFile, setImportFile] = React.useState<File | null>(null)
   const [importing, setImporting] = React.useState(false)
   const [importCreateCategories, setImportCreateCategories] = React.useState(false)
+
+  /** Client-side column sort for the Questions table (Category / Type only). */
+  const [tableSort, setTableSort] = React.useState<{
+    column: QuestionBankTableSortColumn
+    direction: "asc" | "desc"
+  } | null>(null)
+
+  const sortedQuestions = React.useMemo(() => {
+    if (!tableSort) return questions
+    const rows = [...questions]
+    if (tableSort.column === "category") {
+      rows.sort((a, b) => {
+        const an = (a.categoryName ?? "").trim()
+        const bn = (b.categoryName ?? "").trim()
+        const aEmpty = !an
+        const bEmpty = !bn
+        if (aEmpty && bEmpty) return 0
+        if (aEmpty) return 1
+        if (bEmpty) return -1
+        const cmp = an.localeCompare(bn, undefined, { sensitivity: "base" })
+        return tableSort.direction === "asc" ? cmp : -cmp
+      })
+    } else {
+      const typeLabel = (t: string) =>
+        (QUESTION_TYPE_LABELS[t as QuestionType] ?? t).toLowerCase()
+      rows.sort((a, b) => {
+        const cmp = typeLabel(a.type).localeCompare(typeLabel(b.type), undefined, {
+          sensitivity: "base",
+        })
+        return tableSort.direction === "asc" ? cmp : -cmp
+      })
+    }
+    return rows
+  }, [questions, tableSort])
+
+  function toggleTableSort(column: QuestionBankTableSortColumn) {
+    setTableSort((prev) => {
+      if (prev?.column !== column) return { column, direction: "asc" }
+      return { column, direction: prev.direction === "asc" ? "desc" : "asc" }
+    })
+  }
 
   const loadData = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
@@ -410,8 +456,58 @@ export default function QuestionBankPage() {
                       <th className="min-w-48 text-left px-4 py-3 font-medium text-muted-foreground">
                         Description
                       </th>
-                      <th className="whitespace-nowrap text-left px-4 py-3 font-medium text-muted-foreground">Type</th>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Category</th>
+                      <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-muted-foreground">
+                        <button
+                          type="button"
+                          onClick={() => toggleTableSort("type")}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-md -mx-1 px-1 py-0.5 text-left hover:bg-muted/80 hover:text-foreground transition-colors",
+                            tableSort?.column === "type" && "text-foreground"
+                          )}
+                          aria-label={
+                            tableSort?.column === "type"
+                              ? `Sort type ${tableSort.direction === "asc" ? "descending" : "ascending"}`
+                              : "Sort by type"
+                          }
+                        >
+                          Type
+                          {tableSort?.column === "type" ? (
+                            tableSort.direction === "asc" ? (
+                              <ArrowUpIcon className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
+                            ) : (
+                              <ArrowDownIcon className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
+                            )
+                          ) : (
+                            <ArrowUpDownIcon className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
+                          )}
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                        <button
+                          type="button"
+                          onClick={() => toggleTableSort("category")}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-md -mx-1 px-1 py-0.5 text-left hover:bg-muted/80 hover:text-foreground transition-colors",
+                            tableSort?.column === "category" && "text-foreground"
+                          )}
+                          aria-label={
+                            tableSort?.column === "category"
+                              ? `Sort category ${tableSort.direction === "asc" ? "descending" : "ascending"}`
+                              : "Sort by category"
+                          }
+                        >
+                          Category
+                          {tableSort?.column === "category" ? (
+                            tableSort.direction === "asc" ? (
+                              <ArrowUpIcon className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
+                            ) : (
+                              <ArrowDownIcon className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
+                            )
+                          ) : (
+                            <ArrowUpDownIcon className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden />
+                          )}
+                        </button>
+                      </th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground max-w-56">
                         Templates
                       </th>
@@ -422,7 +518,7 @@ export default function QuestionBankPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {questions.map((q) => (
+                    {sortedQuestions.map((q) => (
                       <tr key={q.id} className="hover:bg-muted/40 transition-colors align-top">
                         <td className="px-4 py-3">
                           <p className="font-medium leading-snug text-foreground wrap-break-word">{q.text}</p>
