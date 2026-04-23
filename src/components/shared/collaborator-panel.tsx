@@ -204,6 +204,11 @@ export function CollaboratorPanel({
         </Button>
       </div>
 
+      <p className="px-4 py-2.5 text-[11px] leading-relaxed text-muted-foreground border-b border-border bg-muted/15">
+        Add opens a list where you pick questions or entire sections. Each invitee only sees what you
+        assign; copy or email their link from the list.
+      </p>
+
       {/* Collaborator list */}
       <div className="divide-y divide-border">
         {loading ? (
@@ -332,61 +337,66 @@ function CollaboratorRow({
     )
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      {/* Avatar */}
-      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 text-[10px] font-semibold text-muted-foreground uppercase">
-        {(collaborator.name ?? collaborator.email).charAt(0)}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="text-xs font-medium truncate">
-            {collaborator.name ?? collaborator.email}
-          </p>
-          {statusIcon}
+    <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {/* Avatar */}
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold uppercase text-muted-foreground">
+          {(collaborator.name ?? collaborator.email).charAt(0)}
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
-          <div className="flex-1 max-w-24 bg-muted rounded-full h-1 overflow-hidden">
-            <div
-              className="h-full w-full bg-[color:var(--accent)] rounded-full origin-left transition-transform"
-              style={{ transform: `scaleX(${progress / 100})` }}
-            />
+
+        {/* Info */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-xs font-medium">{collaborator.name ?? collaborator.email}</p>
+            {statusIcon}
           </div>
-          <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
-            {collaborator.answeredCount}/{collaborator.assignedCount}
-          </span>
+          <div className="mt-0.5 flex items-center gap-2">
+            <div className="max-w-24 flex-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-1 w-full origin-left rounded-full bg-[color:var(--accent)] transition-transform"
+                style={{ transform: `scaleX(${progress / 100})` }}
+              />
+            </div>
+            <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+              {collaborator.answeredCount}/{collaborator.assignedCount}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0">
+      {/* Actions — text-first labels so copy/email affordances are obvious */}
+      <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:justify-end">
         <Button
           size="sm"
-          variant="ghost"
-          className="h-9 w-9 p-0"
-          aria-label={`Copy link for ${displayName}`}
+          variant="outline"
+          className="h-8 gap-1.5 px-2.5 text-xs font-normal"
           onClick={onCopy}
         >
           {copied ? (
-            <CheckIcon className="h-3.5 w-3.5 text-accent" aria-hidden />
+            <>
+              <span>Copied</span>
+              <CheckIcon className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
+            </>
           ) : (
-            <CopyIcon className="h-3.5 w-3.5" />
+            <>
+              <span>Copy link</span>
+              <CopyIcon className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+            </>
           )}
         </Button>
         <Button
           size="sm"
-          variant="ghost"
-          className="h-9 w-9 p-0"
-          aria-label={`Send link by email to ${collaborator.email}`}
+          variant="outline"
+          className="h-8 gap-1.5 px-2.5 text-xs font-normal"
           onClick={onEmail}
         >
-          <MailIcon className="h-3.5 w-3.5" />
+          <span>Email link</span>
+          <MailIcon className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
         </Button>
         <Button
           size="sm"
-          variant="ghost"
-          className="h-9 w-9 p-0 text-destructive hover:text-destructive"
+          variant="outline"
+          className="h-8 gap-1.5 border-destructive/25 px-2.5 text-xs font-normal text-destructive hover:bg-destructive/10 hover:text-destructive"
           aria-label={`Remove ${displayName}`}
           onClick={onDelete}
           disabled={deleting}
@@ -394,7 +404,10 @@ function CollaboratorRow({
           {deleting ? (
             <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
           ) : (
-            <TrashIcon className="h-3.5 w-3.5" />
+            <>
+              <span>Remove</span>
+              <TrashIcon className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+            </>
           )}
         </Button>
       </div>

@@ -469,15 +469,27 @@ export default function RespondPage() {
           </CardContent>
         </Card>
 
-        {/* Team panel — owner only (response row is created on first share load) */}
+        {/* Team — owner: always-visible so primary respondent discovers delegation without opening dialogs */}
         {viewerRole === "owner" && questionnaire && responseId && (
-          <CollaboratorPanel
-            responseId={responseId}
-            ownerToken={token}
-            questionnaireTitle={questionnaire.title}
-            questions={allQuestions}
-            onTeamChanged={refreshShareSnapshot}
-          />
+          <>
+            <div className="rounded-lg border border-primary/15 bg-gradient-to-r from-info-muted/80 to-secondary/10 px-4 py-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                <span className="font-medium text-foreground">Work with others on this form.</span> In{" "}
+                <span className="font-medium text-foreground">Team</span> below, click{" "}
+                <span className="font-medium text-foreground">Add</span>, enter their email, and select
+                the questions or whole sections they should answer. Each person gets their own private
+                link. When collaborators have finished, you submit the full questionnaire from this
+                page.
+              </p>
+            </div>
+            <CollaboratorPanel
+              responseId={responseId}
+              ownerToken={token}
+              questionnaireTitle={questionnaire.title}
+              questions={allQuestions}
+              onTeamChanged={refreshShareSnapshot}
+            />
+          </>
         )}
 
         {/* Contributor hint */}
