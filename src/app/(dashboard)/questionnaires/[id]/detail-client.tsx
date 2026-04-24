@@ -62,11 +62,9 @@ import {
 import { toast } from "sonner"
 import { addDays, format } from "date-fns"
 import {
-  QUESTIONNAIRE_TYPE_LABELS,
   QUESTION_TYPE_LABELS,
   QUESTION_TYPES_WITH_OPTIONS,
   type QuestionnaireStatus,
-  type QuestionnaireType,
   type QuestionType,
 } from "@/types"
 import { answerableDisplayNumbers } from "@/lib/question-sections"
@@ -127,9 +125,10 @@ interface Props {
   id: string
   isAdmin: boolean
   currentUserId: string
+  typeLabels: Record<string, string>
 }
 
-export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props) {
+export function QuestionnaireDetailClient({ id, isAdmin, currentUserId, typeLabels }: Props) {
   const router = useRouter()
   const { setOverride } = useDashboardTitle()
   const [data, setData] = React.useState<QuestionnaireDetail | null>(null)
@@ -154,7 +153,7 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
   React.useEffect(() => {
     if (!data) return
     const subtitle = [
-      QUESTIONNAIRE_TYPE_LABELS[data.type as QuestionnaireType],
+      typeLabels[data.type],
       data.clientName,
     ]
       .filter(Boolean)
@@ -164,7 +163,7 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
       subtitle: subtitle || undefined,
     })
     return () => setOverride(null)
-  }, [data, setOverride])
+  }, [data, setOverride, typeLabels])
 
   const sensors = useSensors(
     useSensor(PointerSensor),

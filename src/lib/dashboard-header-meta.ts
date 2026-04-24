@@ -64,6 +64,13 @@ export function getDashboardHeaderMeta(pathname: string): DashboardHeaderMeta {
     }
   }
 
+  if (pathname.startsWith("/admin/questionnaire-types")) {
+    return {
+      title: "Questionnaire Types",
+      subtitle: "Manage questionnaire categories",
+    }
+  }
+
   if (pathname.startsWith("/admin/users")) {
     return {
       title: "Users",

@@ -46,7 +46,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { QUESTIONNAIRE_TYPE_LABELS, QUESTION_TYPE_LABELS, type QuestionnaireType, type QuestionType } from "@/types"
+import { QUESTION_TYPE_LABELS, type QuestionType } from "@/types"
 
 /** Drag id prefix for bank → template (never overlaps UUIDs). */
 const BANK_DRAG_PREFIX = "bank-q:" as const
@@ -118,6 +118,7 @@ type DragOverlayPayload =
 export default function TemplatesPage() {
   const [templates, setTemplates] = React.useState<Template[]>([])
   const [questions, setQuestions] = React.useState<Question[]>([])
+  const [qTypeOptions, setQTypeOptions] = React.useState<{ slug: string; label: string }[]>([])
   const [loading, setLoading] = React.useState(true)
   const [showDialog, setShowDialog] = React.useState(false)
   const [editing, setEditing] = React.useState<Template | null>(null)
@@ -247,13 +248,15 @@ export default function TemplatesPage() {
   const load = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
     try {
-      const [ts, qs] = await Promise.all([
+      const [ts, qs, qt] = await Promise.all([
         fetch("/api/templates", { signal }).then((r) => r.json()),
         fetch("/api/questions?status=active", { signal }).then((r) => r.json()),
+        fetch("/api/questionnaire-types", { signal }).then((r) => r.json()),
       ])
       if (signal?.aborted) return
       setTemplates(ts ?? [])
       setQuestions(qs ?? [])
+      setQTypeOptions((qt ?? []).filter((t: { slug: string }) => t.slug !== "custom"))
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return
       throw e
@@ -408,7 +411,7 @@ export default function TemplatesPage() {
                     <td className="px-4 py-3 font-medium">{t.name}</td>
                     <td className="px-4 py-3">
                       <Badge variant="secondary" className="text-xs">
-                        {QUESTIONNAIRE_TYPE_LABELS[t.type as QuestionnaireType] ?? t.type}
+                        {qTypeOptions.find((o) => o.slug === t.type)?.label ?? t.type}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">{t.description ?? "—"}</td>
@@ -488,11 +491,9 @@ export default function TemplatesPage() {
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(QUESTIONNAIRE_TYPE_LABELS)
-                      .filter(([v]) => v !== "custom")
-                      .map(([v, l]) => (
-                        <SelectItem key={v} value={v}>{l}</SelectItem>
-                      ))}
+                    {qTypeOptions.map(({ slug, label }) => (
+                      <SelectItem key={slug} value={slug}>{label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

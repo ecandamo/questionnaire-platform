@@ -9,8 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2Icon, ArrowLeftIcon, ArrowRightIcon } from "lucide-react"
 import { toast } from "sonner"
-import { QUESTIONNAIRE_TYPE_LABELS, type QuestionnaireType } from "@/types"
-
 interface Client {
   id: string
   name: string
@@ -22,22 +20,30 @@ interface Template {
   type: string
 }
 
+interface QCategory {
+  slug: string
+  label: string
+}
+
 export function NewQuestionnaireClient() {
   const router = useRouter()
   const [title, setTitle] = React.useState("")
-  const [type, setType] = React.useState<QuestionnaireType | "">("")
+  const [type, setType] = React.useState("")
   const [clientId, setClientId] = React.useState("")
   const [clients, setClients] = React.useState<Client[]>([])
   const [templates, setTemplates] = React.useState<Template[]>([])
+  const [typeOptions, setTypeOptions] = React.useState<QCategory[]>([])
   const [loading, setLoading] = React.useState(false)
 
   React.useEffect(() => {
     Promise.all([
       fetch("/api/clients").then((r) => r.json()),
       fetch("/api/templates").then((r) => r.json()),
-    ]).then(([c, t]) => {
+      fetch("/api/questionnaire-types").then((r) => r.json()),
+    ]).then(([c, t, qt]) => {
       setClients(c ?? [])
       setTemplates(t ?? [])
+      setTypeOptions(qt ?? [])
     })
   }, [])
 
@@ -72,7 +78,7 @@ export function NewQuestionnaireClient() {
     }
   }
 
-  const typeOptions = Object.entries(QUESTIONNAIRE_TYPE_LABELS) as [QuestionnaireType, string][]
+  const selectedTypeLabel = typeOptions.find((t) => t.slug === type)?.label
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
@@ -107,13 +113,13 @@ export function NewQuestionnaireClient() {
             <Label>
               Type <span className="text-destructive">*</span>
             </Label>
-            <Select value={type} onValueChange={(v) => setType(v as QuestionnaireType)}>
+            <Select value={type} onValueChange={setType}>
               <SelectTrigger>
                 <SelectValue placeholder="Select questionnaire type" />
               </SelectTrigger>
               <SelectContent>
-                {typeOptions.map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
+                {typeOptions.map(({ slug, label }) => (
+                  <SelectItem key={slug} value={slug}>
                     {label}
                   </SelectItem>
                 ))}
@@ -122,7 +128,7 @@ export function NewQuestionnaireClient() {
             {type && type !== "custom" && (
               <p className="text-xs text-muted-foreground">
                 This will pre-populate questions from the{" "}
-                <span className="font-medium">{QUESTIONNAIRE_TYPE_LABELS[type]}</span> template.
+                <span className="font-medium">{selectedTypeLabel}</span> template.
               </p>
             )}
             {type === "custom" && (

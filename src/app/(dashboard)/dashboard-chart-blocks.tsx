@@ -12,8 +12,8 @@ import {
   Pie,
   Cell,
 } from "recharts"
-import type { QuestionnaireStatus, QuestionnaireType } from "@/types"
-import { QUESTIONNAIRE_STATUS_LABELS, QUESTIONNAIRE_TYPE_LABELS as TYPE_LABELS } from "@/types"
+import type { QuestionnaireStatus } from "@/types"
+import { QUESTIONNAIRE_STATUS_LABELS } from "@/types"
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "var(--color-muted-foreground)",
@@ -23,12 +23,47 @@ const STATUS_COLORS: Record<string, string> = {
   archived: "var(--color-muted-foreground)",
 }
 
+function splitTypeLabel(label: string): [string, string?] {
+  const words = label.trim().split(/\s+/).filter(Boolean)
+  if (words.length <= 1) return [label]
+  if (words.length === 2) return [words[0], words[1]]
+  const mid = Math.ceil(words.length / 2)
+  return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")]
+}
+
+function TypeAxisTick(props: { x?: number; y?: number; payload?: { value?: string } }) {
+  const { x = 0, y = 0, payload } = props
+  const label = String(payload?.value ?? "")
+  const [line1, line2] = splitTypeLabel(label)
+
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      fill="var(--color-muted-foreground)"
+      fontSize={11}
+    >
+      <tspan x={x} dy="0.9em">
+        {line1}
+      </tspan>
+      {line2 ? (
+        <tspan x={x} dy="1.1em">
+          {line2}
+        </tspan>
+      ) : null}
+    </text>
+  )
+}
+
 export function DashboardChartBlocks({
   statusCounts,
   typeCounts,
+  typeLabels,
 }: {
   statusCounts: Record<string, number>
   typeCounts: Record<string, number>
+  typeLabels: Record<string, string>
 }) {
   const statusData = Object.entries(statusCounts).map(([status, count]) => ({
     name: QUESTIONNAIRE_STATUS_LABELS[status as QuestionnaireStatus] ?? status,
@@ -37,7 +72,7 @@ export function DashboardChartBlocks({
   }))
 
   const typeData = Object.entries(typeCounts).map(([type, count]) => ({
-    name: TYPE_LABELS[type as QuestionnaireType] ?? type,
+    name: typeLabels[type] ?? type,
     count,
   }))
 
@@ -121,9 +156,13 @@ export function DashboardChartBlocks({
                 <BarChart data={typeData} margin={{ top: 4, right: 8, left: -20, bottom: 4 }}>
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                    tick={<TypeAxisTick />}
                     tickLine={false}
                     axisLine={false}
+                    interval={0}
+                    height={64}
+                    angle={0}
+                    textAnchor="middle"
                   />
                   <YAxis
                     tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}

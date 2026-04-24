@@ -33,14 +33,6 @@ export const questionStatusEnum = pgEnum("question_status", [
   "archived",
 ])
 
-export const questionnaireTypeEnum = pgEnum("questionnaire_type", [
-  "data_request",
-  "hobson_roi",
-  "workshop",
-  "pre_workshop",
-  "custom",
-])
-
 export const questionnaireStatusEnum = pgEnum("questionnaire_status", [
   "draft",
   "shared",
@@ -137,6 +129,17 @@ export const client = pgTable("client", {
   isActive: boolean("is_active").notNull().default(true),
 })
 
+export const questionnaireCategory = pgTable("questionnaire_category", {
+  slug: text("slug").primaryKey(),
+  label: text("label").notNull(),
+  color: text("color").notNull().default("slate"),
+  isSystem: boolean("is_system").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
 export const questionCategory = pgTable("question_category", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -167,7 +170,7 @@ export const question = pgTable("question", {
 export const questionnaireTemplate = pgTable("questionnaire_template", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
-  type: questionnaireTypeEnum("type").notNull(),
+  type: text("type").notNull().references(() => questionnaireCategory.slug, { onDelete: "restrict" }),
   description: text("description"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -189,7 +192,7 @@ export const templateQuestion = pgTable("template_question", {
 export const questionnaire = pgTable("questionnaire", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
-  type: questionnaireTypeEnum("type").notNull(),
+  type: text("type").notNull().references(() => questionnaireCategory.slug, { onDelete: "restrict" }),
   status: questionnaireStatusEnum("status").notNull().default("draft"),
   clientId: uuid("client_id").references(() => client.id, { onDelete: "set null" }),
   ownerId: text("owner_id")
@@ -317,6 +320,7 @@ export type User = typeof user.$inferSelect
 export type Client = typeof client.$inferSelect
 export type Question = typeof question.$inferSelect
 export type QuestionCategory = typeof questionCategory.$inferSelect
+export type QuestionnaireCategory = typeof questionnaireCategory.$inferSelect
 export type QuestionnaireTemplate = typeof questionnaireTemplate.$inferSelect
 export type TemplateQuestion = typeof templateQuestion.$inferSelect
 export type Questionnaire = typeof questionnaire.$inferSelect

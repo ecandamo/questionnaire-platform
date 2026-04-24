@@ -31,9 +31,7 @@ import { toast } from "sonner"
 import { format } from "date-fns"
 import {
   QUESTIONNAIRE_STATUS_LABELS,
-  QUESTIONNAIRE_TYPE_LABELS,
   type QuestionnaireStatus,
-  type QuestionnaireType,
 } from "@/types"
 
 interface QuestionnaireRow {
@@ -51,9 +49,10 @@ interface QuestionnaireRow {
 interface Props {
   isAdmin: boolean
   currentUserId: string
+  typeLabels: Record<string, string>
 }
 
-export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
+export function QuestionnairesClient({ isAdmin, currentUserId, typeLabels }: Props) {
   const router = useRouter()
   const [questionnaires, setQuestionnaires] = React.useState<QuestionnaireRow[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -167,7 +166,7 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
-            {Object.entries(QUESTIONNAIRE_TYPE_LABELS).map(([v, l]) => (
+            {Object.entries(typeLabels).map(([v, l]) => (
               <SelectItem key={v} value={v}>{l}</SelectItem>
             ))}
           </SelectContent>
@@ -221,7 +220,7 @@ export function QuestionnairesClient({ isAdmin, currentUserId }: Props) {
                         </Link>
                       </td>
                       <td className="px-4 py-3.5 text-sm text-muted-foreground whitespace-nowrap">
-                        {QUESTIONNAIRE_TYPE_LABELS[q.type as QuestionnaireType] ?? q.type}
+                        {typeLabels[q.type] ?? q.type}
                       </td>
                       <td className="px-4 py-3.5 text-sm text-muted-foreground">{q.clientName ?? <span className="text-muted-foreground/40">—</span>}</td>
                       {isAdmin && <td className="px-4 py-3.5 text-sm text-muted-foreground">{q.ownerName ?? <span className="text-muted-foreground/40">—</span>}</td>}

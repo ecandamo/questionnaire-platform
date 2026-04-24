@@ -42,6 +42,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { getQuestionnaireTypePillClass } from "@/lib/questionnaire-type-colors"
 import {
   QUESTION_TYPE_LABELS,
   QUESTION_TYPES_WITH_OPTIONS,
@@ -60,7 +61,7 @@ interface Question {
   options: string[] | null
   description: string | null
   /** Preset templates that include this bank question (empty = orphan for templates) */
-  templates?: { id: string; name: string }[]
+  templates?: { id: string; name: string; type: string; color: string | null }[]
 }
 
 interface Category {
@@ -68,28 +69,6 @@ interface Category {
   name: string
   description: string | null
   sortOrder: number
-}
-
-/** Stable accent per template id so the same name always picks the same pill color. */
-function hashTemplateId(id: string): number {
-  let h = 0
-  for (let i = 0; i < id.length; i++) h = Math.imul(31, h) + id.charCodeAt(i)
-  return Math.abs(h)
-}
-
-const TEMPLATE_PILL_STYLES = [
-  "border-primary/30 bg-primary/10 text-primary",
-  "border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200",
-  "border-sky-500/35 bg-sky-500/10 text-sky-900 dark:text-sky-200",
-  "border-violet-500/30 bg-violet-500/10 text-violet-900 dark:text-violet-200",
-  "border-amber-500/35 bg-amber-500/12 text-amber-950 dark:text-amber-200",
-  "border-rose-500/30 bg-rose-500/10 text-rose-900 dark:text-rose-200",
-  "border-teal-500/30 bg-teal-500/10 text-teal-900 dark:text-teal-200",
-  "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-900 dark:text-fuchsia-200",
-] as const
-
-function templatePillClass(templateId: string): string {
-  return TEMPLATE_PILL_STYLES[hashTemplateId(templateId) % TEMPLATE_PILL_STYLES.length]
 }
 
 type QuestionBankTableSortColumn = "category" | "type"
@@ -559,7 +538,7 @@ export default function QuestionBankPage() {
                                   title={t.name}
                                   className={cn(
                                     "inline-flex max-w-56 wrap-break-word rounded-full border px-2 py-0.5 text-left text-[11px] font-medium leading-snug sm:max-w-72",
-                                    templatePillClass(t.id)
+                                    getQuestionnaireTypePillClass(t.color)
                                   )}
                                 >
                                   {t.name}

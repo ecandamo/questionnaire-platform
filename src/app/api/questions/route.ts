@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { question, questionCategory, questionnaireTemplate, templateQuestion } from "@/lib/db/schema"
+import {
+  question,
+  questionCategory,
+  questionnaireCategory,
+  questionnaireTemplate,
+  templateQuestion,
+} from "@/lib/db/schema"
 import { getRequestSession, requireAdmin } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
 import { and, asc, eq, ilike, inArray } from "drizzle-orm"
@@ -60,7 +66,7 @@ export async function GET(req: NextRequest) {
     .orderBy(asc(question.sortOrder), asc(question.text))
 
   const questionIds = questions.map((q) => q.id)
-  const templatesByQuestionId = new Map<string, { id: string; name: string }[]>()
+  const templatesByQuestionId = new Map<string, { id: string; name: string; type: string; color: string | null }[]>()
 
   if (questionIds.length > 0) {
     const links = await db
@@ -68,18 +74,26 @@ export async function GET(req: NextRequest) {
         questionId: templateQuestion.questionId,
         templateId: questionnaireTemplate.id,
         templateName: questionnaireTemplate.name,
+        templateType: questionnaireTemplate.type,
+        templateColor: questionnaireCategory.color,
       })
       .from(templateQuestion)
       .innerJoin(
         questionnaireTemplate,
         eq(templateQuestion.templateId, questionnaireTemplate.id)
       )
+      .leftJoin(questionnaireCategory, eq(questionnaireTemplate.type, questionnaireCategory.slug))
       .where(inArray(templateQuestion.questionId, questionIds))
 
     for (const row of links) {
       const list = templatesByQuestionId.get(row.questionId) ?? []
       if (!list.some((t) => t.id === row.templateId)) {
-        list.push({ id: row.templateId, name: row.templateName })
+        list.push({
+          id: row.templateId,
+          name: row.templateName,
+          type: row.templateType,
+          color: row.templateColor,
+        })
       }
       templatesByQuestionId.set(row.questionId, list)
     }

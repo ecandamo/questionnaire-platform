@@ -13,12 +13,7 @@ export type QuestionType =
 
 export type QuestionStatus = "active" | "inactive" | "archived"
 
-export type QuestionnaireType =
-  | "data_request"
-  | "hobson_roi"
-  | "workshop"
-  | "pre_workshop"
-  | "custom"
+export type QuestionnaireType = string
 
 export type QuestionnaireStatus =
   | "draft"
@@ -34,14 +29,6 @@ export type UserRole = "admin" | "user"
 export interface QuestionOption {
   label: string
   value: string
-}
-
-export const QUESTIONNAIRE_TYPE_LABELS: Record<QuestionnaireType, string> = {
-  data_request: "Data Request (Adhoc)",
-  hobson_roi: "Hobson ROI",
-  workshop: "Workshop",
-  pre_workshop: "Pre-Workshop",
-  custom: "Custom Questionnaire",
 }
 
 export const QUESTIONNAIRE_STATUS_LABELS: Record<QuestionnaireStatus, string> = {

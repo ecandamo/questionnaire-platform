@@ -14,6 +14,7 @@ import {
   LogOutIcon,
   UserIcon,
   SettingsIcon,
+  TagIcon,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ const mainNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { label: "Question Bank", href: "/admin/question-bank", icon: BookOpenIcon, adminOnly: true },
   { label: "Templates", href: "/admin/templates", icon: LayoutTemplateIcon, adminOnly: true },
+  { label: "Questionnaire Types", href: "/admin/questionnaire-types", icon: TagIcon, adminOnly: true },
   { label: "Users", href: "/admin/users", icon: UsersIcon, adminOnly: true },
   { label: "Audit Log", href: "/admin/audit-log", icon: ActivityIcon, adminOnly: true },
 ]

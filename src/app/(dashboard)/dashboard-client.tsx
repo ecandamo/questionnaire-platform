@@ -10,8 +10,7 @@ import {
   PlusIcon,
 } from "lucide-react"
 import { format } from "date-fns"
-import type { QuestionnaireStatus, QuestionnaireType } from "@/types"
-import { QUESTIONNAIRE_TYPE_LABELS as TYPE_LABELS } from "@/types"
+import type { QuestionnaireStatus } from "@/types"
 
 const DashboardChartBlocks = dynamic(
   () =>
@@ -43,6 +42,7 @@ interface Props {
   isAdmin: boolean
   statusCounts: Record<string, number>
   typeCounts: Record<string, number>
+  typeLabels: Record<string, string>
   recent: Array<{
     id: string
     title: string
@@ -53,7 +53,7 @@ interface Props {
   total: number
 }
 
-export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, recent, total }: Props) {
+export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, typeLabels, recent, total }: Props) {
   const kpis = [
     { label: "total",       value: total,                        valueColor: "text-foreground" },
     { label: "in progress", value: statusCounts.in_progress ?? 0, valueColor: "text-warning" },
@@ -91,7 +91,7 @@ export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, r
         </Button>
       </div>
 
-      <DashboardChartBlocks statusCounts={statusCounts} typeCounts={typeCounts} />
+      <DashboardChartBlocks statusCounts={statusCounts} typeCounts={typeCounts} typeLabels={typeLabels} />
 
       {/* Recent Activity */}
       <Card className="shadow-card">
@@ -132,7 +132,7 @@ export function DashboardClient({ userName, isAdmin, statusCounts, typeCounts, r
                     <div className="min-w-0">
                       <p className="text-sm font-semibold truncate text-foreground">{q.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {TYPE_LABELS[q.type as QuestionnaireType] ?? q.type}
+                        {typeLabels[q.type] ?? q.type}
                         {q.updatedAt && (
                           <span className="text-muted-foreground/60"> · {format(new Date(q.updatedAt), "MMM d")}</span>
                         )}
