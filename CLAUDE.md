@@ -45,6 +45,13 @@
 - **Template vs bank “required”:** `template_question.is_required` is what new questionnaires copy (`questionnaire_question.is_required`); it may differ per template from `question.is_required` on the bank row. Admin → Templates: when adding a bank question, send that row’s `isRequired` from `GET /api/questions` — do not hardcode `false` or every linked question saves as optional.
 - **Better Auth admin from API routes:** server-side `fetch` to Better Auth (e.g. admin **`create-user`**) has **no browser `Origin`**. Better Auth may return **"Missing or null Origin"**. Send **`Origin`** (and typically **`Referer`**) derived from **`BETTER_AUTH_URL`** or **`NEXT_PUBLIC_APP_URL`** — see `src/app/api/admin/users/route.ts`.
 
+## Drag-and-Drop inside Modals (dnd-kit)
+
+- **Never use `DragOverlay` inside a Radix UI `Dialog`, `Sheet`, or any component that applies CSS `transform` to a fixed ancestor.**
+- Radix `DialogContent` uses `position: fixed; transform: translate(-50%, -50%)` — this creates a new containing block for `position: fixed` descendants. dnd-kit's `DragOverlay` renders inline (no portal) so it inherits this broken coordinate space; the ghost appears offset downward by the Dialog's top position regardless of modifier math.
+- **Correct pattern**: use `createPortal(<overlay />, document.body)` controlled by a drag-state flag. Update position via direct DOM style mutations (`el.style.left/top`) in the existing `pointermove` listener. Use `requestAnimationFrame` on drag start to set the initial position after the portal element mounts.
+- No dnd-kit modifier is needed when using the portal approach.
+
 ## File Structure
 
 - src/components/ui — shadcn/ui

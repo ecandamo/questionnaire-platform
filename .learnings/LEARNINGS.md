@@ -768,3 +768,77 @@ After logging a learning, if the rule is promoted to one agent file, consider th
 - **Resolved**: 2026-04-14 — `AGENTS.md` mirrors Better Auth `Origin`/`Referer` guidance; `create-user` route sends both; dedupe noted for ERR/LRN pairs.
 
 ---
+
+## [LRN-20260423-001] best_practice
+
+**Logged**: 2026-04-23T00:00:00Z
+**Priority**: high
+**Status**: promoted
+**Area**: frontend
+
+### Summary
+`DragOverlay` from `@dnd-kit/core` renders inline (no portal) and uses `position: fixed`, which breaks inside CSS-transformed ancestors such as Radix UI `DialogContent`.
+
+### Details
+Radix UI `DialogContent` uses `position: fixed; transform: translate(-50%, -50%)` to center itself in the viewport. Any `position: fixed` descendant rendered inside this element is positioned relative to the Dialog's containing block rather than the viewport. Because dnd-kit's `DragOverlay` renders inline inside the `DndContext` DOM subtree (not via a portal to `document.body`), it inherits this broken fixed-positioning context.
+
+This caused the drag preview ghost to appear consistently offset downward by the Dialog's top position (~4dvh on most screens), regardless of modifier math applied to the transform — because the coordinate systems for `getBoundingClientRect()` (viewport-relative) and the overlay's CSS `fixed` position (dialog-relative) were mismatched.
+
+Multiple failed attempts were made before diagnosing the root cause:
+1. Default DragOverlay (no modifier) → ghost "too far down"
+2. `snapCenterToCursor` modifier (from `@dnd-kit/modifiers`) → ghost jumps on drag start because it uses the original row's rect size, not the overlay's
+3. Custom modifier: top-left of overlay at cursor → still offset (same coordinate mismatch)
+4. Custom modifier: center overlay on cursor using `overlayNodeRect` → Y still wrong because `overlayNodeRect` is null/zero for first frames after portal mount
+5. Custom modifier: center overlay using `overlayElRef.current.offsetHeight` → horizontal works, vertical still wrong — root cause finally identified
+
+**Root cause**: `position: fixed` inside a CSS `transform`ed ancestor creates a new stacking/containing block. dnd-kit DragOverlay does not escape this.
+
+### Correct Solution
+Replace `DragOverlay` with a `createPortal(…, document.body)` rendered directly into `document.body`, completely outside the Dialog's DOM subtree. Use `position: fixed; top: 0; left: 0` on the portal div and update its position via direct DOM style mutations (`el.style.left`, `el.style.top`) in a `pointermove` listener. This escapes the Dialog's coordinate space entirely.
+
+Key implementation details:
+- Render via `createPortal(<div ref={portalOverlayRef} style={{ position: "fixed", top: 0, left: 0 }}>, document.body)` controlled by a drag state flag
+- In `pointermove` handler: `el.style.left = clientX - el.offsetWidth/2; el.style.top = clientY - el.offsetHeight/2` — centers the card on cursor using live DOM measurements
+- On drag start: use `requestAnimationFrame(() => { /* set initial position */ })` so the portal element is mounted before measuring
+- No dnd-kit modifier needed at all
+
+```tsx
+// ✅ Correct: portal to document.body, direct DOM position updates
+{dragOverlay && typeof document !== "undefined" && createPortal(
+  <div
+    ref={portalOverlayRef}
+    style={{ position: "fixed", top: 0, left: 0, zIndex: 9999, pointerEvents: "none" }}
+    className="…card styles…"
+  >
+    {/* overlay content */}
+  </div>,
+  document.body
+)}
+
+// In pointermove handler:
+const el = portalOverlayRef.current
+if (el) {
+  el.style.left = `${e.clientX - el.offsetWidth / 2}px`
+  el.style.top = `${e.clientY - el.offsetHeight / 2}px`
+}
+```
+
+```tsx
+// ❌ Wrong: DragOverlay inside Dialog — coordinate mismatch, no modifier can fix it
+<DragOverlay modifiers={[anyModifier]}>…</DragOverlay>
+```
+
+### Suggested Action
+- Whenever `DragOverlay` is used inside a Radix UI `Dialog`, `Sheet`, `Popover`, or any component that applies CSS `transform` to a fixed ancestor: always use `createPortal` to `document.body` instead.
+- This pattern should be the default for any drag-and-drop UI inside modals.
+
+### Metadata
+- Source: user_feedback — iterative debugging session 2026-04-23
+- Related Files: `src/app/(dashboard)/admin/templates/page.tsx`
+- Tags: dnd-kit, drag-and-drop, DragOverlay, portal, radix-ui, dialog, position-fixed, css-transform, coordinate-system
+- Pattern-Key: frontend.dnd-overlay-in-modal
+- Recurrence-Count: 1
+- First-Seen: 2026-04-23
+- Last-Seen: 2026-04-23
+
+---

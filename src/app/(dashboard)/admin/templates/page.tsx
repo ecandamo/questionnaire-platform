@@ -1,6 +1,17 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
+import {
+  DndContext,
+  PointerSensor,
+  useDraggable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+  type UniqueIdentifier,
+} from "@dnd-kit/core"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   ArchiveIcon,
+  GripVerticalIcon,
   LayoutTemplateIcon,
   Loader2Icon,
   MoreHorizontalIcon,
@@ -33,7 +45,46 @@ import {
   XIcon,
 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import { QUESTIONNAIRE_TYPE_LABELS, QUESTION_TYPE_LABELS, type QuestionnaireType, type QuestionType } from "@/types"
+
+/** Drag id prefix for bank → template (never overlaps UUIDs). */
+const BANK_DRAG_PREFIX = "bank-q:" as const
+
+function bankDragId(questionId: string): string {
+  return `${BANK_DRAG_PREFIX}${questionId}`
+}
+
+function isBankDragId(id: UniqueIdentifier): boolean {
+  return String(id).startsWith(BANK_DRAG_PREFIX)
+}
+
+function parseBankQuestionId(id: UniqueIdentifier): string {
+  return String(id).slice(BANK_DRAG_PREFIX.length)
+}
+
+/** Slot index from viewport Y: insert before row i where pointer is above that row's midpoint (append if below all). */
+function computeInsertIndexAmongRows(rows: HTMLElement[], clientY: number): number {
+  if (rows.length === 0) return 0
+  for (let i = 0; i < rows.length; i++) {
+    const rect = rows[i].getBoundingClientRect()
+    const midY = rect.top + rect.height / 2
+    if (clientY < midY) return i
+  }
+  return rows.length
+}
+
+/** Bank insert: all template rows participate (none excluded). */
+function computeBankInsertIndex(columnEl: HTMLElement, clientY: number): number {
+  const rows = [...columnEl.querySelectorAll<HTMLElement>("[data-template-row]")]
+  return computeInsertIndexAmongRows(rows, clientY)
+}
+
+function isPointerInsideTemplateColumn(columnEl: HTMLElement | null, x: number, y: number): boolean {
+  if (!columnEl) return false
+  const r = columnEl.getBoundingClientRect()
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom
+}
 
 interface Template {
   id: string
@@ -60,6 +111,10 @@ interface TemplateQuestion {
   isRequired: boolean
 }
 
+type DragOverlayPayload =
+  | { kind: "bank"; question: Question }
+  | { kind: "template"; row: TemplateQuestion }
+
 export default function TemplatesPage() {
   const [templates, setTemplates] = React.useState<Template[]>([])
   const [questions, setQuestions] = React.useState<Question[]>([])
@@ -70,6 +125,124 @@ export default function TemplatesPage() {
   const [form, setForm] = React.useState({ name: "", type: "", description: "" })
   const [templateQuestions, setTemplateQuestions] = React.useState<TemplateQuestion[]>([])
   const [qSearch, setQSearch] = React.useState("")
+  /** Bank → template and template reorder both use the same overlay + pointer-geometry drop (see BankQuestionRow / DraggableTemplateRow). */
+  const [dragOverlay, setDragOverlay] = React.useState<DragOverlayPayload | null>(null)
+  const templateDropColumnRef = React.useRef<HTMLDivElement | null>(null)
+  const lastPointerRef = React.useRef({ x: 0, y: 0 })
+  /**
+   * The portal overlay div — lives in document.body so it is never inside a
+   * CSS-transformed ancestor (Radix Dialog uses transform: translate(-50%,-50%) to center
+   * itself, which creates a new fixed-position containing block that offsets child
+   * fixed elements). Direct DOM style updates avoid React render overhead.
+   */
+  const portalOverlayRef = React.useRef<HTMLDivElement | null>(null)
+
+  const pointerTrackingActive = dragOverlay !== null
+
+  React.useEffect(() => {
+    if (!pointerTrackingActive) return
+    const handler = (e: PointerEvent) => {
+      lastPointerRef.current = { x: e.clientX, y: e.clientY }
+      const el = portalOverlayRef.current
+      if (el) {
+        el.style.left = `${e.clientX - el.offsetWidth / 2}px`
+        el.style.top = `${e.clientY - el.offsetHeight / 2}px`
+      }
+    }
+    window.addEventListener("pointermove", handler, { capture: true, passive: true })
+    return () => window.removeEventListener("pointermove", handler, { capture: true })
+  }, [pointerTrackingActive])
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
+
+  function handleDragStart(event: DragStartEvent) {
+    const { active, activatorEvent } = event
+    if (isBankDragId(active.id)) {
+      const qid = parseBankQuestionId(active.id)
+      const q = questions.find((x) => x.id === qid)
+      setDragOverlay(q ? { kind: "bank", question: q } : null)
+    } else {
+      const qid = String(active.id)
+      const row = templateQuestions.find((t) => t.questionId === qid)
+      setDragOverlay(row ? { kind: "template", row } : null)
+    }
+    if (activatorEvent instanceof PointerEvent) {
+      lastPointerRef.current = { x: activatorEvent.clientX, y: activatorEvent.clientY }
+      // Position the portal overlay at the initial pointer — rAF so the element is mounted first.
+      requestAnimationFrame(() => {
+        const el = portalOverlayRef.current
+        if (el) {
+          el.style.left = `${activatorEvent.clientX - el.offsetWidth / 2}px`
+          el.style.top = `${activatorEvent.clientY - el.offsetHeight / 2}px`
+        }
+      })
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active } = event
+
+    if (isBankDragId(active.id)) {
+      const qid = parseBankQuestionId(active.id)
+      const bankQ = questions.find((x) => x.id === qid)
+      setDragOverlay(null)
+      if (!bankQ) return
+      const col = templateDropColumnRef.current
+      const { x: px, y: py } = lastPointerRef.current
+      if (!isPointerInsideTemplateColumn(col, px, py)) {
+        return
+      }
+      if (templateQuestions.some((t) => t.questionId === qid)) {
+        toast.error("Already added")
+        return
+      }
+      const newEntry: TemplateQuestion = {
+        questionId: bankQ.id,
+        text: bankQ.text,
+        type: bankQ.type,
+        description: bankQ.description ?? null,
+        isRequired: bankQ.isRequired,
+      }
+      const insertIndex = col ? computeBankInsertIndex(col, py) : 0
+      setTemplateQuestions((prev) => {
+        if (prev.some((t) => t.questionId === qid)) return prev
+        const next = [...prev]
+        next.splice(insertIndex, 0, newEntry)
+        return next
+      })
+      return
+    }
+
+    setDragOverlay(null)
+
+    const oldIndex = templateQuestions.findIndex((t) => t.questionId === active.id)
+    if (oldIndex < 0) return
+
+    const col = templateDropColumnRef.current
+    const { x: px, y: py } = lastPointerRef.current
+    if (!col || !isPointerInsideTemplateColumn(col, px, py)) return
+
+    const rows = [...col.querySelectorAll<HTMLElement>("[data-template-row]")]
+    const dragId = String(active.id)
+    const dragEl = rows.find((r) => r.dataset.templateRowId === dragId)
+    if (!dragEl) return
+
+    const others = rows.filter((r) => r !== dragEl)
+    const targetSlot = computeInsertIndexAmongRows(others, py)
+    const prev = templateQuestions
+    const item = prev[oldIndex]
+    const rest = prev.filter((_, i) => i !== oldIndex)
+    const newOrder = [...rest.slice(0, targetSlot), item, ...rest.slice(targetSlot)]
+    setTemplateQuestions((cur) => {
+      if (newOrder.length !== cur.length) return cur
+      const same = newOrder.every((q, i) => q.questionId === cur[i].questionId)
+      return same ? cur : newOrder
+    })
+  }
+
+  function handleDragCancel() {
+    setDragOverlay(null)
+  }
 
   const load = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
@@ -286,7 +459,7 @@ export default function TemplatesPage() {
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="flex h-[min(92dvh,920px)] max-h-[92dvh] w-[calc(100vw-1.25rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:left-[50%] sm:top-[50%] sm:max-w-[min(88rem,calc(100vw-2rem))] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-xl">
+        <DialogContent className="flex h-[min(92dvh,920px)] max-h-[92dvh] w-[calc(100vw-1.25rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(88rem,calc(100vw-2rem))] sm:rounded-xl">
           <div className="shrink-0 border-b border-border px-5 py-4 sm:px-6">
             <DialogHeader className="text-left">
               <DialogTitle className="text-xl">{editing ? "Edit Template" : "New Template"}</DialogTitle>
@@ -335,85 +508,85 @@ export default function TemplatesPage() {
               />
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 border-t border-border pt-4 lg:grid-cols-2 lg:gap-6">
-              {/* Question Bank Picker */}
-              <div className="flex min-h-[min(42dvh,360px)] flex-col gap-2 lg:min-h-0">
-                <p className="shrink-0 text-sm font-medium">Question Bank</p>
-                <div className="relative shrink-0">
-                  <Label htmlFor="tmpl-bank-search" className="sr-only">
-                    Search question bank
-                  </Label>
-                  <SearchIcon className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-                  <Input
-                    id="tmpl-bank-search"
-                    placeholder="Search question or description…"
-                    value={qSearch}
-                    onChange={(e) => setQSearch(e.target.value)}
-                    className="h-9 pl-8 text-sm"
-                  />
+            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
+              <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 border-t border-border pt-4 lg:grid-cols-2 lg:gap-6">
+                {/* Question Bank Picker */}
+                <div className="flex min-h-[min(42dvh,360px)] flex-col gap-2 lg:min-h-0">
+                  <p className="shrink-0 text-sm font-medium">Question Bank</p>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    Drag from the grip into the template column — drop above or below existing rows by position. Click the
+                    card to add at the end.
+                  </p>
+                  <div className="relative shrink-0">
+                    <Label htmlFor="tmpl-bank-search" className="sr-only">
+                      Search question bank
+                    </Label>
+                    <SearchIcon className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                    <Input
+                      id="tmpl-bank-search"
+                      placeholder="Search question or description…"
+                      value={qSearch}
+                      onChange={(e) => setQSearch(e.target.value)}
+                      className="h-9 pl-8 text-sm"
+                    />
+                  </div>
+                  <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto rounded-lg border border-border bg-muted/20 p-1.5">
+                    {filteredBankQuestions.map((q) => (
+                      <BankQuestionRow key={q.id} question={q} dragId={bankDragId(q.id)} onAppend={() => addQuestion(q)} />
+                    ))}
+                    {filteredBankQuestions.length === 0 && (
+                      <p className="py-8 text-center text-sm text-muted-foreground">No questions available</p>
+                    )}
+                  </div>
                 </div>
-                <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto rounded-lg border border-border bg-muted/20 p-1.5">
-                  {filteredBankQuestions.map((q) => (
-                    <button
-                      key={q.id}
-                      type="button"
-                      onClick={() => addQuestion(q)}
-                      className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-left text-sm shadow-sm transition-colors hover:bg-muted/60"
-                    >
-                      <p className="font-medium leading-snug text-foreground wrap-break-word">{q.text}</p>
-                      {q.description ? (
-                        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground wrap-break-word">{q.description}</p>
-                      ) : null}
-                      <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
-                        {QUESTION_TYPE_LABELS[q.type as QuestionType]}
-                        {q.categoryName ? ` · ${q.categoryName}` : ""}
-                      </p>
-                    </button>
-                  ))}
-                  {filteredBankQuestions.length === 0 && (
-                    <p className="py-8 text-center text-sm text-muted-foreground">No questions available</p>
-                  )}
+
+                {/* Template questions — same useDraggable + pointer geometry + overlay as Question Bank */}
+                <div className="flex min-h-[min(42dvh,360px)] flex-col gap-2 lg:min-h-0">
+                  <p className="shrink-0 text-sm font-medium">Template questions ({templateQuestions.length})</p>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    Use the grip on the left like the bank: drag, then drop in this column — position follows your pointer vs.
+                    row midpoints (reorder or add from the bank the same way).
+                  </p>
+                  <div
+                    ref={templateDropColumnRef}
+                    className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto rounded-lg border border-border bg-muted/20 p-1.5"
+                  >
+                    {templateQuestions.length === 0 ? (
+                      <TemplateEmptyDrop />
+                    ) : (
+                      templateQuestions.map((tq, i) => (
+                        <DraggableTemplateRow
+                          key={tq.questionId}
+                          index={i}
+                          question={tq}
+                          onRemove={() => removeTemplateQ(tq.questionId)}
+                        />
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Selected Questions */}
-              <div className="flex min-h-[min(42dvh,360px)] flex-col gap-2 lg:min-h-0">
-                <p className="shrink-0 text-sm font-medium">Template questions ({templateQuestions.length})</p>
-                <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto rounded-lg border border-border bg-muted/20 p-1.5">
-                  {templateQuestions.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">No questions added yet</p>
-                  ) : (
-                    templateQuestions.map((tq, i) => (
-                      <div
-                        key={tq.questionId}
-                        className="flex gap-2 rounded-md border border-border bg-card px-3 py-2.5 text-sm shadow-sm"
-                      >
-                        <span className="w-6 shrink-0 pt-0.5 text-right text-xs font-medium text-muted-foreground tabular-nums">
-                          {i + 1}.
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium leading-snug text-foreground wrap-break-word">{tq.text}</p>
-                          {tq.description ? (
-                            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground wrap-break-word">{tq.description}</p>
-                          ) : null}
-                          <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
-                            {QUESTION_TYPE_LABELS[tq.type as QuestionType]}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeTemplateQ(tq.questionId)}
-                          className="shrink-0 self-start rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                          aria-label="Remove from template"
-                        >
-                          <XIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
+              {/* Portal overlay — rendered into document.body to escape the Dialog's CSS transform
+                  containing block; position is updated directly via DOM style mutations. */}
+              {dragOverlay && typeof document !== "undefined" && createPortal(
+                <div
+                  ref={portalOverlayRef}
+                  style={{ position: "fixed", top: 0, left: 0, zIndex: 9999, pointerEvents: "none" }}
+                  className="max-w-xs rounded-md border border-border bg-card px-3 py-2.5 text-sm shadow-xl opacity-95"
+                >
+                  <p className="font-medium leading-snug text-foreground wrap-break-word">
+                    {dragOverlay.kind === "bank" ? dragOverlay.question.text : dragOverlay.row.text}
+                  </p>
+                  <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
+                    {QUESTION_TYPE_LABELS[
+                      (dragOverlay.kind === "bank" ? dragOverlay.question.type : dragOverlay.row.type) as QuestionType
+                    ]}
+                  </p>
+                </div>,
+                document.body
+              )}
+            </DndContext>
           </div>
 
           <DialogFooter className="shrink-0 gap-2 border-t border-border px-5 py-4 sm:px-6">
@@ -425,6 +598,118 @@ export default function TemplatesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function BankQuestionRow({
+  question,
+  dragId,
+  onAppend,
+}: {
+  question: Question
+  dragId: string
+  onAppend: () => void
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: dragId })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex gap-2 rounded-md border border-border bg-card px-2 py-2.5 text-sm shadow-sm transition-opacity",
+        isDragging && "opacity-40"
+      )}
+    >
+      <button
+        type="button"
+        className="flex shrink-0 cursor-grab touch-none items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted active:cursor-grabbing"
+        aria-label={`Drag to template: ${question.text.slice(0, 120)}`}
+        {...listeners}
+        {...attributes}
+      >
+        <GripVerticalIcon className="h-4 w-4" aria-hidden />
+      </button>
+      <button
+        type="button"
+        onClick={onAppend}
+        className="min-w-0 flex-1 rounded-md px-1 py-0 text-left transition-colors hover:bg-muted/60"
+      >
+        <p className="font-medium leading-snug text-foreground wrap-break-word">{question.text}</p>
+        {question.description ? (
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground wrap-break-word">{question.description}</p>
+        ) : null}
+        <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
+          {QUESTION_TYPE_LABELS[question.type as QuestionType]}
+          {question.categoryName ? ` · ${question.categoryName}` : ""}
+        </p>
+      </button>
+    </div>
+  )
+}
+
+function DraggableTemplateRow({
+  question: tq,
+  index,
+  onRemove,
+}: {
+  question: TemplateQuestion
+  index: number
+  onRemove: () => void
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: tq.questionId })
+
+  return (
+    <div
+      ref={setNodeRef}
+      data-template-row
+      data-template-row-id={tq.questionId}
+      aria-grabbed={isDragging}
+      className={cn(
+        "flex gap-2 rounded-md border border-border bg-card px-2 py-2.5 text-sm shadow-sm transition-opacity",
+        isDragging && "opacity-40"
+      )}
+    >
+      <button
+        type="button"
+        className="flex shrink-0 cursor-grab touch-none items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted active:cursor-grabbing"
+        aria-label={`Drag in template: ${tq.text.slice(0, 120)}`}
+        {...listeners}
+        {...attributes}
+      >
+        <GripVerticalIcon className="h-4 w-4" aria-hidden />
+      </button>
+      <span className="w-6 shrink-0 pt-0.5 text-right text-xs font-medium text-muted-foreground tabular-nums">
+        {index + 1}.
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium leading-snug text-foreground wrap-break-word">{tq.text}</p>
+        {tq.description ? (
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground wrap-break-word">{tq.description}</p>
+        ) : null}
+        <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
+          {QUESTION_TYPE_LABELS[tq.type as QuestionType]}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="shrink-0 self-start rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        aria-label="Remove from template"
+      >
+        <XIcon className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
+
+function TemplateEmptyDrop() {
+  return (
+    <div className="flex min-h-[120px] flex-col items-center justify-center rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+      <p>No questions added yet</p>
+      <p className="mt-2 max-w-xs text-xs leading-relaxed">
+        Drag from the bank into this column (drop position follows your pointer), or click a bank card to append at the end.
+      </p>
     </div>
   )
 }
