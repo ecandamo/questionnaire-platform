@@ -463,12 +463,10 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
                 {questions.length} total
               </p>
               <div className="flex gap-2">
-                {data.type === "custom" && (
-                  <Button variant="outline" size="sm" onClick={() => setShowBankPicker(true)}>
-                    <SearchIcon className="h-4 w-4" />
-                    Add from Bank
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" onClick={() => setShowBankPicker(true)}>
+                  <SearchIcon className="h-4 w-4" />
+                  Add from Bank
+                </Button>
                 <Button size="sm" onClick={() => setShowAddCustom(true)}>
                   <PlusIcon className="h-4 w-4" />
                   Add Custom Question
@@ -489,19 +487,24 @@ export function QuestionnaireDetailClient({ id, isAdmin, currentUserId }: Props)
               <CardContent className="flex flex-col items-center py-12 text-center gap-3">
                 <p className="text-sm text-muted-foreground">No questions yet</p>
                 {canEdit && canInteract && (
-                  <>
-                    {data.type === "custom" ? (
-                      <Button size="sm" onClick={() => setShowBankPicker(true)}>
-                        <SearchIcon className="h-4 w-4" />
-                        Add from Question Bank
-                      </Button>
-                    ) : (
+                  <div className="flex flex-col items-center gap-3 max-w-md">
+                    {data.type !== "custom" && (
                       <p className="text-xs text-muted-foreground">
-                        Questions from the template will appear here.
-                        You can also add custom questions.
+                        Questions from the template appear here when present. You can also add from the
+                        bank or create custom questions.
                       </p>
                     )}
-                  </>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      <Button variant="outline" size="sm" onClick={() => setShowBankPicker(true)}>
+                        <SearchIcon className="h-4 w-4" />
+                        Add from Bank
+                      </Button>
+                      <Button size="sm" onClick={() => setShowAddCustom(true)}>
+                        <PlusIcon className="h-4 w-4" />
+                        Add Custom Question
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
