@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
   const nextOrder = maxOrder.length > 0 ? (maxOrder[maxOrder.length - 1]!.sortOrder + 1) : 0
 
-  const allowedColors = new Set(QUESTIONNAIRE_TYPE_COLOR_OPTIONS.map((option) => option.value))
+  const allowedColors = new Set<string>(QUESTIONNAIRE_TYPE_COLOR_OPTIONS.map((option) => option.value))
   const normalizedColor = color && allowedColors.has(color)
     ? color
     : DEFAULT_QUESTIONNAIRE_TYPE_COLOR

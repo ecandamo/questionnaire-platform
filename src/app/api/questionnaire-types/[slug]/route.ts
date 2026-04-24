@@ -44,7 +44,7 @@ export async function PATCH(
     updates.label = label.trim()
   }
   if (color !== undefined) {
-    const allowedColors = new Set(QUESTIONNAIRE_TYPE_COLOR_OPTIONS.map((option) => option.value))
+    const allowedColors = new Set<string>(QUESTIONNAIRE_TYPE_COLOR_OPTIONS.map((option) => option.value))
     if (!allowedColors.has(color)) {
       return NextResponse.json({ error: "Invalid color" }, { status: 400 })
     }
