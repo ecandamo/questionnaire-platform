@@ -9,8 +9,12 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:verbose": "npx tsx scripts/migrate-with-log.ts",
+    "db:baseline": "npx tsx scripts/baseline-migrations.ts",
     "db:push": "drizzle-kit push",
     "db:seed": "npx tsx src/lib/db/seed.ts",
+    "db:backup": "npx tsx scripts/backup-db.ts",
+    "db:verify-rls": "npx tsx scripts/verify-rls.ts",
     "db:studio": "drizzle-kit studio",
     "auth:migrate": "npx @better-auth/cli@latest migrate"
   },
@@ -44,6 +48,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/papaparse": "^5.5.2",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
@@ -52,6 +57,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "eslint-config-prettier": "^10.1.8",
+    "pg": "^8.20.0",
     "prettier": "^3.8.1",
     "tailwindcss": "^4",
     "typescript": "^5"

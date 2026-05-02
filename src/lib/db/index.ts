@@ -1,23 +1,26 @@
-import { neon } from "@neondatabase/serverless"
-import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http"
+import { Pool } from "@neondatabase/serverless"
+import { drizzle, type NeonDatabase } from "drizzle-orm/neon-serverless"
 import * as schema from "./schema"
 
-type DB = NeonHttpDatabase<typeof schema> & { $client: ReturnType<typeof neon> }
+type DB = NeonDatabase<typeof schema>
 
-function createDb(): DB {
+function createPool(): Pool {
   const url = process.env.DATABASE_URL
   if (!url) {
     throw new Error("DATABASE_URL environment variable is not set")
   }
-  const sql = neon(url)
-  return drizzle(sql, { schema }) as DB
+  return new Pool({ connectionString: url })
 }
 
-// Lazy singleton — instantiated on first use, not at module load
+// Lazy singleton pool — instantiated on first use, not at module load
+let _pool: Pool | undefined
 let _db: DB | undefined
 
 export function getDb(): DB {
-  if (!_db) _db = createDb()
+  if (!_db) {
+    _pool = createPool()
+    _db = drizzle(_pool, { schema })
+  }
   return _db
 }
 

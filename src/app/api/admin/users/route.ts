@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { user } from "@/lib/db/schema"
 import { getRequestSession, requireAdmin } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
+import { withRls } from "@/lib/db/rls-context"
 import { asc } from "drizzle-orm"
 
 export async function GET(req: NextRequest) {
@@ -67,13 +68,15 @@ export async function POST(req: NextRequest) {
 
   const created = await result.json()
 
-  await logAudit({
-    userId: session!.user.id,
-    action: "create_user",
-    entityType: "user",
-    entityId: created.id,
-    metadata: { email, role },
-  })
+  await withRls(
+    { mode: "auth", userId: session!.user.id, isAdmin: true },
+    async (tx) => {
+      await logAudit(
+        { userId: session!.user.id, action: "create_user", entityType: "user", entityId: created.id, metadata: { email, role } },
+        tx
+      )
+    }
+  )
 
   return NextResponse.json(created, { status: 201 })
 }

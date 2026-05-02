@@ -4,7 +4,7 @@
 Internal sales questionnaire platform. Allows authenticated internal users (and admins) to create, manage, share, and review questionnaires for prospects/clients. External respondents access via a secure tokenized link — no login required.
 
 ## Current Status
-- State: **working** — full application built and compiles cleanly
+- State: **working** — full application built and compiles cleanly; **RLS** (`0006`) applied when **`drizzle.__drizzle_migrations`** has **7** rows (after **`db:baseline`** if the DB was **`db:push`**-only). Run **`npm run db:verify-rls`** post-migrate.
 - **Admin → Create user:** `POST /api/admin/users` server-fetches Better Auth `create-user` without browser **`Origin` / `Referer`**; Better Auth could return **"Missing or null Origin"**. Route now sends both from `BETTER_AUTH_URL` / `NEXT_PUBLIC_APP_URL` (500 if both unset). Rule also in **`AGENTS.md`**.
 - New question type **`file_upload`**: respondents upload via **Vercel Blob client uploads** (`POST /api/blob` + `@vercel/blob/client` `upload()`); answer stores the public URL in `answer.value`. Requires **`BLOB_READ_WRITE_TOKEN`** (create Blob store in Vercel → link project). DB: run `npm run db:migrate` or `db:push` after pulling — migration `drizzle/0002_sharp_ben_parker.sql` adds enum value `file_upload`.
 - Admin question bank: **Templates** column uses colored pills per template; CSV import dialog copy clarified (requirements, after-import, categories checkbox)
@@ -29,6 +29,17 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
   - JSON import/export for questions (if still desired) — not implemented; CSV covers bulk bank rows only
 
 ## Last Session Changes
+
+- **2026-05-01 (RLS implementation):** Full Row Level Security rollout across all application tables.
+  - **DB driver switched:** `drizzle-orm/neon-http` → `drizzle-orm/neon-serverless` (Pool + WebSocket) in `src/lib/db/index.ts` — required because neon-http throws "No transactions support" and RLS needs `SET LOCAL` inside a real transaction.
+  - **`src/lib/db/rls-context.ts` (new):** `withRls(ctx, fn)` + `setLocalRls(tx, ctx)` + `RlsContext` type. Every API route wraps its DB work in `withRls`. Three modes: `auth` (authenticated users), `share_owner` (external respondent via share link token), `share_contributor` (collaborator token).
+  - **`drizzle/0006_rls_policies.sql` (new):** ENABLE + FORCE + policies on all 14 app tables. Better Auth tables (`user`, `session`, `account`, `verification`) excluded. Registered in `drizzle/meta/_journal.json`.
+  - **All 20 API routes refactored** to use `withRls` + `tx` instead of global `db`. Lib helpers (`logAudit`, `deleteAnswersForRemovedCollaborator`) accept optional `tx`.
+  - **`scripts/backup-db.ts` (new):** `npm run db:backup` — Neon branch + optional pg_dump. Set `NEON_API_KEY` + `NEON_PROJECT_ID` in `.env.local`.
+  - **`scripts/verify-rls.ts` (new):** `npm run db:verify-rls` — asserts all tables have `relrowsecurity + relforcerowsecurity` and have policies. Exits non-zero on failure (CI-ready).
+  - **`CLAUDE.md` updated** with RLS + driver rules.
+  - `tsc --noEmit` and ESLint clean.
+  - **⚠️ Migration not yet applied to production** — run `npm run db:backup` first, then `npm run db:migrate`.
 
 - **2026-04-15 (post-`/audit` fixes — batch):** Addressed remaining Clients + dashboard audit items in one pass.
   - **`clients/page.tsx`:** Search `id` + `sr-only` label; loading `role="status"`; table **Actions** column `sr-only` header; row menu `aria-label` + decorative icons `aria-hidden`; dialog: all fields `htmlFor`/`id`, required company name + `aria-required`, `autoComplete`, contact grid `grid-cols-1 sm:grid-cols-2`; save `aria-busy`.
@@ -285,11 +296,19 @@ Key paths (design 2026-03-28):
 - `src/app/respond/[token]/confirmation/page.tsx`
 
 ## Open Issues
+- (Resolved path for push-only DBs:) **`db:baseline -- --apply`** → **`db:migrate`** → **`COUNT(*) = 7`** on **`drizzle.__drizzle_migrations`**. See **`CLAUDE.md`** if migrating a fresh clone hits **`already exists`** on **`0000`**.
 - JSON import/export for questions remains optional if product wants parity with CSV-only workflow
 - `command.tsx` is a lightweight custom implementation — could be replaced with cmdk if needed
 
 ## Next Best Step
-1. Apply DB migration for `file_upload` (`npm run db:push` or `db:migrate`); provision Vercel Blob store and set **`BLOB_READ_WRITE_TOKEN`** locally + on Vercel; smoke-test upload on `/respond/[token]`.
+1. **Apply RLS migration on staging first:**
+   - Set `NEON_API_KEY` + `NEON_PROJECT_ID` in `.env.local`, then run `npm run db:backup`
+   - Apply: `npm run db:migrate`
+   - Verify: `npm run db:verify-rls`
+   - Smoke-test all flows: auth login, dashboard, questionnaire CRUD, publish, respond (owner), respond (contributor), admin (audit log, users)
+   - If staging passes, repeat on production
+2. If rollback is needed: `DROP POLICY ... ON ...` + `DISABLE ROW LEVEL SECURITY` per table (see `drizzle/0006_rls_policies.sql`), or restore from Neon backup branch.
+3. Apply DB migration for `file_upload` (`npm run db:push` or `db:migrate`); provision Vercel Blob store and set **`BLOB_READ_WRITE_TOKEN`** locally + on Vercel; smoke-test upload on `/respond/[token]`.
 2. Smoke-test: numbering skips section headers; assign a full section via Team UI; remove a collaborator and confirm their answers disappear from the owner view / DB.
 3. **Smoke-test collaborative flow** on branch `feature/collaborative-questionnaire-responses` (if not on `main`):
    - Publish a questionnaire → open the respond link → add a collaborator → copy their link → open in a second browser → verify they see only assigned questions → mark complete → verify owner can then submit
@@ -306,6 +325,7 @@ Key paths (design 2026-03-28):
 - Follow existing project patterns unless there is a good reason not to
 
 ## Known Decisions
+- **RLS:** All app tables have RLS enabled + forced. Driver is `drizzle-orm/neon-serverless` (Pool). Every API route uses `withRls()` from `src/lib/db/rls-context.ts`. Better Auth tables are excluded. Migration: `drizzle/0006_rls_policies.sql`. Do NOT switch back to `neon-http` — it does not support transactions.
 - **Typography:** `next/font/google` — **IBM Plex Sans** (`--font-heading`, weights 500–700) + **Source Sans 3** (`--font-sans`, 400–600). Replaces Plus Jakarta Sans + Inter for a more distinctive B2B tooling feel.
 - **Buttons:** shadcn-style `Button` from `@/components/ui/button` is backed by `material-design-3-button.tsx`; drop-in external snippets that import `@radix-ui/react-slot` must use `radix-ui` + `Slot.Root` instead. Ripple is client-only; no extra global CSS required.
 - Branding: API Navy `#273B6E` = primary, API Green `#78BC43` = accent/active — all via CSS custom properties in `globals.css`

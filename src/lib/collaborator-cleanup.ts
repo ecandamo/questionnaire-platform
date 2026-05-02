@@ -1,13 +1,17 @@
 import { and, eq, inArray, or } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { answer, questionAssignment } from "@/lib/db/schema"
+import type { Tx } from "@/lib/db/rls-context"
 
 /** Delete answers tied to a collaborator: assigned questions + any row last-updated by them. Call before removing assignment rows. */
 export async function deleteAnswersForRemovedCollaborator(
   responseId: string,
-  collaboratorId: string
+  collaboratorId: string,
+  tx?: Tx
 ): Promise<void> {
-  const assignedRows = await db
+  const client = tx ?? db
+
+  const assignedRows = await client
     .select({ qid: questionAssignment.questionnaireQuestionId })
     .from(questionAssignment)
     .where(eq(questionAssignment.collaboratorId, collaboratorId))
@@ -19,5 +23,5 @@ export async function deleteAnswersForRemovedCollaborator(
     parts.push(inArray(answer.questionId, qids))
   }
 
-  await db.delete(answer).where(and(eq(answer.responseId, responseId), or(...parts)))
+  await client.delete(answer).where(and(eq(answer.responseId, responseId), or(...parts)))
 }

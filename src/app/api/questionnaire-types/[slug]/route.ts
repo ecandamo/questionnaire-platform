@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/db"
 import { questionnaireCategory, questionnaire, questionnaireTemplate } from "@/lib/db/schema"
 import { getRequestSession, requireAdmin } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
+import { withRls } from "@/lib/db/rls-context"
 import { QUESTIONNAIRE_TYPE_COLOR_OPTIONS } from "@/lib/questionnaire-type-colors"
 import { eq, count } from "drizzle-orm"
 
@@ -15,16 +15,6 @@ export async function PATCH(
   if (adminError) return adminError
 
   const { slug } = await params
-
-  const [existing] = await db
-    .select()
-    .from(questionnaireCategory)
-    .where(eq(questionnaireCategory.slug, slug))
-
-  if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 })
-  }
-
   const body = await req.json()
   const { label, color, isActive, sortOrder } = body as {
     label?: string
@@ -33,41 +23,54 @@ export async function PATCH(
     sortOrder?: number
   }
 
-  const updates: Partial<typeof questionnaireCategory.$inferInsert> = {
-    updatedAt: new Date(),
-  }
+  return withRls(
+    { mode: "auth", userId: session!.user.id, isAdmin: true },
+    async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(questionnaireCategory)
+        .where(eq(questionnaireCategory.slug, slug))
 
-  if (label !== undefined) {
-    if (!label.trim()) {
-      return NextResponse.json({ error: "Label cannot be empty" }, { status: 400 })
+      if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+      const updates: Partial<typeof questionnaireCategory.$inferInsert> = {
+        updatedAt: new Date(),
+      }
+
+      if (label !== undefined) {
+        if (!label.trim()) return NextResponse.json({ error: "Label cannot be empty" }, { status: 400 })
+        updates.label = label.trim()
+      }
+      if (color !== undefined) {
+        const allowedColors = new Set<string>(
+          QUESTIONNAIRE_TYPE_COLOR_OPTIONS.map((option) => option.value)
+        )
+        if (!allowedColors.has(color)) return NextResponse.json({ error: "Invalid color" }, { status: 400 })
+        updates.color = color
+      }
+      if (isActive !== undefined) updates.isActive = isActive
+      if (sortOrder !== undefined) updates.sortOrder = sortOrder
+
+      const [updated] = await tx
+        .update(questionnaireCategory)
+        .set(updates)
+        .where(eq(questionnaireCategory.slug, slug))
+        .returning()
+
+      await logAudit(
+        {
+          userId: session!.user.id,
+          action: "update",
+          entityType: "questionnaire_category",
+          entityId: slug,
+          metadata: { label, color, isActive, sortOrder },
+        },
+        tx
+      )
+
+      return NextResponse.json(updated)
     }
-    updates.label = label.trim()
-  }
-  if (color !== undefined) {
-    const allowedColors = new Set<string>(QUESTIONNAIRE_TYPE_COLOR_OPTIONS.map((option) => option.value))
-    if (!allowedColors.has(color)) {
-      return NextResponse.json({ error: "Invalid color" }, { status: 400 })
-    }
-    updates.color = color
-  }
-  if (isActive !== undefined) updates.isActive = isActive
-  if (sortOrder !== undefined) updates.sortOrder = sortOrder
-
-  const [updated] = await db
-    .update(questionnaireCategory)
-    .set(updates)
-    .where(eq(questionnaireCategory.slug, slug))
-    .returning()
-
-  await logAudit({
-    userId: session!.user.id,
-    action: "update",
-    entityType: "questionnaire_category",
-    entityId: slug,
-    metadata: { label, color, isActive, sortOrder },
-  })
-
-  return NextResponse.json(updated)
+  )
 }
 
 export async function DELETE(
@@ -80,52 +83,54 @@ export async function DELETE(
 
   const { slug } = await params
 
-  const [existing] = await db
-    .select()
-    .from(questionnaireCategory)
-    .where(eq(questionnaireCategory.slug, slug))
+  return withRls(
+    { mode: "auth", userId: session!.user.id, isAdmin: true },
+    async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(questionnaireCategory)
+        .where(eq(questionnaireCategory.slug, slug))
 
-  if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 })
-  }
+      if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-  if (existing.isSystem) {
-    return NextResponse.json({ error: "System types cannot be deleted" }, { status: 403 })
-  }
+      if (existing.isSystem) {
+        return NextResponse.json({ error: "System types cannot be deleted" }, { status: 403 })
+      }
 
-  const [qCount] = await db
-    .select({ count: count() })
-    .from(questionnaire)
-    .where(eq(questionnaire.type, slug))
+      const [qCount] = await tx
+        .select({ count: count() })
+        .from(questionnaire)
+        .where(eq(questionnaire.type, slug))
 
-  const [tCount] = await db
-    .select({ count: count() })
-    .from(questionnaireTemplate)
-    .where(eq(questionnaireTemplate.type, slug))
+      const [tCount] = await tx
+        .select({ count: count() })
+        .from(questionnaireTemplate)
+        .where(eq(questionnaireTemplate.type, slug))
 
-  const questionnaireCount = Number(qCount?.count ?? 0)
-  const templateCount = Number(tCount?.count ?? 0)
+      const questionnaireCount = Number(qCount?.count ?? 0)
+      const templateCount = Number(tCount?.count ?? 0)
 
-  if (questionnaireCount > 0 || templateCount > 0) {
-    return NextResponse.json(
-      {
-        error: "This type is in use and cannot be deleted",
-        questionnaireCount,
-        templateCount,
-      },
-      { status: 409 }
-    )
-  }
+      if (questionnaireCount > 0 || templateCount > 0) {
+        return NextResponse.json(
+          { error: "This type is in use and cannot be deleted", questionnaireCount, templateCount },
+          { status: 409 }
+        )
+      }
 
-  await db.delete(questionnaireCategory).where(eq(questionnaireCategory.slug, slug))
+      await tx.delete(questionnaireCategory).where(eq(questionnaireCategory.slug, slug))
 
-  await logAudit({
-    userId: session!.user.id,
-    action: "delete",
-    entityType: "questionnaire_category",
-    entityId: slug,
-    metadata: { label: existing.label },
-  })
+      await logAudit(
+        {
+          userId: session!.user.id,
+          action: "delete",
+          entityType: "questionnaire_category",
+          entityId: slug,
+          metadata: { label: existing.label },
+        },
+        tx
+      )
 
-  return new NextResponse(null, { status: 204 })
+      return new NextResponse(null, { status: 204 })
+    }
+  )
 }

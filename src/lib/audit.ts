@@ -1,5 +1,6 @@
 import { db } from "@/lib/db"
 import { auditLog } from "@/lib/db/schema"
+import type { Tx } from "@/lib/db/rls-context"
 
 interface AuditParams {
   userId?: string | null
@@ -10,9 +11,10 @@ interface AuditParams {
   ipAddress?: string | null
 }
 
-export async function logAudit(params: AuditParams) {
+export async function logAudit(params: AuditParams, tx?: Tx) {
+  const client = tx ?? db
   try {
-    await db.insert(auditLog).values({
+    await client.insert(auditLog).values({
       userId: params.userId ?? null,
       action: params.action,
       entityType: params.entityType,

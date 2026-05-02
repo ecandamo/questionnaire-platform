@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/db"
 import { client } from "@/lib/db/schema"
 import { getRequestSession } from "@/lib/session"
+import { withRls } from "@/lib/db/rls-context"
 import { eq } from "drizzle-orm"
 
 export async function PATCH(
@@ -13,15 +13,21 @@ export async function PATCH(
 
   const { id } = await params
   const body = await req.json()
+  const isAdmin = session.user.role === "admin"
 
-  const [updated] = await db
-    .update(client)
-    .set({ ...body, updatedAt: new Date() })
-    .where(eq(client.id, id))
-    .returning()
+  return withRls(
+    { mode: "auth", userId: session.user.id, isAdmin },
+    async (tx) => {
+      const [updated] = await tx
+        .update(client)
+        .set({ ...body, updatedAt: new Date() })
+        .where(eq(client.id, id))
+        .returning()
 
-  if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  return NextResponse.json(updated)
+      if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 })
+      return NextResponse.json(updated)
+    }
+  )
 }
 
 export async function DELETE(
@@ -32,11 +38,17 @@ export async function DELETE(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
+  const isAdmin = session.user.role === "admin"
 
-  await db
-    .update(client)
-    .set({ isActive: false, updatedAt: new Date() })
-    .where(eq(client.id, id))
+  return withRls(
+    { mode: "auth", userId: session.user.id, isAdmin },
+    async (tx) => {
+      await tx
+        .update(client)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(client.id, id))
 
-  return NextResponse.json({ success: true })
+      return NextResponse.json({ success: true })
+    }
+  )
 }

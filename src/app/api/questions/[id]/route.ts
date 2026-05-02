@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/db"
 import { question } from "@/lib/db/schema"
 import { getRequestSession, requireAdmin } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
+import { withRls } from "@/lib/db/rls-context"
 import { eq } from "drizzle-orm"
 
 export async function GET(
@@ -13,10 +13,16 @@ export async function GET(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
-  const [q] = await db.select().from(question).where(eq(question.id, id))
-  if (!q) return NextResponse.json({ error: "Not found" }, { status: 404 })
+  const isAdmin = session.user.role === "admin"
 
-  return NextResponse.json(q)
+  return withRls(
+    { mode: "auth", userId: session.user.id, isAdmin },
+    async (tx) => {
+      const [q] = await tx.select().from(question).where(eq(question.id, id))
+      if (!q) return NextResponse.json({ error: "Not found" }, { status: 404 })
+      return NextResponse.json(q)
+    }
+  )
 }
 
 export async function PATCH(
@@ -30,23 +36,31 @@ export async function PATCH(
   const { id } = await params
   const body = await req.json()
 
-  const [updated] = await db
-    .update(question)
-    .set({ ...body, updatedAt: new Date() })
-    .where(eq(question.id, id))
-    .returning()
+  return withRls(
+    { mode: "auth", userId: session!.user.id, isAdmin: true },
+    async (tx) => {
+      const [updated] = await tx
+        .update(question)
+        .set({ ...body, updatedAt: new Date() })
+        .where(eq(question.id, id))
+        .returning()
 
-  if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 })
+      if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-  await logAudit({
-    userId: session!.user.id,
-    action: "update",
-    entityType: "question",
-    entityId: id,
-    metadata: body,
-  })
+      await logAudit(
+        {
+          userId: session!.user.id,
+          action: "update",
+          entityType: "question",
+          entityId: id,
+          metadata: body,
+        },
+        tx
+      )
 
-  return NextResponse.json(updated)
+      return NextResponse.json(updated)
+    }
+  )
 }
 
 export async function DELETE(
@@ -60,35 +74,34 @@ export async function DELETE(
   const { id } = await params
   const permanent = req.nextUrl.searchParams.get("permanent") === "true"
 
-  if (permanent) {
-    const [existing] = await db.select().from(question).where(eq(question.id, id))
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+  return withRls(
+    { mode: "auth", userId: session!.user.id, isAdmin: true },
+    async (tx) => {
+      if (permanent) {
+        const [existing] = await tx.select().from(question).where(eq(question.id, id))
+        if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-    await db.delete(question).where(eq(question.id, id))
+        await tx.delete(question).where(eq(question.id, id))
+        await logAudit(
+          { userId: session!.user.id, action: "delete", entityType: "question", entityId: id },
+          tx
+        )
+      } else {
+        const [updated] = await tx
+          .update(question)
+          .set({ status: "archived", updatedAt: new Date() })
+          .where(eq(question.id, id))
+          .returning()
 
-    await logAudit({
-      userId: session!.user.id,
-      action: "delete",
-      entityType: "question",
-      entityId: id,
-    })
-  } else {
-    // Soft archive instead of hard delete to preserve history
-    const [updated] = await db
-      .update(question)
-      .set({ status: "archived", updatedAt: new Date() })
-      .where(eq(question.id, id))
-      .returning()
+        if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-    if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 })
+        await logAudit(
+          { userId: session!.user.id, action: "archive", entityType: "question", entityId: id },
+          tx
+        )
+      }
 
-    await logAudit({
-      userId: session!.user.id,
-      action: "archive",
-      entityType: "question",
-      entityId: id,
-    })
-  }
-
-  return NextResponse.json({ success: true })
+      return NextResponse.json({ success: true })
+    }
+  )
 }

@@ -31,7 +31,18 @@
 
 - Never initialize Neon / Drizzle at module top-level — builds crash when DATABASE_URL is absent
 - Use lazy factory pattern (see src/lib/db/index.ts)
+- **Driver**: the project uses `drizzle-orm/neon-serverless` + `Pool` (WebSocket). Do NOT switch back to `drizzle-orm/neon-http` + `neon()` — neon-http throws "No transactions support" and RLS `SET LOCAL` requires real transactions.
 - **Drizzle CLI** (`drizzle-kit push`, `generate`, `migrate`) does not load `.env.local` by default. `drizzle.config.ts` in this repo pre-reads `DATABASE_URL` from `.env.local` / `.env` so `npm run db:push` works without exporting vars manually.
+- **`npm run db:migrate`:** Install **`pg`** as a devDependency so Drizzle Kit picks the **`pg`** driver (TCP). If only `@neondatabase/serverless` is present, the CLI uses WebSockets and **`migrate` may exit 1 with no rows in `drizzle.__drizzle_migrations`**. Use Neon’s **direct** connection string (pooling off) when migrating. If migrate still exits **1** with **no helpful stderr**, run **`npm run db:migrate:verbose`** (`scripts/migrate-with-log.ts`) — it uses `migrate()` from `drizzle-orm` and prints the underlying PostgreSQL error. A DB built with **`db:push`** fails **`0000_*.sql`** with **duplicate type/table** (`already exists`). Fix: **`npm run db:baseline -- --apply`** (`scripts/baseline-migrations.ts`) — inserts hashes for every migration **except the last journal entry** (so **`0006_rls_policies`** still runs), then **`npm run db:migrate`**. Dry-run: `npm run db:baseline` without `--apply`.
+
+## Row Level Security (RLS)
+
+- All app tables have RLS **enabled + forced** (see `drizzle/0006_rls_policies.sql`). Better Auth tables (`user`, `session`, `account`, `verification`) do NOT have RLS.
+- Every API route **must** wrap its DB work in `withRls(ctx, async (tx) => { … })` from `src/lib/db/rls-context.ts`. Use `tx`, never the global `db`, inside that callback.
+- Context types: `{ mode: "auth", userId, isAdmin }` for authenticated routes; `{ mode: "share_owner", shareToken }` or `{ mode: "share_contributor", collaboratorToken }` for public token routes.
+- `SET LOCAL` (via `set_config(..., true)`) scopes GUCs to the current transaction — they are invisible outside it. This is intentional and safe for serverless pools.
+- `logAudit` and `deleteAnswersForRemovedCollaborator` accept an optional `tx` parameter — always pass `tx` when calling them from inside a `withRls` callback.
+- **Backup before any RLS migration**: run `npm run db:backup` (creates Neon branch + optional pg_dump). Set `NEON_API_KEY` and `NEON_PROJECT_ID` in `.env.local` for the branch step.
 
 ## Questionnaires & public responses
 

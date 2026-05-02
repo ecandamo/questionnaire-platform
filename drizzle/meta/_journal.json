@@ -43,6 +43,13 @@
       "when": 1776995768049,
       "tag": "0005_first_rocket_raccoon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776995768050,
+      "tag": "0006_rls_policies",
+      "breakpoints": true
     }
   ]
 }
