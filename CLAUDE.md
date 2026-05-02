@@ -42,7 +42,7 @@
 - Context types: `{ mode: "auth", userId, isAdmin }` for authenticated routes; `{ mode: "share_owner", shareToken }` or `{ mode: "share_contributor", collaboratorToken }` for public token routes.
 - `SET LOCAL` (via `set_config(..., true)`) scopes GUCs to the current transaction — they are invisible outside it. This is intentional and safe for serverless pools.
 - `logAudit` and `deleteAnswersForRemovedCollaborator` accept an optional `tx` parameter — always pass `tx` when calling them from inside a `withRls` callback.
-- **Backup before any RLS migration**: run `npm run db:backup` (creates Neon branch + optional pg_dump). Set `NEON_API_KEY` and `NEON_PROJECT_ID` in `.env.local` for the branch step.
+- **Backup before any RLS migration**: run `npm run db:backup` (creates Neon branch + optional pg_dump). Set `NEON_API_KEY` and `NEON_PROJECT_ID` in `.env.local` for the branch step. Branch names default to **`backup-pre-rls-<UTC-date-time>`** (unique per run); override with **`BACKUP_BRANCH_NAME`**. Date-only names caused Neon **409** (`BRANCH_ALREADY_EXISTS`) on repeat runs the same day.
 
 ## Questionnaires & public responses
 

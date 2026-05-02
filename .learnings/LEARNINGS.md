@@ -1,6 +1,70 @@
 # Learnings Log
 <!-- Corrections, knowledge gaps, best practices -->
 
+## [LRN-20260501-001] bug_fix
+
+**Logged**: 2026-05-01
+**Priority**: high
+**Status**: resolved
+**Area**: security, next.js, csp
+
+### Summary
+Next.js Turbopack in **development mode** requires `'unsafe-eval'` in `script-src`. Without it, the browser blocks eval-based source maps and HMR evaluation, silently breaking client-side JS bundles — including the Better Auth client (sign-in fails) and `next/dynamic` imports (Recharts charts blank).
+
+### Details
+- Symptom: after adding CSP headers, sign-in stopped working and charts did not load in local dev.
+- Root cause: Turbopack uses `eval()` for dynamic module evaluation during HMR. CSP `script-src` without `'unsafe-eval'` blocks this.
+- In **production**, Next.js does NOT need `'unsafe-eval'` — bundles are precomputed. Omitting it in prod is correct and the highest-value CSP restriction to keep.
+- Fix: build `script-src` conditionally in `next.config.ts` using `process.env.NODE_ENV === "development"`.
+
+```ts
+const isDev = process.env.NODE_ENV === "development";
+const scriptSrc = ["script-src 'self' 'unsafe-inline'", isDev ? "'unsafe-eval'" : ""]
+  .filter(Boolean).join(" ");
+```
+
+- Requires a dev server **restart** after changing `next.config.ts` — config is read at startup.
+
+### Resolution
+- Fixed in `next.config.ts` — conditional `'unsafe-eval'` dev-only.
+
+### Metadata
+- Source: session — security headers implementation 2026-05-01
+- Related Files: `next.config.ts`
+- Tags: csp, turbopack, next.js, security-headers, unsafe-eval, dev-mode
+
+---
+
+## [LRN-20260502-001] best_practice
+
+**Logged**: 2026-05-02
+**Priority**: high
+**Status**: promoted
+**Area**: database, tooling
+
+### Summary
+Drizzle **`migrate`** against a **`db:push`** database fails on **`0000`** (`CREATE TYPE` / table already exists). Baseline inserts hashes for prior migrations; **`drizzle-kit migrate`** may hide errors — use **`migrate()`** with logging. **`tsx`** bundles scripts as CJS — avoid **top-level `await`**. Neon **`db:backup`** branch names must be unique (date-only collides with **409**).
+
+### Details
+- **`readMigrationFiles`** hashes + **`created_at`** come from **`drizzle/meta/_journal.json`**. If the last migration’s **`when`** is **≤** the previous entry’s **`when`**, Drizzle’s migrate loop **never runs** that file (compares max **`created_at`** to **`folderMillis`**).
+- **`npm run db:baseline -- --apply`** inserts rows for all migrations **except the last** journal entry so only **`0006`** (or whatever is last) executes.
+- **`npm run db:migrate:verbose`** (`scripts/migrate-with-log.ts`) surfaces Postgres errors when **`drizzle-kit migrate`** exits **1** silently.
+- **`scripts/verify-rls.ts`** / **`backup-db.ts`**: wrap async work in **`void (async () => { … })().catch(...)`** — no top-level **`await`** with **`npx tsx`** (esbuild CJS).
+- **`npm run db:backup`**: default branch name includes UTC **time**; **`BACKUP_BRANCH_NAME`** overrides; duplicate name → Neon **409**.
+
+### Suggested Action
+See **`CLAUDE.md`** (RLS / migrate / backup). **`HANDOFF.md`** — **Known Decisions** for single **`DATABASE_URL`** local + Vercel.
+
+### Resolution
+- **Promoted**: `CLAUDE.md` (backup branch names), `HANDOFF.md` (status, next steps, 2026-05-02 session)
+
+### Metadata
+- Source: session — RLS rollout + migrate troubleshooting 2026-05-02
+- Related Files: `scripts/baseline-migrations.ts`, `scripts/migrate-with-log.ts`, `scripts/verify-rls.ts`, `scripts/backup-db.ts`, `drizzle/meta/_journal.json`
+- Tags: drizzle, migrate, baseline, neon, rls, tsx
+
+---
+
 ## [LRN-20260326-001] knowledge_gap
 
 **Logged**: 2026-03-26T23:00:00Z
