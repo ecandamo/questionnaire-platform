@@ -14,6 +14,9 @@
  *   NEON_API_KEY   — Neon account API key  (get from https://console.neon.tech/app/settings/api-keys)
  *   NEON_PROJECT_ID — your project's short id  (visible in Neon console URL or project settings)
  *
+ * Optional:
+ *   BACKUP_BRANCH_NAME — Neon branch name (default: backup-pre-rls-<UTC YYYY-MM-DD-HH-mm-ss>, unique per run)
+ *
  * Only DATABASE_URL is mandatory; pg_dump and Neon branch steps are skipped
  * gracefully when the respective env vars / tools are absent.
  */
@@ -53,7 +56,15 @@ if (!DATABASE_URL) {
   process.exit(1)
 }
 
-const tag = `backup-pre-rls-${new Date().toISOString().slice(0, 10)}`
+/** One backup tag per run — date-only names collide on Neon (409 BRANCH_ALREADY_EXISTS). */
+function backupTag(): string {
+  const raw =
+    process.env.BACKUP_BRANCH_NAME?.trim() ||
+    `backup-pre-rls-${new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-")}`
+  return raw.replace(/[^a-zA-Z0-9_-]/g, "-")
+}
+
+const tag = backupTag()
 
 // ── 1. Neon branch snapshot ───────────────────────────────────────────────────
 
@@ -82,6 +93,17 @@ async function createNeonBranch() {
 
   if (!res.ok) {
     const text = await res.text()
+    const duplicateBranch =
+      res.status === 409 &&
+      (text.includes("BRANCH_ALREADY_EXISTS") || text.includes("branch already exists"))
+    if (duplicateBranch) {
+      console.log(
+        `⚠️  Branch name already exists: ${tag}\n` +
+          "    Either delete that branch in the Neon console (Branches), or re-run with a new name, e.g.:\n" +
+          `    BACKUP_BRANCH_NAME=${tag}-retry npm run db:backup`
+      )
+      return
+    }
     console.error(`❌  Neon API error ${res.status}: ${text}`)
     return
   }
