@@ -14,6 +14,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "npx tsx src/lib/db/seed.ts",
     "db:backup": "npx tsx scripts/backup-db.ts",
+    "db:backfill-template-questions": "npx tsx scripts/backfill-template-questions.ts",
     "db:verify-rls": "npx tsx scripts/verify-rls.ts",
     "db:studio": "drizzle-kit studio",
     "auth:migrate": "npx @better-auth/cli@latest migrate"

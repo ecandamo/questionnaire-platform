@@ -10,7 +10,7 @@ import {
 import { getRequestSession } from "@/lib/session"
 import { logAudit } from "@/lib/audit"
 import { withRls } from "@/lib/db/rls-context"
-import { and, asc, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq, inArray } from "drizzle-orm"
 import type { QuestionnaireStatus, QuestionnaireType } from "@/types"
 
 export async function GET(req: NextRequest) {
@@ -113,11 +113,7 @@ export async function POST(req: NextRequest) {
           const questions = await tx
             .select()
             .from(question)
-            .where(
-              questionIds.length === 1
-                ? eq(question.id, questionIds[0])
-                : and(...questionIds.map((id) => eq(question.id, id)))
-            )
+            .where(inArray(question.id, questionIds))
 
           const questionMap = new Map(questions.map((q) => [q.id, q]))
 

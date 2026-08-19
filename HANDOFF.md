@@ -31,6 +31,12 @@ Internal sales questionnaire platform. Allows authenticated internal users (and 
 
 ## Last Session Changes
 
+- **2026-08-19 (template-copy blank-questions regression — fixed):** Creating a questionnaire from a template with **2+ questions** produced questions with **blank text** (empty `text`, `type` defaulted to `short_text`, null `description`/`options`).
+  - **Root cause (code, not DB):** in `POST /api/questionnaires` the copy step fetched source bank rows with `and(...questionIds.map(id => eq(question.id, id)))` — i.e. `id = a AND id = b …`, always false for 2+ ids → zero rows → every copied row fell back to defaults (`text: ""`). Single-question templates used the `eq` branch and worked, which is why it looked intermittent.
+  - **Regression origin:** the original feature commit (`146bae9`) did this correctly with a single `.innerJoin(question, …)`. It was rewritten into the broken two-step fetch during the RLS migration commit (`57da1a5`) — an unrelated refactor; `inArray` was also dropped from imports there. Lesson: broad mixed-purpose commits hide collateral regressions in untested paths.
+  - **Fix:** `.where(inArray(question.id, questionIds))` + re-added `inArray` import in `src/app/api/questionnaires/route.ts`. `tsc --noEmit` clean.
+  - **Data repair:** `scripts/backfill-template-questions.ts` (+ `npm run db:backfill-template-questions`) restores `text/description/type/options` from `source_question_id` for rows with the bug signature (`text = '' AND is_custom = false`); dry-run by default, `--apply` to write, runs in one tx under admin RLS context, reports unrecoverable rows (source question deleted). Applied successfully — verified fix works.
+
 - **2026-05-01 (security headers):** Added HTTP security headers via `next.config.ts` `headers()` — applied to all routes.
   - `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `Strict-Transport-Security` (2-year HSTS).
   - `Content-Security-Policy`: tight policy; `'unsafe-eval'` conditionally added **only in development** (`NODE_ENV === "development"`) because Turbopack uses eval for HMR/source maps — omitting it in dev breaks sign-in and dynamic imports (Recharts). Production CSP has no `unsafe-eval`.
@@ -205,6 +211,10 @@ Full design redesign (2026-03-28) — styling only, zero logic changes:
 - **Confirmation page**: Larger success circle with ring + shadow; `text-3xl` heading; editorial numbered next-steps list
 
 ## Files Touched
+- `src/app/api/questionnaires/route.ts` — template-copy fix (`inArray` instead of broken `and(...)`)
+- `scripts/backfill-template-questions.ts` (new), `package.json` — `db:backfill-template-questions` data-repair script
+- `docs/` (new, untracked) — security audit report, IT/TJ email drafts, AWS deployment open-items
+
 - `HANDOFF.md` — post-audit batch (Clients a11y, dashboard charts lazy + sr-only table, `text-accent`)
 - `src/app/(dashboard)/clients/page.tsx`, `src/app/(dashboard)/dashboard-client.tsx`, `src/app/(dashboard)/dashboard-chart-blocks.tsx` (new)
 - `src/app/(dashboard)/questionnaires/[id]/detail-client.tsx`, `src/components/shared/collaborator-panel.tsx`, `src/app/respond/[token]/page.tsx`
