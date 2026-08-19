@@ -906,3 +906,40 @@ if (el) {
 - Last-Seen: 2026-04-23
 
 ---
+
+## [LRN-20260819-001] bug_fix
+
+**Logged**: 2026-08-19
+**Priority**: high
+**Status**: promoted
+**Area**: backend, database
+
+### Summary
+Filtering a column by a **list** of values in Drizzle must use `inArray(col, ids)`. The pattern `and(...ids.map(id => eq(col, id)))` builds `col = a AND col = b AND …`, which is **always false for 2+ ids** (one row can't equal multiple values) and silently returns zero rows.
+
+### Details
+- Symptom: creating a questionnaire from a template with **2+ questions** produced questions with **blank text**; single-question templates worked (masked the bug).
+- Root cause: `POST /api/questionnaires` copied template questions by fetching source bank rows with `and(...questionIds.map(id => eq(question.id, id)))`. For 2+ ids that condition is unsatisfiable → empty result → `questionMap` empty → every copied row fell back to defaults (`text: ""`, `type: "short_text"`, null description/options), and those blanks were persisted.
+- **Regression origin:** original feature commit (`146bae9`) did this correctly with a single `.innerJoin(question, eq(templateQuestion.questionId, question.id))`. It was rewritten into the broken two-step fetch during an **unrelated** broad commit — the RLS migration (`57da1a5`) — which also dropped `inArray` from imports. Broad mixed-purpose commits hide collateral regressions in paths that aren't the commit's focus and don't get tested.
+- Fix: `.where(inArray(question.id, questionIds))` + re-add `inArray` import.
+- Data repair: `scripts/backfill-template-questions.ts` (`npm run db:backfill-template-questions`) restores fields from `source_question_id` for rows matching the bug signature (`text = '' AND is_custom = false`), dry-run by default, one tx under admin RLS context.
+
+### Suggested Action
+- Prefer `inArray` for list membership; never emulate `IN` with chained `and(eq(...))`.
+- When a refactor (e.g. RLS) touches a route, re-verify unrelated logic in that route — especially query-shape changes. Keep infra refactors in narrowly-scoped commits.
+- Promoted a short rule to `CLAUDE.md` (Database Initialization / query patterns).
+
+### Resolution
+- **Resolved**: 2026-08-19 — fix applied, `tsc --noEmit` clean, backfill applied and verified in-app.
+- **Promoted**: `CLAUDE.md`, `HANDOFF.md` (2026-08-19 session entry)
+
+### Metadata
+- Source: user_feedback — bug report + diagnosis session 2026-08-19
+- Related Files: `src/app/api/questionnaires/route.ts`, `scripts/backfill-template-questions.ts`
+- Tags: drizzle, inArray, query-bug, regression, template-copy, mixed-commit
+- Pattern-Key: backend.drizzle-in-array-vs-and-eq
+- Recurrence-Count: 1
+- First-Seen: 2026-08-19
+- Last-Seen: 2026-08-19
+
+---
